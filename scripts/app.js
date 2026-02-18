@@ -1,0 +1,987 @@
+// Runtime logic (champion raw data is loaded from data/champions.js)
+const CDN_VERSION = "14.24.1";
+const CHAMP_IMG_KEY_MAP = {
+    Ksante: "KSante"
+};
+const TYPE_LABEL = {
+    Dive: "돌진",
+    Poke: "포킹",
+    Anti: "받아치기"
+};
+
+const clampStat = (value) => Math.min(Math.max(value, 1), 10);
+const clampScale = (value) => Math.min(Math.max(Math.round(value), 1), 3);
+const TYPE_BASE_STATS = {
+    Dive: { dmg: 7, tank: 5 },
+    Poke: { dmg: 8, tank: 3 },
+    Anti: { dmg: 5, tank: 7 }
+};
+const TYPE_PHASE_BASE = {
+    Dive: { early: 8, mid: 6, late: 4 },
+    Poke: { early: 5, mid: 7, late: 8 },
+    Anti: { early: 4, mid: 7, late: 7 }
+};
+const CHAMP_PHASE_OVERRIDES = {};
+const CHAMP_STAT_OVERRIDES = {
+    Akshan: { dmg: 9, tank: 2 },
+    DrMundo: { dmg: 5, tank: 9 },
+    Malphite: { dmg: 6, tank: 9 },
+    Ornn: { dmg: 5, tank: 10 },
+    Ksante: { dmg: 6, tank: 10 },
+    Karthus: { dmg: 9, tank: 2 },
+    Vayne: { dmg: 9, tank: 2 },
+    Zeri: { dmg: 9, tank: 2 },
+    Leona: { dmg: 4, tank: 9 },
+    Nautilus: { dmg: 5, tank: 9 }
+};
+const CHAMP_PROFILE_OVERRIDES = {
+    Brand: { type: "Anti", scale: 2, pos: "SPT" },
+    Xerath: { type: "Poke", scale: 3, pos: "MID" },
+    Poppy: { type: "Anti", scale: 3, pos: "TOP" },
+    Akali: { type: "Dive", scale: 3, pos: "MID" },
+    Garen: { type: "Dive", scale: 1, pos: "TOP" },
+    Ambessa: { type: "Dive", scale: 3, pos: "TOP" },
+    Ksante: { type: "Anti", scale: 3, pos: "TOP" }
+};
+const CHAMP_POSITION_OVERRIDES = {};
+const CHAMP_DAMAGE_TYPE_OVERRIDES = {
+    Akali: "AP",
+    Diana: "AP",
+    Ekko: "AP",
+    Elise: "AP",
+    Fizz: "AP",
+    Katarina: "AP",
+    Lillia: "AP",
+    Evelynn: "AP",
+    Nidalee: "AP",
+    Karthus: "AP",
+    Gragas: "AP",
+    Sylas: "AP",
+    Tristana: "AD",
+    Corki: "Hybrid",
+    KaiSa: "Hybrid",
+    Kaisa: "Hybrid",
+    Varus: "Hybrid",
+    Twitch: "AD",
+    Teemo: "AP",
+    Yone: "AD",
+    Yasuo: "AD",
+    Jax: "Hybrid",
+    Gwen: "AP",
+    Volibear: "Hybrid",
+    Udyr: "Hybrid",
+    Zac: "AP",
+    ChoGath: "AP",
+    Chogath: "AP",
+    Malphite: "AP",
+    Rumble: "AP",
+    Swain: "AP",
+    Veigar: "AP",
+    Viktor: "AP",
+    Xerath: "AP",
+    Ziggs: "AP",
+    Zoe: "AP",
+    Zyra: "AP"
+};
+
+Object.keys(CHAMP_DB).forEach((key) => {
+    const champ = CHAMP_DB[key];
+    const base = TYPE_BASE_STATS[champ.type] || { dmg: 6, tank: 6 };
+    const ccBonus = champ.cc >= 2 ? 1 : 0;
+
+    champ.dmg = clampStat(base.dmg + (champ.cc === 0 ? 1 : 0) + (champ.type === "Poke" ? 1 : 0) - (champ.type === "Anti" ? 1 : 0));
+    champ.tank = clampStat(base.tank + ccBonus - (champ.type === "Poke" ? 1 : 0));
+
+    if (CHAMP_STAT_OVERRIDES[key]) {
+        champ.dmg = CHAMP_STAT_OVERRIDES[key].dmg;
+        champ.tank = CHAMP_STAT_OVERRIDES[key].tank;
+    }
+
+    // 챔피언당 포지션 1개로 강제 고정
+    champ.pos = [CHAMP_POSITION_OVERRIDES[key] || champ.pos[0]];
+
+    let profileType = champ.type;
+    // 역밸런싱: 강한 기본 스탯일수록 유형 스케일을 낮게 부여
+    const powerScore = champ.dmg + champ.tank + champ.cc * 2;
+    let profileScale = 3;
+    if (powerScore >= 19) profileScale = 1;
+    else if (powerScore >= 14) profileScale = 2;
+    if (CHAMP_PROFILE_OVERRIDES[key]) {
+        profileType = CHAMP_PROFILE_OVERRIDES[key].type;
+        profileScale = CHAMP_PROFILE_OVERRIDES[key].scale;
+        if (CHAMP_PROFILE_OVERRIDES[key].pos) {
+            champ.pos = [CHAMP_PROFILE_OVERRIDES[key].pos];
+        }
+    }
+    champ.profile = { type: profileType, scale: clampScale(profileScale) };
+
+    // AD / AP / 하이브리드 분류
+    let dmgType = champ.type === "Dive" ? "AD" : "AP";
+    if (champ.pos[0] === "ADC") dmgType = "AD";
+    if (CHAMP_DAMAGE_TYPE_OVERRIDES[key]) dmgType = CHAMP_DAMAGE_TYPE_OVERRIDES[key];
+    champ.dmgType = dmgType;
+
+    // 라인전(초반) / 교전(중반) / 한타(후반) 강점 스탯
+    const phaseBase = TYPE_PHASE_BASE[champ.type] || { early: 6, mid: 6, late: 6 };
+    let early = Math.round(phaseBase.early + (champ.dmg - 6) * 0.3 + (champ.tank - 6) * 0.25 + (champ.cc - 1) * 0.2);
+    let mid = Math.round(phaseBase.mid + (champ.dmg - 6) * 0.25 + (champ.tank - 6) * 0.25 + (champ.cc - 1) * 0.25);
+    let late = Math.round(phaseBase.late + (champ.dmg - 6) * 0.35 + (champ.tank - 6) * 0.15 + (champ.cc - 1) * 0.2);
+    if (CHAMP_PHASE_OVERRIDES[key]) {
+        early = CHAMP_PHASE_OVERRIDES[key].early ?? early;
+        mid = CHAMP_PHASE_OVERRIDES[key].mid ?? mid;
+        late = CHAMP_PHASE_OVERRIDES[key].late ?? late;
+    }
+    champ.phase = { early: clampStat(early), mid: clampStat(mid), late: clampStat(late) };
+});
+
+const POSITIONS = ["TOP", "JNG", "MID", "ADC", "SPT"];
+// 공식 밴픽 순서: 3밴-3픽-2밴-2픽 (전술적 스왑 고려하지 않은 정석 포지션 매핑 버전)
+const DRAFT_ORDER = [
+    {t:'blue', type:'ban', id:0}, {t:'red', type:'ban', id:0}, {t:'blue', type:'ban', id:1}, {t:'red', type:'ban', id:1}, {t:'blue', type:'ban', id:2}, {t:'red', type:'ban', id:2},
+    {t:'blue', type:'pick', id:0}, {t:'red', type:'pick', id:0}, {t:'red', type:'pick', id:1}, {t:'blue', type:'pick', id:1}, {t:'blue', type:'pick', id:2}, {t:'red', type:'pick', id:2},
+    {t:'red', type:'ban', id:3}, {t:'blue', type:'ban', id:3}, {t:'red', type:'ban', id:4}, {t:'blue', type:'ban', id:4},
+    {t:'red', type:'pick', id:3}, {t:'blue', type:'pick', id:3}, {t:'blue', type:'pick', id:4}, {t:'red', type:'pick', id:4}
+];
+
+let currentStep = 0;
+let picks = { blue: [null,null,null,null,null], red: [null,null,null,null,null] };
+let bans = { blue: [null,null,null,null,null], red: [null,null,null,null,null] };
+let swapSource = null;
+let activePosFilter = "ALL";
+let activeTypeFilter = "ALL";
+let userTeam = null;
+let aiTeam = null;
+let currentGame = 1;
+let seriesWins = { blue: 0, red: 0 };
+let fearlessLocked = new Set();
+let aiThinking = false;
+let lastSeriesEnded = false;
+const MAX_GAMES = 5;
+const WIN_TARGET = 3;
+let matchNarrationTimer = null;
+let activeBgmUrl = null;
+
+function getChampionImageUrl(key) {
+    const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
+    return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
+}
+
+function renderStatRow(label, icon, value, maxValue, color) {
+    const percentage = Math.min((value / maxValue) * 100, 100);
+    const width = value > 0 ? Math.max(percentage, 8) : 0;
+    return `
+        <div class="tip-stat">
+            <span class="tip-stat-label">${icon} ${label}</span>
+            <span class="tip-stat-track"><span class="tip-stat-fill" style="width:${width}%; background:${color};"></span></span>
+            <span class="tip-stat-value">${value}/${maxValue}</span>
+        </div>
+    `;
+}
+
+function canAssignDistinctPositions(championKeys) {
+    const used = {};
+    const tryAssign = (idx, visited) => {
+        if (visited[idx]) return false;
+        visited[idx] = true;
+        const key = championKeys[idx];
+        const poss = CHAMP_DB[key].pos;
+        for (const p of poss) {
+            if (!used[p]) {
+                used[p] = key;
+                return true;
+            }
+        }
+        for (const p of poss) {
+            const prevKey = used[p];
+            if (!prevKey) continue;
+            used[p] = key;
+            const prevIdx = championKeys.indexOf(prevKey);
+            if (prevIdx >= 0 && tryAssign(prevIdx, visited)) return true;
+            used[p] = prevKey;
+        }
+        return false;
+    };
+
+    for (let i = 0; i < championKeys.length; i++) {
+        const ok = tryAssign(i, {});
+        if (!ok) return false;
+    }
+    return true;
+}
+
+function canPickForTeam(team, key) {
+    const selected = picks[team].filter(Boolean);
+    return canAssignDistinctPositions([...selected, key]);
+}
+
+function updateSeriesInfo() {
+    const sideTxt = userTeam ? `MY TEAM: ${userTeam.toUpperCase()} / AI TEAM: ${aiTeam.toUpperCase()}` : "MY TEAM: 선택 전";
+    document.getElementById('series-info').innerText = `HARD FEARLESS BO5 | SET ${currentGame}/${MAX_GAMES} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R | ${sideTxt} | 누적 잠금 ${fearlessLocked.size}`;
+}
+
+function getTeamRoleLabel(team) {
+    if (!userTeam) return team.toUpperCase();
+    return team === userTeam ? "MY TEAM" : "AI TEAM";
+}
+
+function renderLockedChamps() {
+    const list = document.getElementById('locked-list');
+    if (!list) return;
+    const locked = [...fearlessLocked];
+    if (locked.length === 0) {
+        list.innerHTML = `<span style="font-size:10px;color:#7f95a3;">아직 잠금 없음</span>`;
+        return;
+    }
+    list.innerHTML = locked.map((key) => `<span class="locked-chip"><img src="${getChampionImageUrl(key)}" alt="${CHAMP_DB[key]?.name || key}"><span>${CHAMP_DB[key]?.name || key}</span></span>`).join("");
+}
+
+function clearBoardUI() {
+    for (let i = 0; i < 5; i++) {
+        const bBan = document.getElementById(`b-ban-${i}`);
+        const rBan = document.getElementById(`r-ban-${i}`);
+        const bSlot = document.getElementById(`b-slot-${i}`);
+        const rSlot = document.getElementById(`r-slot-${i}`);
+        if (bBan) bBan.style.backgroundImage = "";
+        if (rBan) rBan.style.backgroundImage = "";
+        if (bSlot) {
+            bSlot.querySelector('.champ-img').style.backgroundImage = "";
+            bSlot.querySelector('.name').innerText = "-";
+            bSlot.style.borderColor = "#222";
+        }
+        if (rSlot) {
+            rSlot.querySelector('.champ-img').style.backgroundImage = "";
+            rSlot.querySelector('.name').innerText = "-";
+            rSlot.style.borderColor = "#222";
+        }
+    }
+    document.querySelectorAll('.swap-btn').forEach((b) => b.style.display = 'none');
+}
+
+function startGameDraft() {
+    if (matchNarrationTimer) {
+        clearInterval(matchNarrationTimer);
+        matchNarrationTimer = null;
+    }
+    currentStep = 0;
+    picks = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
+    bans = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
+    swapSource = null;
+    aiThinking = false;
+    clearBoardUI();
+    document.getElementById('result-modal').style.display = 'none';
+    const nextBtn = document.getElementById('result-next-btn');
+    if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+    }
+    updateSeriesInfo();
+    renderLockedChamps();
+    renderPool();
+    updateUI();
+    calculateStats();
+}
+
+function resetSeries() {
+    currentGame = 1;
+    seriesWins = { blue: 0, red: 0 };
+    fearlessLocked = new Set();
+    lastSeriesEnded = false;
+    startGameDraft();
+}
+
+function chooseSide(side) {
+    userTeam = side;
+    aiTeam = side === "blue" ? "red" : "blue";
+    document.getElementById('side-select-modal').style.display = 'none';
+    resetSeries();
+}
+
+function init() {
+    setupBgmControls();
+    const bBans = document.getElementById('b-bans');
+    const rBans = document.getElementById('r-bans');
+    const bPicks = document.getElementById('b-picks');
+    const rPicks = document.getElementById('r-picks');
+
+    POSITIONS.forEach((pos, i) => {
+        bBans.innerHTML += `<div class="ban-slot" id="b-ban-${i}"></div>`;
+        rBans.innerHTML += `<div class="ban-slot" id="r-ban-${i}"></div>`;
+        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div style="margin-left:10px;"><div class="name">-</div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
+        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div style="margin-right:10px;"><div class="name">-</div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
+    });
+    document.querySelectorAll('.pos-filter-btn').forEach((btn) => {
+        if (btn.dataset.pos) {
+            btn.addEventListener('click', () => {
+                activePosFilter = btn.dataset.pos;
+                document.querySelectorAll('#pos-nav .pos-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
+                renderPool();
+            });
+        }
+        if (btn.dataset.type) {
+            btn.addEventListener('click', () => {
+                activeTypeFilter = btn.dataset.type;
+                document.querySelectorAll('#type-nav .pos-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
+                renderPool();
+            });
+        }
+    });
+    renderPool();
+    updateUI();
+    calculateStats();
+}
+
+function renderPool() {
+    const grid = document.getElementById('champ-grid');
+    const term = document.getElementById('search').value.toLowerCase();
+    grid.innerHTML = '';
+    const step = currentStep < DRAFT_ORDER.length ? DRAFT_ORDER[currentStep] : null;
+    const pickingTeam = step && step.type === 'pick' ? step.t : null;
+
+    Object.keys(CHAMP_DB).forEach(key => {
+        const c = CHAMP_DB[key];
+        const isSelected = [...picks.blue, ...picks.red, ...bans.blue, ...bans.red].includes(key);
+        const isFearlessLocked = fearlessLocked.has(key);
+        const matchesSearch = c.name.includes(term) || key.toLowerCase().includes(term) || TYPE_LABEL[c.profile.type].includes(term) || c.profile.type.toLowerCase().includes(term);
+        const matchesPosFilter = activePosFilter === "ALL" || c.pos.includes(activePosFilter);
+        const matchesTypeFilter = activeTypeFilter === "ALL" || c.profile.type === activeTypeFilter;
+        const isPickValid = !pickingTeam || canPickForTeam(pickingTeam, key);
+
+        if (matchesSearch && matchesPosFilter && matchesTypeFilter) {
+            const div = document.createElement('div');
+            div.className = `card ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
+            div.innerHTML = `
+                <img src="${getChampionImageUrl(key)}" onerror="this.onerror=null;this.src='https://placehold.co/120x120/121c23/c8aa6e?text=${encodeURIComponent(c.name)}';">
+                <p>${c.name}</p>
+            `;
+            
+            div.onmouseover = (e) => showTooltip(e, `
+                <b>${c.name}</b><br>유형: ${TYPE_LABEL[c.profile.type]} ${c.profile.scale}<br>
+                <div style="margin-top:4px; color:#ffe082;">피해 타입: ${c.dmgType}</div>
+                ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
+                ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
+                ${renderStatRow("CC", "🌀", c.cc, 3, "#ffca28")}
+                ${renderStatRow("초반", "⏱", c.phase.early, 10, "#26c6da")}
+                ${renderStatRow("중반", "📈", c.phase.mid, 10, "#66bb6a")}
+                ${renderStatRow("후반", "🏁", c.phase.late, 10, "#ffa726")}
+                ${renderStatRow(TYPE_LABEL[c.profile.type], "◆", c.profile.scale, 3, "#ab47bc")}
+                <div style="margin-top:5px; color:#cfd8dc;">주 포지션: ${c.pos.join(', ')}</div>${isFearlessLocked ? '<div style="margin-top:5px;color:#ef9a9a;">피어리스 잠금됨 (이전 세트 픽)</div>' : ''}
+            `);
+            div.onmousemove = (e) => moveTooltip(e);
+            div.onmouseout = hideTooltip;
+            
+            if (!isSelected && !isFearlessLocked && isPickValid) {
+                div.onclick = () => selectChamp(key);
+            }
+            grid.appendChild(div);
+        }
+    });
+}
+
+function selectChamp(key, byAI = false) {
+    if (!userTeam) return;
+    if (currentStep >= DRAFT_ORDER.length) return;
+    const step = DRAFT_ORDER[currentStep];
+    if (!byAI && step.t === aiTeam) return;
+    
+    if (step.type === 'ban') {
+        bans[step.t][step.id] = key;
+        document.getElementById(`${step.t[0]}-ban-${step.id}`).style.backgroundImage = `url(${getChampionImageUrl(key)})`;
+    } else {
+        picks[step.t][step.id] = key;
+        refreshUI(step.t);
+    }
+
+    currentStep++;
+    document.getElementById('search').value = '';
+    renderPool();
+    updateUI();
+    calculateStats();
+}
+
+function updateUI() {
+    document.querySelectorAll('.slot, .ban-slot').forEach(s => s.classList.remove('active'));
+    updateSeriesInfo();
+    const wrTrack = document.querySelector('.winrate-track');
+    if (currentStep < DRAFT_ORDER.length) {
+        wrTrack.style.display = "none";
+        const step = DRAFT_ORDER[currentStep];
+        const elId = step.type === 'ban' ? `${step.t[0]}-ban-${step.id}` : `${step.t[0]}-slot-${step.id}`;
+        document.getElementById(elId).classList.add('active');
+        
+        const nextTeam = step.t.toUpperCase();
+        const isAiTurn = userTeam && step.t === aiTeam;
+        document.getElementById('step-msg').innerText = isAiTurn ? `AI(${nextTeam}) ${step.type.toUpperCase()}...` : `${nextTeam} ${step.type.toUpperCase()}...`;
+        document.getElementById('pos-guide').innerText = step.type === 'pick' ? "💡 포지션 순서 제한 없이 픽 가능하지만, 팀 내 포지션 중복이 발생하는 조합은 선택할 수 없습니다." : "💡 상대의 핵심 챔피언을 밴하세요.";
+        if (isAiTurn && !aiThinking) {
+            aiThinking = true;
+            setTimeout(aiTakeTurn, 550);
+        }
+    } else {
+        wrTrack.style.display = "flex";
+        document.getElementById('step-msg').innerText = `SET ${currentGame} 종료`;
+        document.querySelectorAll('.swap-btn').forEach(b => b.style.display = 'block');
+        showFinalResult();
+    }
+}
+
+function getCompLabel(stats) {
+    const dominant = getDominantProfile(stats);
+    if (dominant.type === "Dive") return "돌진 조합";
+    if (dominant.type === "Poke") return "포킹 조합";
+    return "받아치기 조합";
+}
+
+function getDominantProfile(stats) {
+    const items = [
+        { type: "Dive", value: stats.dive },
+        { type: "Poke", value: stats.poke },
+        { type: "Anti", value: stats.anti }
+    ];
+    // 동점 시에는 먼저 나온 유형을 택해 단일 조합으로 고정 반영
+    let best = items[0];
+    for (let i = 1; i < items.length; i++) {
+        if (items[i].value > best.value) best = items[i];
+    }
+    return best;
+}
+
+function hasProfileTie(stats) {
+    const values = [stats.dive, stats.poke, stats.anti];
+    const maxValue = Math.max(...values);
+    return values.filter((v) => v === maxValue).length >= 2;
+}
+
+function updateTeamPanels(b, r) {
+    const maxProfileSum = 15;
+    const makeBars = (teamStats, colorMap) => `
+        <div class="mini-bars">
+            <div class="mini-bar"><span class="mini-bar-label">돌진</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.dive / maxProfileSum) * 100}%;background:${colorMap.dive};"></span></span><span class="mini-bar-value">${teamStats.dive}</span></div>
+            <div class="mini-bar"><span class="mini-bar-label">포킹</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.poke / maxProfileSum) * 100}%;background:${colorMap.poke};"></span></span><span class="mini-bar-value">${teamStats.poke}</span></div>
+            <div class="mini-bar"><span class="mini-bar-label">받아</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.anti / maxProfileSum) * 100}%;background:${colorMap.anti};"></span></span><span class="mini-bar-value">${teamStats.anti}</span></div>
+        </div>
+    `;
+    const blueSummary = document.getElementById('b-team-summary');
+    const redSummary = document.getElementById('r-team-summary');
+    const blueRole = getTeamRoleLabel('blue');
+    const redRole = getTeamRoleLabel('red');
+    blueSummary.innerHTML = `
+        <div class="title">블루팀 요약 (${blueRole})</div>
+        <div class="row"><span>기본</span><span>CC ${b.cc} | 딜 ${b.dmg} | 탱 ${b.tank}</span></div>
+        <div class="row"><span>시간대</span><span>초 ${b.early} / 중 ${b.mid} / 후 ${b.late}</span></div>
+        <div class="row"><span>AD/AP</span><span>AD ${Math.round(b.adRatio * 100)}% / AP ${Math.round((1 - b.adRatio) * 100)}%</span></div>
+        <div class="row"><span>성향</span><span>돌진 ${b.dive} / 포킹 ${b.poke} / 받아치기 ${b.anti}</span></div>
+        <div class="row"><span>조합</span><span>${getCompLabel(b)}</span></div>
+        ${makeBars(b, { dive: "#29b6f6", poke: "#66bb6a", anti: "#ab47bc" })}
+    `;
+    redSummary.innerHTML = `
+        <div class="title">레드팀 요약 (${redRole})</div>
+        <div class="row"><span>기본</span><span>CC ${r.cc} | 딜 ${r.dmg} | 탱 ${r.tank}</span></div>
+        <div class="row"><span>시간대</span><span>초 ${r.early} / 중 ${r.mid} / 후 ${r.late}</span></div>
+        <div class="row"><span>AD/AP</span><span>AD ${Math.round(r.adRatio * 100)}% / AP ${Math.round((1 - r.adRatio) * 100)}%</span></div>
+        <div class="row"><span>성향</span><span>돌진 ${r.dive} / 포킹 ${r.poke} / 받아치기 ${r.anti}</span></div>
+        <div class="row"><span>조합</span><span>${getCompLabel(r)}</span></div>
+        ${makeBars(r, { dive: "#ef5350", poke: "#ffa726", anti: "#7e57c2" })}
+    `;
+}
+
+function getTeamStats(team, picksState) {
+    let res = {
+        cc: 0, dmg: 0, tank: 0, dive: 0, poke: 0, anti: 0,
+        early: 0, mid: 0, late: 0,
+        adCount: 0, apCount: 0, hybridCount: 0,
+        adDmg: 0, apDmg: 0, adPressure: 0, apPressure: 0, adRatio: 0.5
+    };
+    picksState[team].forEach((key) => {
+        if (key) {
+            const c = CHAMP_DB[key];
+            res.cc += c.cc;
+            res.dmg += c.dmg;
+            res.tank += c.tank;
+            res.early += c.phase.early;
+            res.mid += c.phase.mid;
+            res.late += c.phase.late;
+            if (c.profile.type === "Dive") res.dive += c.profile.scale;
+            if (c.profile.type === "Poke") res.poke += c.profile.scale;
+            if (c.profile.type === "Anti") res.anti += c.profile.scale;
+            if (c.dmgType === "AD") {
+                res.adCount += 1;
+                res.adDmg += c.dmg;
+            } else if (c.dmgType === "AP") {
+                res.apCount += 1;
+                res.apDmg += c.dmg;
+            } else {
+                // 하이브리드는 AD/AP 영향도를 반반으로 분배
+                res.hybridCount += 1;
+                res.adCount += 0.5;
+                res.apCount += 0.5;
+                res.adDmg += c.dmg * 0.5;
+                res.apDmg += c.dmg * 0.5;
+            }
+        }
+    });
+    res.adPressure = res.adCount * res.adDmg;
+    res.apPressure = res.apCount * res.apDmg;
+    const totalPressure = res.adPressure + res.apPressure;
+    res.adRatio = totalPressure > 0 ? (res.adPressure / totalPressure) : 0.5;
+    return res;
+}
+
+function getCorePenalty(stats) {
+    let penalty = 0;
+    if (stats.dmg < 20) penalty -= 16 + (20 - stats.dmg) * 1.3;
+    if (stats.tank < 20) penalty -= 16 + (20 - stats.tank) * 1.2;
+    if (stats.cc <= 5) penalty -= 14 + (5 - stats.cc) * 2.0;
+    return penalty;
+}
+
+function getDamageBalanceBonus(stats) {
+    const total = stats.adPressure + stats.apPressure;
+    if (total <= 0) return 0;
+    const adShare = stats.adPressure / total;
+    const dominantShare = Math.max(adShare, 1 - adShare);
+    const symmetry = 1 - Math.abs(0.5 - adShare) * 2; // 0~1
+    let bonus = symmetry * 4.5;
+    if (dominantShare >= 0.8) {
+        // AD/AP 한쪽이 80% 이상이면 큰 페널티
+        bonus -= 16 + (dominantShare - 0.8) * 35;
+    }
+    return bonus;
+}
+
+function clampPercent(v) {
+    return Math.min(Math.max(v, 3), 97);
+}
+
+function getPhaseProjection(b, r, overallWin) {
+    const balanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
+    const earlyRaw = (b.early - r.early) * 2.1 + (b.dive - r.dive) * 0.8 + (b.cc - r.cc) * 0.45;
+    const midRaw = (b.mid - r.mid) * 2.2 + (b.dmg - r.dmg) * 0.35 + (b.tank - r.tank) * 0.35 + balanceEdge * 0.25;
+    const lateRaw = (b.late - r.late) * 2.3 + (b.poke - r.poke) * 0.8 + (b.dmg - r.dmg) * 0.4 + balanceEdge * 0.3;
+
+    const earlyWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(earlyRaw / 18) * 45) * 0.55);
+    const midWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(midRaw / 18) * 45) * 0.55);
+    const lateWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(lateRaw / 18) * 45) * 0.55);
+    return { earlyWin, midWin, lateWin };
+}
+
+function getWinRateByStats(b, r) {
+    let statEdge = (b.cc - r.cc) * 0.9 + (b.dmg - r.dmg) * 0.8 + (b.tank - r.tank) * 0.8;
+    const phaseEdge = (b.early - r.early) * 0.55 + (b.mid - r.mid) * 0.85 + (b.late - r.late) * 1.1;
+    const bMain = getDominantProfile(b);
+    const rMain = getDominantProfile(r);
+    const beats = { Poke: "Anti", Anti: "Dive", Dive: "Poke" };
+    let matchupEdge = 0;
+    if (bMain.type === rMain.type) {
+        // 같은 조합이면 조합 점수 우위만 약하게 반영
+        matchupEdge = (bMain.value - rMain.value) * 0.9;
+    } else {
+        const bVal = Math.max(bMain.value, 1);
+        const rVal = Math.max(rMain.value, 1);
+        if (beats[bMain.type] === rMain.type) {
+            // 우상성: 내 주유형이 높을수록 더 강하게 누름
+            matchupEdge = Math.pow(bVal, 1.35) * Math.pow(rVal, 0.95);
+        } else {
+            // 역상성: 내 주유형이 높을수록 카운터 당할 때 페널티도 더 큼
+            matchupEdge = -Math.pow(rVal, 1.35) * Math.pow(bVal, 1.15);
+        }
+    }
+
+    // 성향합 동점(혼합 성향) 팀이 있으면 상성 영향 자체를 완화
+    if (hasProfileTie(b) || hasProfileTie(r)) {
+        matchupEdge *= (matchupEdge < 0 ? 0.42 : 0.65);
+    }
+
+    const bCorePenalty = getCorePenalty(b);
+    const rCorePenalty = getCorePenalty(r);
+    const bBalanceBonus = getDamageBalanceBonus(b);
+    const rBalanceBonus = getDamageBalanceBonus(r);
+
+    // 딜/탱 20 이상 팀이 많을수록 조합 상성 영향도를 더 키움
+    const bStable = b.dmg > 20 && b.tank > 20;
+    const rStable = r.dmg > 20 && r.tank > 20;
+    const stableCount = (bStable ? 1 : 0) + (rStable ? 1 : 0);
+    if (stableCount === 2) statEdge *= 0.55;
+    else if (stableCount === 1) statEdge *= 0.75;
+    const compMultiplier = stableCount === 2 ? 0.9 : (stableCount === 1 ? 0.78 : 0.65);
+
+    const rawScore =
+        statEdge +
+        phaseEdge +
+        matchupEdge * compMultiplier +
+        (bCorePenalty - rCorePenalty) +
+        (bBalanceBonus - rBalanceBonus);
+
+    let bWin = 50 + Math.tanh(rawScore / 20) * 46;
+    return clampPercent(bWin);
+}
+
+function calculateStats() {
+    const b = getTeamStats('blue', picks);
+    const r = getTeamStats('red', picks);
+    const blueRole = getTeamRoleLabel('blue');
+    const redRole = getTeamRoleLabel('red');
+    document.getElementById('blue-info').innerText = `${blueRole} (BLUE) CC: ${b.cc} | 딜: ${b.dmg} | 탱: ${b.tank}`;
+    document.getElementById('red-info').innerText = `${redRole} (RED) CC: ${r.cc} | 딜: ${r.dmg} | 탱: ${r.tank}`;
+    updateTeamPanels(b, r);
+
+    const bWin = getWinRateByStats(b, r);
+    const phases = getPhaseProjection(b, r, bWin);
+    if (currentStep >= DRAFT_ORDER.length) {
+        document.getElementById('blue-win-bar').style.width = bWin + "%";
+        document.getElementById('b-wr-txt').innerText = bWin.toFixed(1) + "%";
+        document.getElementById('r-wr-txt').innerText = (100-bWin).toFixed(1) + "%";
+    }
+
+    return { bWin, b, r, phases };
+}
+
+function aiTakeTurn() {
+    if (!userTeam || currentStep >= DRAFT_ORDER.length) return;
+    const step = DRAFT_ORDER[currentStep];
+    if (step.t !== aiTeam) return;
+
+    const taken = new Set([...picks.blue, ...picks.red, ...bans.blue, ...bans.red, ...fearlessLocked]);
+    let candidates = Object.keys(CHAMP_DB).filter((key) => !taken.has(key));
+    if (step.type === 'pick') {
+        candidates = candidates.filter((key) => canPickForTeam(aiTeam, key));
+    }
+    if (candidates.length === 0) {
+        if (step.type === 'pick') candidates = Object.keys(CHAMP_DB).filter((key) => !taken.has(key));
+        else {
+            aiThinking = false;
+            return;
+        }
+    }
+    if (candidates.length === 0) {
+        aiThinking = false;
+        return;
+    }
+
+    let bestKey = candidates[0];
+    let bestScore = -Infinity;
+    const enemyTeam = aiTeam === 'blue' ? 'red' : 'blue';
+    candidates.forEach((key) => {
+        let score = 0;
+        const champ = CHAMP_DB[key];
+        if (step.type === 'pick') {
+            const saved = picks[aiTeam][step.id];
+            picks[aiTeam][step.id] = key;
+            const b = getTeamStats('blue', picks);
+            const r = getTeamStats('red', picks);
+            const bWin = getWinRateByStats(b, r);
+            const perspective = aiTeam === 'blue' ? bWin : (100 - bWin);
+            const bonus = champ.profile.scale * 1.2 + champ.cc * 0.4;
+            score = perspective + bonus;
+            picks[aiTeam][step.id] = saved;
+        } else {
+            // 밴은 "상대가 가져갔을 때 내 승률이 가장 떨어지는 챔피언"을 우선 제거
+            let simulatedThreat = 0;
+            if (canPickForTeam(enemyTeam, key)) {
+                const slotIdx = picks[enemyTeam].findIndex((v) => !v);
+                if (slotIdx >= 0) {
+                    const saved = picks[enemyTeam][slotIdx];
+                    picks[enemyTeam][slotIdx] = key;
+                    const b = getTeamStats('blue', picks);
+                    const r = getTeamStats('red', picks);
+                    const bWin = getWinRateByStats(b, r);
+                    const aiPerspective = aiTeam === 'blue' ? bWin : (100 - bWin);
+                    simulatedThreat = 100 - aiPerspective;
+                    picks[enemyTeam][slotIdx] = saved;
+                }
+            }
+            const rawPower = champ.dmg * 0.75 + champ.tank * 0.55 + champ.cc * 1.2 + champ.profile.scale * 1.1;
+            score = simulatedThreat + rawPower * 0.45;
+        }
+        if (score > bestScore) {
+            bestScore = score;
+            bestKey = key;
+        }
+    });
+
+    aiThinking = false;
+    selectChamp(bestKey, true);
+}
+
+function handleSwap(team, idx) {
+    if (swapSource === null) {
+        swapSource = { team, idx };
+        document.getElementById(`${team[0]}-slot-${idx}`).style.borderColor = "var(--gold)";
+    } else {
+        if (swapSource.team === team) {
+            const temp = picks[team][swapSource.idx];
+            picks[team][swapSource.idx] = picks[team][idx];
+            picks[team][idx] = temp;
+            refreshUI(team);
+        }
+        document.getElementById(`${swapSource.team[0]}-slot-${swapSource.idx}`).style.borderColor = "#222";
+        swapSource = null;
+    }
+}
+
+function refreshUI(team) {
+    // 슬롯 표시 기준은 픽 순서가 아니라 챔피언의 실제 포지션
+    POSITIONS.forEach((_, i) => {
+        const slot = document.getElementById(`${team[0]}-slot-${i}`);
+        slot.querySelector('.champ-img').style.backgroundImage = "";
+        slot.querySelector('.name').innerText = "-";
+    });
+
+    picks[team].forEach((key) => {
+        if (!key) return;
+        const pos = CHAMP_DB[key].pos[0];
+        const slotIdx = POSITIONS.indexOf(pos);
+        if (slotIdx < 0) return;
+        const slot = document.getElementById(`${team[0]}-slot-${slotIdx}`);
+        slot.querySelector('.champ-img').style.backgroundImage = `url(${getChampionImageUrl(key)})`;
+        slot.querySelector('.name').innerText = CHAMP_DB[key].name;
+    });
+}
+
+function teamDisplayName(team) {
+    return team === userTeam ? "MY team" : "AI team";
+}
+
+function randomPick(arr) {
+    if (!arr || arr.length === 0) return "";
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function buildPhaseCommentary(res) {
+    const blueName = teamDisplayName("blue");
+    const redName = teamDisplayName("red");
+    const blueCarry = randomPick(picks.blue.filter(Boolean).map((k) => CHAMP_DB[k].name)) || "블루팀";
+    const redCarry = randomPick(picks.red.filter(Boolean).map((k) => CHAMP_DB[k].name)) || "레드팀";
+    const earlyFav = res.phases.earlyWin >= 50 ? "blue" : "red";
+    const midFav = res.phases.midWin >= 50 ? "blue" : "red";
+    const lateFav = res.phases.lateWin >= 50 ? "blue" : "red";
+
+    const earlyLines = [
+        `${earlyFav === "blue" ? blueName : redName}이 초반 주도권을 잡고 라인 압박을 넣습니다!`,
+        `${earlyFav === "blue" ? blueName : redName} 정글이 첫 오브젝트를 챙깁니다.`,
+        `${earlyFav === "blue" ? blueCarry : redCarry}가 강하게 딜교를 밀어붙입니다.`
+    ];
+    const midLines = [
+        `${midFav === "blue" ? blueName : redName}이 용 교전에서 이득을 봅니다!`,
+        `${midFav === "blue" ? blueCarry : redCarry}가 한타 각을 제대로 열어냅니다.`,
+        `${midFav === "blue" ? redName : blueName} 비상! 한 번 빼야 합니다!`
+    ];
+    const lateLines = [
+        `${lateFav === "blue" ? blueName : redName}이 바론 앞 시야를 완전히 장악합니다.`,
+        `${lateFav === "blue" ? blueCarry : redCarry}가 결정적인 킬을 만들어냅니다!`,
+        `${res.bWin >= 50 ? blueName : redName} 쪽으로 승기가 크게 기웁니다.`
+    ];
+    return [...earlyLines, ...midLines, ...lateLines];
+}
+
+function buildResultBody(res, winner, loser, seriesEnded) {
+    const bComp = getCompLabel(res.b);
+    const rComp = getCompLabel(res.r);
+    return `
+        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>
+        <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
+        <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti} | 시간대: 초 ${res.r.early} / 중 ${res.r.mid} / 후 ${res.r.late}</p>
+        <div class="sim-wrap">
+            <div class="sim-title">10초 경기 시뮬레이션</div>
+            <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.earlyWin.toFixed(1)}%"></div></div><span>${res.phases.earlyWin.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.midWin.toFixed(1)}%"></div></div><span>${res.phases.midWin.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.lateWin.toFixed(1)}%"></div></div><span>${res.phases.lateWin.toFixed(1)}%</span></div>
+            <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
+        </div>
+        <hr style="border-color:#333">
+        <h2 style="color:var(--gold)">최종 승리 확률: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
+        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.`}</p>
+    `;
+}
+
+function startResultNarration(res, seriesEnded) {
+    const nextBtn = document.getElementById('result-next-btn');
+    const feed = document.getElementById('narrator-feed');
+    const lines = buildPhaseCommentary(res);
+    let idx = 0;
+
+    nextBtn.disabled = true;
+    nextBtn.style.opacity = "0.6";
+    nextBtn.innerText = "경기 진행중... 10";
+    feed.innerHTML = `<div class="narrator-line">🎙 해설: 밴픽 결과를 바탕으로 시뮬레이션을 시작합니다.</div>`;
+
+    if (matchNarrationTimer) clearInterval(matchNarrationTimer);
+    matchNarrationTimer = setInterval(() => {
+        idx += 1;
+        const remain = Math.max(10 - idx, 0);
+        if (idx <= 5) {
+            const line = lines[(idx - 1) % lines.length];
+            feed.innerHTML += `<div class="narrator-line">🎙 ${line}</div>`;
+            feed.scrollTop = feed.scrollHeight;
+        }
+        nextBtn.innerText = remain > 0 ? `경기 진행중... ${remain}` : (seriesEnded ? "새 시리즈 시작" : "다음 세트 시작");
+        if (idx >= 10) {
+            clearInterval(matchNarrationTimer);
+            matchNarrationTimer = null;
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = "1";
+            nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
+        }
+    }, 1000);
+}
+
+function showFinalResult() {
+    const res = calculateStats();
+    const modal = document.getElementById('result-modal');
+    modal.style.display = 'flex';
+    const winner = res.bWin >= 50 ? "blue" : "red";
+    const loser = winner === "blue" ? "red" : "blue";
+    seriesWins[winner] += 1;
+    [...picks.blue, ...picks.red].forEach((key) => { if (key) fearlessLocked.add(key); });
+    updateSeriesInfo();
+    renderLockedChamps();
+
+    document.getElementById('winner-text').innerText = winner.toUpperCase() + " SET WIN";
+    document.getElementById('winner-text').style.color = winner === "blue" ? "var(--blue)" : "var(--red)";
+    
+    const seriesEnded = seriesWins[winner] >= WIN_TARGET || currentGame >= MAX_GAMES;
+    lastSeriesEnded = seriesEnded;
+    const nextBtn = document.getElementById('result-next-btn');
+    nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
+    document.getElementById('final-stats').innerHTML = buildResultBody(res, winner, loser, seriesEnded);
+    startResultNarration(res, seriesEnded);
+}
+
+function handleNextAction() {
+    if (matchNarrationTimer) {
+        clearInterval(matchNarrationTimer);
+        matchNarrationTimer = null;
+    }
+    document.getElementById('result-modal').style.display = 'none';
+    if (lastSeriesEnded) {
+        userTeam = null;
+        aiTeam = null;
+        document.getElementById('side-select-modal').style.display = 'flex';
+        return;
+    }
+    // BO5 내에서는 세트마다 진영 자동 교대
+    userTeam = userTeam === "blue" ? "red" : "blue";
+    aiTeam = userTeam === "blue" ? "red" : "blue";
+    currentGame += 1;
+    startGameDraft();
+}
+
+function showTooltip(e, txt) {
+    const tip = document.getElementById('tooltip');
+    tip.innerHTML = txt;
+    tip.style.display = 'block';
+    moveTooltip(e);
+}
+function moveTooltip(e) {
+    const tip = document.getElementById('tooltip');
+    if (tip.style.display !== 'block') return;
+    const pad = 14;
+    const tipRect = tip.getBoundingClientRect();
+    let left = e.clientX + pad;
+    let top = e.clientY + pad;
+    if (left + tipRect.width > window.innerWidth - pad) left = e.clientX - tipRect.width - pad;
+    if (top + tipRect.height > window.innerHeight - pad) top = e.clientY - tipRect.height - pad;
+    if (left < pad) left = pad;
+    if (top < pad) top = pad;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+}
+function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
+
+function normalizeTypeKey(rawType) {
+    if (rawType === "Dive" || rawType === "Poke" || rawType === "Anti") return rawType;
+    if (rawType === "돌진") return "Dive";
+    if (rawType === "포킹") return "Poke";
+    if (rawType === "받아치기") return "Anti";
+    return null;
+}
+function closeTutorial() {
+    document.getElementById('tutorial-modal').style.display = 'none';
+}
+
+function setupBgmControls() {
+    const player = document.getElementById('bgm-player');
+    const fileInput = document.getElementById('bgm-file');
+    const volumeInput = document.getElementById('bgm-volume');
+    const toggleBtn = document.getElementById('bgm-toggle');
+    if (!player || !fileInput || !volumeInput || !toggleBtn) return;
+
+    player.volume = parseFloat(volumeInput.value || "0.35");
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (activeBgmUrl) URL.revokeObjectURL(activeBgmUrl);
+        activeBgmUrl = URL.createObjectURL(file);
+        player.src = activeBgmUrl;
+        toggleBtn.innerText = "재생";
+    });
+    volumeInput.addEventListener('input', () => {
+        player.volume = parseFloat(volumeInput.value || "0.35");
+    });
+}
+
+function toggleBgm() {
+    const player = document.getElementById('bgm-player');
+    const toggleBtn = document.getElementById('bgm-toggle');
+    if (!player || !toggleBtn) return;
+    if (!player.src) {
+        alert("먼저 BGM 파일을 선택해주세요.");
+        return;
+    }
+    if (player.paused) {
+        player.play().then(() => {
+            toggleBtn.innerText = "정지";
+        }).catch(() => {
+            alert("브라우저 정책상 사용자 클릭 후 재생됩니다. 다시 재생 버튼을 눌러주세요.");
+        });
+    } else {
+        player.pause();
+        toggleBtn.innerText = "재생";
+    }
+}
+
+function loadProfileEditor() {
+    const editor = document.getElementById('profile-editor');
+    editor.value = JSON.stringify(CHAMP_PROFILE_OVERRIDES, null, 2);
+    document.getElementById('editor-msg').innerText = "현재 오버라이드 데이터를 불러왔습니다.";
+}
+
+function applyProfileEditor() {
+    const msg = document.getElementById('editor-msg');
+    const raw = document.getElementById('profile-editor').value.trim();
+    if (!raw) {
+        msg.innerText = "입력된 JSON이 없습니다.";
+        return;
+    }
+    try {
+        const next = JSON.parse(raw);
+        Object.keys(CHAMP_PROFILE_OVERRIDES).forEach((k) => delete CHAMP_PROFILE_OVERRIDES[k]);
+        Object.keys(next).forEach((k) => {
+            const row = next[k];
+            if (!row || !row.type || !row.scale) return;
+            const parsedType = normalizeTypeKey(row.type);
+            if (!parsedType) return;
+            CHAMP_PROFILE_OVERRIDES[k] = {
+                type: parsedType,
+                scale: clampScale(row.scale),
+                pos: row.pos || undefined
+            };
+        });
+        Object.keys(CHAMP_DB).forEach((key) => {
+            const champ = CHAMP_DB[key];
+            if (CHAMP_PROFILE_OVERRIDES[key]) {
+                champ.profile.type = CHAMP_PROFILE_OVERRIDES[key].type;
+                champ.profile.scale = CHAMP_PROFILE_OVERRIDES[key].scale;
+                if (CHAMP_PROFILE_OVERRIDES[key].pos) champ.pos = [CHAMP_PROFILE_OVERRIDES[key].pos];
+            }
+        });
+        renderPool();
+        calculateStats();
+        msg.innerText = "적용 완료: 런타임에 반영되었습니다. (지속 저장은 코드에 붙여넣기)";
+    } catch (err) {
+        msg.innerText = `JSON 파싱 오류: ${err.message}`;
+    }
+}
+
+init();
