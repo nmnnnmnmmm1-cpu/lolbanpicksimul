@@ -156,14 +156,149 @@ let seriesWins = { blue: 0, red: 0 };
 let fearlessLocked = new Set();
 let aiThinking = false;
 let lastSeriesEnded = false;
-const MAX_GAMES = 5;
-const WIN_TARGET = 3;
+let maxGames = 5;
+let winTarget = 3;
+let hardFearless = true;
+let selectedModeKey = "bo5";
+let pendingPickKey = null;
 let matchNarrationTimer = null;
-let activeBgmUrl = null;
+const MODE_RECORDS_KEY = "lol_draft_mode_records_v1";
+const MODE_CONFIGS = {
+    single: { label: "단판", maxGames: 1, winTarget: 1, hardFearless: false },
+    bo3: { label: "3전제 (하드피어리스)", maxGames: 3, winTarget: 2, hardFearless: true },
+    bo5: { label: "5전제 (하드피어리스)", maxGames: 5, winTarget: 3, hardFearless: true }
+};
+const TUTORIAL_STEPS = [
+    "“이 게임은 리그 오브 레전드 밴픽 시뮬레이션을 통해 승패를 가르는 게임입니다.”",
+    "“각 챔피언에는 딜링/탱킹/CC기 스탯, 데미지 종류, 챔피언 유형, 파워커브가 존재합니다.”",
+    "1. 딜링 & 탱킹 스탯 각 챔피언은 1~10 사이의 공격/방어 수치를 가집니다. 스탯이 높을수록 승률이 조금씩 상승하지만, 팀 전체의 균형이 더 중요합니다. 5명 챔피언의 스탯 총합이 어느 한쪽이라도 20 미만일 경우, 승률이 크게 떨어지니 주의하세요!",
+    "2. CC기 스탯 챔피언당 0~3의 CC 수치를 보유합니다. 팀의 CC 합계가 5 이하면 승리가 매우 어려워지지만, 10 이상을 확보하면 승률이 비약적으로 상승하여 게임을 유리하게 이끌 수 있습니다.",
+    "3. 데미지 밸런스 (AD/AP) 챔피언은 AD, AP, 하이브리드 중 하나의 속성을 가집니다. 각 속성의 비중은 챔피언의 '공격 스탯'에 따라 결정됩니다. 데미지 비중이 한쪽으로 너무 쏠리면 적의 방어에 막혀 승률이 하락하므로, AD와 AP의 비율을 적절히 섞는 것이 핵심입니다.",
+    "4. 챔피언 상성 (유형) 모든 챔피언은 [돌진 > 포킹 > 받아치기 > 돌진]의 가위바위보 상성을 가집니다(1~3단계).\n* 수치가 높을수록 상성 이득(또는 손해)을 크게 보고, 낮을수록 상성 영향을 덜 받습니다.\n* 만약 수치가 동일해 '밸런스 유형'이 되면 모든 상성에서 조금씩 불리해지니, 확실한 팀 컬러를 정하는 것이 좋습니다.",
+    "5. 파워 커브 챔피언마다 전성기(초/중/후반)가 다릅니다. 만약 상대 팀과 특정 시점의 전력 차이가 너무 크게 벌어진다면, 게임이 그 즉시 종료될 수도 있습니다.",
+    "그럼 즐거운 게임 되세요!"
+];
+let tutorialStepIndex = 0;
+let modeRecords = loadModeRecords();
 
 function getChampionImageUrl(key) {
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
     return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
+}
+
+function loadModeRecords() {
+    const empty = {
+        single: { wins: 0, losses: 0, streak: 0, bestStreak: 0 },
+        bo3: { wins: 0, losses: 0, streak: 0, bestStreak: 0 },
+        bo5: { wins: 0, losses: 0, streak: 0, bestStreak: 0 }
+    };
+    try {
+        const raw = localStorage.getItem(MODE_RECORDS_KEY);
+        if (!raw) return empty;
+        const parsed = JSON.parse(raw);
+        Object.keys(empty).forEach((k) => {
+            if (!parsed[k]) parsed[k] = { ...empty[k] };
+            Object.keys(empty[k]).forEach((m) => {
+                if (typeof parsed[k][m] !== "number") parsed[k][m] = empty[k][m];
+            });
+        });
+        return parsed;
+    } catch (_) {
+        return empty;
+    }
+}
+
+function saveModeRecords() {
+    try {
+        localStorage.setItem(MODE_RECORDS_KEY, JSON.stringify(modeRecords));
+    } catch (_) {
+        // Ignore storage failures.
+    }
+}
+
+function applyModeConfig(modeKey) {
+    const mode = MODE_CONFIGS[modeKey] || MODE_CONFIGS.bo5;
+    selectedModeKey = modeKey;
+    maxGames = mode.maxGames;
+    winTarget = mode.winTarget;
+    hardFearless = mode.hardFearless;
+}
+
+function getModeRecordLine(modeKey) {
+    const rec = modeRecords[modeKey];
+    const total = rec.wins + rec.losses;
+    const winRate = total > 0 ? (rec.wins / total) * 100 : 0;
+    return `승률 ${winRate.toFixed(1)}% (${rec.wins}/${total}) | 연승 ${rec.streak} | 최고 ${rec.bestStreak}`;
+}
+
+function renderHomeStats() {
+    document.getElementById("record-single").innerText = getModeRecordLine("single");
+    document.getElementById("record-bo3").innerText = getModeRecordLine("bo3");
+    document.getElementById("record-bo5").innerText = getModeRecordLine("bo5");
+}
+
+function openHome() {
+    renderHomeStats();
+    document.getElementById("home-modal").style.display = "flex";
+    document.getElementById("side-select-modal").style.display = "none";
+    document.getElementById("tutorial-modal").style.display = "none";
+}
+
+function selectMode(modeKey) {
+    applyModeConfig(modeKey);
+    document.getElementById("home-modal").style.display = "none";
+    document.getElementById("side-title").innerText = MODE_CONFIGS[modeKey].label;
+    document.getElementById("side-desc").innerText = "진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 밴픽합니다.";
+    document.getElementById("side-select-modal").style.display = "flex";
+    startYoutubeBgm();
+}
+
+function updateModeRecord(userWonSeries) {
+    const rec = modeRecords[selectedModeKey];
+    if (!rec) return;
+    if (userWonSeries) {
+        rec.wins += 1;
+        rec.streak += 1;
+        rec.bestStreak = Math.max(rec.bestStreak, rec.streak);
+    } else {
+        rec.losses += 1;
+        rec.streak = 0;
+    }
+    saveModeRecords();
+}
+
+function startYoutubeBgm() {
+    const iframe = document.getElementById("yt-bgm");
+    const status = document.getElementById("yt-bgm-status");
+    if (!iframe) return;
+    if (!iframe.src) {
+        iframe.src = "https://www.youtube.com/embed/eMCkLrF8C2s?autoplay=1&loop=1&playlist=eMCkLrF8C2s&controls=1&modestbranding=1&rel=0";
+        if (status) status.innerText = "유튜브 BGM 자동 재생중 (브라우저 정책으로 차단될 수 있음)";
+    }
+}
+
+function openTutorial() {
+    tutorialStepIndex = 0;
+    renderTutorialStep();
+    document.getElementById("tutorial-modal").style.display = "flex";
+}
+
+function renderTutorialStep() {
+    const body = document.getElementById("tutorial-step-body");
+    const idx = document.getElementById("tutorial-step-index");
+    if (!body || !idx) return;
+    body.innerText = TUTORIAL_STEPS[tutorialStepIndex];
+    idx.innerText = `${tutorialStepIndex + 1} / ${TUTORIAL_STEPS.length}`;
+}
+
+function prevTutorialStep() {
+    tutorialStepIndex = Math.max(0, tutorialStepIndex - 1);
+    renderTutorialStep();
+}
+
+function nextTutorialStep() {
+    tutorialStepIndex = Math.min(TUTORIAL_STEPS.length - 1, tutorialStepIndex + 1);
+    renderTutorialStep();
 }
 
 function renderStatRow(label, icon, value, maxValue, color) {
@@ -215,8 +350,10 @@ function canPickForTeam(team, key) {
 }
 
 function updateSeriesInfo() {
+    const mode = MODE_CONFIGS[selectedModeKey];
     const sideTxt = userTeam ? `MY TEAM: ${userTeam.toUpperCase()} / AI TEAM: ${aiTeam.toUpperCase()}` : "MY TEAM: 선택 전";
-    document.getElementById('series-info').innerText = `HARD FEARLESS BO5 | SET ${currentGame}/${MAX_GAMES} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R | ${sideTxt} | 누적 잠금 ${fearlessLocked.size}`;
+    const lockTxt = hardFearless ? `누적 잠금 ${fearlessLocked.size}` : "잠금 없음";
+    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R | ${sideTxt} | ${lockTxt}`;
 }
 
 function getTeamRoleLabel(team) {
@@ -227,6 +364,10 @@ function getTeamRoleLabel(team) {
 function renderLockedChamps() {
     const list = document.getElementById('locked-list');
     if (!list) return;
+    if (!hardFearless) {
+        list.innerHTML = `<span style="font-size:10px;color:#7f95a3;">단판 모드는 잠금이 없습니다.</span>`;
+        return;
+    }
     const locked = [...fearlessLocked];
     if (locked.length === 0) {
         list.innerHTML = `<span style="font-size:10px;color:#7f95a3;">아직 잠금 없음</span>`;
@@ -266,6 +407,7 @@ function startGameDraft() {
     picks = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
     bans = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
     swapSource = null;
+    pendingPickKey = null;
     aiThinking = false;
     clearBoardUI();
     document.getElementById('result-modal').style.display = 'none';
@@ -297,7 +439,6 @@ function chooseSide(side) {
 }
 
 function init() {
-    setupBgmControls();
     const bBans = document.getElementById('b-bans');
     const rBans = document.getElementById('r-bans');
     const bPicks = document.getElementById('b-picks');
@@ -328,6 +469,7 @@ function init() {
     renderPool();
     updateUI();
     calculateStats();
+    openHome();
 }
 
 function renderPool() {
@@ -348,7 +490,7 @@ function renderPool() {
 
         if (matchesSearch && matchesPosFilter && matchesTypeFilter) {
             const div = document.createElement('div');
-            div.className = `card ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
+            div.className = `card ${key === pendingPickKey ? 'selected' : ''} ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
             div.innerHTML = `
                 <img src="${getChampionImageUrl(key)}" onerror="this.onerror=null;this.src='https://placehold.co/120x120/121c23/c8aa6e?text=${encodeURIComponent(c.name)}';">
                 <p>${c.name}</p>
@@ -370,11 +512,51 @@ function renderPool() {
             div.onmouseout = hideTooltip;
             
             if (!isSelected && !isFearlessLocked && isPickValid) {
-                div.onclick = () => selectChamp(key);
+                div.onclick = () => {
+                    if (step && step.type === 'pick' && step.t === userTeam) {
+                        pendingPickKey = key;
+                        updatePickConfirmUI();
+                        renderPool();
+                        return;
+                    }
+                    selectChamp(key);
+                };
             }
             grid.appendChild(div);
         }
     });
+}
+
+function updatePickConfirmUI() {
+    const panel = document.getElementById("pick-confirm");
+    const nameEl = document.getElementById("pick-confirm-name");
+    if (!panel || !nameEl) return;
+    if (currentStep >= DRAFT_ORDER.length) {
+        panel.classList.add("hidden");
+        return;
+    }
+    const step = DRAFT_ORDER[currentStep];
+    const canShow = step.type === "pick" && step.t === userTeam && !!pendingPickKey;
+    if (!canShow) {
+        panel.classList.add("hidden");
+        return;
+    }
+    nameEl.innerText = CHAMP_DB[pendingPickKey]?.name || pendingPickKey;
+    panel.classList.remove("hidden");
+}
+
+function confirmPendingPick() {
+    if (!pendingPickKey) return;
+    const key = pendingPickKey;
+    pendingPickKey = null;
+    updatePickConfirmUI();
+    selectChamp(key);
+}
+
+function cancelPendingPick() {
+    pendingPickKey = null;
+    updatePickConfirmUI();
+    renderPool();
 }
 
 function selectChamp(key, byAI = false) {
@@ -391,6 +573,7 @@ function selectChamp(key, byAI = false) {
         refreshUI(step.t);
     }
 
+    pendingPickKey = null;
     currentStep++;
     document.getElementById('search').value = '';
     renderPool();
@@ -411,7 +594,9 @@ function updateUI() {
         const nextTeam = step.t.toUpperCase();
         const isAiTurn = userTeam && step.t === aiTeam;
         document.getElementById('step-msg').innerText = isAiTurn ? `AI(${nextTeam}) ${step.type.toUpperCase()}...` : `${nextTeam} ${step.type.toUpperCase()}...`;
-        document.getElementById('pos-guide').innerText = step.type === 'pick' ? "💡 포지션 순서 제한 없이 픽 가능하지만, 팀 내 포지션 중복이 발생하는 조합은 선택할 수 없습니다." : "💡 상대의 핵심 챔피언을 밴하세요.";
+        document.getElementById('pos-guide').innerText = step.type === 'pick'
+            ? "💡 챔피언을 선택한 뒤 '픽 확정' 버튼을 눌러야 반영됩니다."
+            : "💡 상대의 핵심 챔피언을 밴하세요.";
         if (isAiTurn && !aiThinking) {
             aiThinking = true;
             setTimeout(aiTakeTurn, 550);
@@ -422,6 +607,7 @@ function updateUI() {
         document.querySelectorAll('.swap-btn').forEach(b => b.style.display = 'block');
         showFinalResult();
     }
+    updatePickConfirmUI();
 }
 
 function getCompLabel(stats) {
@@ -791,7 +977,7 @@ function buildResultBody(res, winner, loser, seriesEnded) {
         </div>
         <hr style="border-color:#333">
         <h2 style="color:var(--gold)">최종 승리 확률: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
-        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.`}</p>
+        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : (hardFearless ? `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.` : `다음 SET ${currentGame + 1}은 잠금 없이 진행됩니다.`)}</p>
     `;
 }
 
@@ -833,15 +1019,21 @@ function showFinalResult() {
     const winner = res.bWin >= 50 ? "blue" : "red";
     const loser = winner === "blue" ? "red" : "blue";
     seriesWins[winner] += 1;
-    [...picks.blue, ...picks.red].forEach((key) => { if (key) fearlessLocked.add(key); });
+    if (hardFearless) {
+        [...picks.blue, ...picks.red].forEach((key) => { if (key) fearlessLocked.add(key); });
+    }
     updateSeriesInfo();
     renderLockedChamps();
 
     document.getElementById('winner-text').innerText = winner.toUpperCase() + " SET WIN";
     document.getElementById('winner-text').style.color = winner === "blue" ? "var(--blue)" : "var(--red)";
     
-    const seriesEnded = seriesWins[winner] >= WIN_TARGET || currentGame >= MAX_GAMES;
+    const seriesEnded = seriesWins[winner] >= winTarget || currentGame >= maxGames;
     lastSeriesEnded = seriesEnded;
+    if (seriesEnded) {
+        const userWonSeries = (userTeam === winner);
+        updateModeRecord(userWonSeries);
+    }
     const nextBtn = document.getElementById('result-next-btn');
     nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
     document.getElementById('final-stats').innerHTML = buildResultBody(res, winner, loser, seriesEnded);
@@ -857,10 +1049,10 @@ function handleNextAction() {
     if (lastSeriesEnded) {
         userTeam = null;
         aiTeam = null;
-        document.getElementById('side-select-modal').style.display = 'flex';
+        openHome();
         return;
     }
-    // BO5 내에서는 세트마다 진영 자동 교대
+    // 다전제 모드에서는 세트마다 진영 자동 교대
     userTeam = userTeam === "blue" ? "red" : "blue";
     aiTeam = userTeam === "blue" ? "red" : "blue";
     currentGame += 1;
@@ -889,99 +1081,8 @@ function moveTooltip(e) {
 }
 function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
 
-function normalizeTypeKey(rawType) {
-    if (rawType === "Dive" || rawType === "Poke" || rawType === "Anti") return rawType;
-    if (rawType === "돌진") return "Dive";
-    if (rawType === "포킹") return "Poke";
-    if (rawType === "받아치기") return "Anti";
-    return null;
-}
 function closeTutorial() {
     document.getElementById('tutorial-modal').style.display = 'none';
-}
-
-function setupBgmControls() {
-    const player = document.getElementById('bgm-player');
-    const fileInput = document.getElementById('bgm-file');
-    const volumeInput = document.getElementById('bgm-volume');
-    const toggleBtn = document.getElementById('bgm-toggle');
-    if (!player || !fileInput || !volumeInput || !toggleBtn) return;
-
-    player.volume = parseFloat(volumeInput.value || "0.35");
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (activeBgmUrl) URL.revokeObjectURL(activeBgmUrl);
-        activeBgmUrl = URL.createObjectURL(file);
-        player.src = activeBgmUrl;
-        toggleBtn.innerText = "재생";
-    });
-    volumeInput.addEventListener('input', () => {
-        player.volume = parseFloat(volumeInput.value || "0.35");
-    });
-}
-
-function toggleBgm() {
-    const player = document.getElementById('bgm-player');
-    const toggleBtn = document.getElementById('bgm-toggle');
-    if (!player || !toggleBtn) return;
-    if (!player.src) {
-        alert("먼저 BGM 파일을 선택해주세요.");
-        return;
-    }
-    if (player.paused) {
-        player.play().then(() => {
-            toggleBtn.innerText = "정지";
-        }).catch(() => {
-            alert("브라우저 정책상 사용자 클릭 후 재생됩니다. 다시 재생 버튼을 눌러주세요.");
-        });
-    } else {
-        player.pause();
-        toggleBtn.innerText = "재생";
-    }
-}
-
-function loadProfileEditor() {
-    const editor = document.getElementById('profile-editor');
-    editor.value = JSON.stringify(CHAMP_PROFILE_OVERRIDES, null, 2);
-    document.getElementById('editor-msg').innerText = "현재 오버라이드 데이터를 불러왔습니다.";
-}
-
-function applyProfileEditor() {
-    const msg = document.getElementById('editor-msg');
-    const raw = document.getElementById('profile-editor').value.trim();
-    if (!raw) {
-        msg.innerText = "입력된 JSON이 없습니다.";
-        return;
-    }
-    try {
-        const next = JSON.parse(raw);
-        Object.keys(CHAMP_PROFILE_OVERRIDES).forEach((k) => delete CHAMP_PROFILE_OVERRIDES[k]);
-        Object.keys(next).forEach((k) => {
-            const row = next[k];
-            if (!row || !row.type || !row.scale) return;
-            const parsedType = normalizeTypeKey(row.type);
-            if (!parsedType) return;
-            CHAMP_PROFILE_OVERRIDES[k] = {
-                type: parsedType,
-                scale: clampScale(row.scale),
-                pos: row.pos || undefined
-            };
-        });
-        Object.keys(CHAMP_DB).forEach((key) => {
-            const champ = CHAMP_DB[key];
-            if (CHAMP_PROFILE_OVERRIDES[key]) {
-                champ.profile.type = CHAMP_PROFILE_OVERRIDES[key].type;
-                champ.profile.scale = CHAMP_PROFILE_OVERRIDES[key].scale;
-                if (CHAMP_PROFILE_OVERRIDES[key].pos) champ.pos = [CHAMP_PROFILE_OVERRIDES[key].pos];
-            }
-        });
-        renderPool();
-        calculateStats();
-        msg.innerText = "적용 완료: 런타임에 반영되었습니다. (지속 저장은 코드에 붙여넣기)";
-    } catch (err) {
-        msg.innerText = `JSON 파싱 오류: ${err.message}`;
-    }
 }
 
 init();

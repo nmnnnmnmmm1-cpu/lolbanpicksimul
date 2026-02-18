@@ -16,10 +16,9 @@
     </div>
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
     <div class="header-tools">
-        <span class="bgm-label">BGM</span>
-        <input id="bgm-file" class="bgm-file" type="file" accept="audio/*">
-        <button id="bgm-toggle" class="bgm-btn" type="button" onclick="toggleBgm()">재생</button>
-        <input id="bgm-volume" class="bgm-vol" type="range" min="0" max="1" step="0.05" value="0.35">
+        <span class="bgm-label">BGM: YouTube</span>
+        <a class="bgm-btn" href="https://www.youtube.com/watch?v=eMCkLrF8C2s" target="_blank" rel="noopener noreferrer">원본 링크</a>
+        <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
     </div>
     <div class="winrate-track">
         <div id="blue-win-bar"></div>
@@ -38,8 +37,8 @@
     </div>
 
     <div class="center">
-        <div style="background: #1a2328; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-            <input type="text" id="search" placeholder="챔피언 검색..." oninput="renderPool()" style="width:100%; padding:10px; background:#000; color:white; border:1px solid var(--gold); border-radius: 4px;">
+        <div class="center-toolbar">
+            <input type="text" id="search" class="search-input" placeholder="챔피언 검색..." oninput="renderPool()">
             <div class="locked-wrap">
                 <div class="locked-title">하드 피어리스 잠금 챔피언</div>
                 <div id="locked-list" class="locked-list"></div>
@@ -64,18 +63,14 @@
                     <button type="button" class="pos-filter-btn" data-type="Anti">받아치기</button>
                 </div>
             </div>
-            <p id="pos-guide" style="font-size: 12px; color: var(--gold); margin: 8px 0 0 0;">💡 픽 단계에서는 어떤 챔피언이든 자유롭게 선택할 수 있습니다.</p>
-            <details class="editor-wrap">
-                <summary>챔피언 스케일 편집 도구</summary>
-                <div class="editor-body">
-                    <textarea id="profile-editor" placeholder='{"Akali":{"type":"Dive","scale":3,"pos":"MID"}}'></textarea>
-                    <div class="editor-btns">
-                        <button class="editor-btn" type="button" onclick="loadProfileEditor()">현재 설정 불러오기</button>
-                        <button class="editor-btn" type="button" onclick="applyProfileEditor()">붙여넣기 적용</button>
-                    </div>
-                    <div class="editor-msg" id="editor-msg"></div>
+            <p id="pos-guide" class="pos-guide">💡 픽 단계에서는 어떤 챔피언이든 자유롭게 선택할 수 있습니다.</p>
+            <div id="pick-confirm" class="pick-confirm hidden">
+                <div class="pick-confirm-text">선택됨: <b id="pick-confirm-name">-</b></div>
+                <div class="pick-confirm-actions">
+                    <button type="button" class="pick-confirm-btn primary" onclick="confirmPendingPick()">픽 확정</button>
+                    <button type="button" class="pick-confirm-btn" onclick="cancelPendingPick()">취소</button>
                 </div>
-            </details>
+            </div>
         </div>
         <div class="grid" id="champ-grid"></div>
     </div>
@@ -88,10 +83,33 @@
 </div>
 
 <div id="tooltip" class="tooltip"></div>
+<div id="home-modal">
+    <div class="home-card">
+        <h1 class="home-title">LoL Banpick Simulator</h1>
+        <p class="home-desc">모드를 고르고 진영을 선택한 뒤 밴픽으로 승패를 가르는 게임입니다.</p>
+        <div class="mode-grid">
+            <button type="button" class="mode-btn" onclick="selectMode('single')">
+                <span class="mode-name">단판</span>
+                <span id="record-single" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+            <button type="button" class="mode-btn" onclick="selectMode('bo3')">
+                <span class="mode-name">3전제 (하드피어리스)</span>
+                <span id="record-bo3" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+            <button type="button" class="mode-btn" onclick="selectMode('bo5')">
+                <span class="mode-name">5전제 (하드피어리스)</span>
+                <span id="record-bo5" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+        </div>
+        <div class="home-actions">
+            <button type="button" class="tutorial-btn" onclick="openTutorial()">게임 설명 보기</button>
+        </div>
+    </div>
+</div>
 <div id="side-select-modal">
     <div class="side-select-card">
-        <h2 class="side-title">하드 피어리스 BO5</h2>
-        <p class="side-desc">진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 픽합니다.</p>
+        <h2 class="side-title" id="side-title">모드 선택됨</h2>
+        <p class="side-desc" id="side-desc">진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 픽합니다.</p>
         <div class="side-btn-wrap">
             <button class="side-btn blue" type="button" onclick="chooseSide('blue')">블루팀 선택</button>
             <button class="side-btn red" type="button" onclick="chooseSide('red')">레드팀 선택</button>
@@ -100,16 +118,14 @@
 </div>
 <div id="tutorial-modal">
     <div class="tutorial-card">
-        <h2 class="tutorial-title">밴픽 시뮬레이터 튜토리얼</h2>
-        <ol class="tutorial-list">
-            <li>챔피언은 <b>단일 유형 + 스케일(1~3)</b>만 가집니다. 예: `포킹 3`, `받아치기 2`.</li>
-            <li>유형 상성: <b>포킹 > 받아치기 > 돌진 > 포킹</b>. 상성 우위일수록 승률 차이가 크게 벌어집니다.</li>
-            <li>딜링/탱킹/CC는 팀 기본 전투력에 합산됩니다. (각 챔피언별 스탯 합)</li>
-            <li>각 챔피언은 <b>초반/중반/후반 강점(1~10)</b>을 가지며, 팀의 시간대 우세가 승률에 반영됩니다.</li>
-            <li>유형 스케일은 역밸런싱으로 계산됩니다: <b>딜/탱/CC가 높을수록 스케일↓, 낮을수록 스케일↑</b>.</li>
-            <li>밴픽 완료 후 10초 동안 경기 시뮬레이션 내레이터가 진행되고, 이후 최종 결과가 확정됩니다.</li>
-        </ol>
-        <button class="tutorial-btn" type="button" onclick="closeTutorial()">이해했어요, 시작하기</button>
+        <h2 class="tutorial-title">게임 설명</h2>
+        <div id="tutorial-step-body" class="tutorial-step-body"></div>
+        <div id="tutorial-step-index" class="tutorial-step-index">1 / 1</div>
+        <div class="tutorial-nav">
+            <button class="tutorial-btn" type="button" onclick="prevTutorialStep()">이전</button>
+            <button class="tutorial-btn" type="button" onclick="nextTutorialStep()">다음</button>
+            <button class="tutorial-btn" type="button" onclick="closeTutorial()">닫기</button>
+        </div>
     </div>
 </div>
 
@@ -120,7 +136,16 @@
         <button id="result-next-btn" onclick="handleNextAction()" style="padding:12px 30px; background:var(--gold); border:none; cursor:pointer; font-weight:bold; font-size: 16px;">다음 세트</button>
     </div>
 </div>
-<audio id="bgm-player" loop></audio>
+<div class="yt-player-wrap">
+    <iframe
+        id="yt-bgm"
+        src=""
+        title="BGM"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen
+    ></iframe>
+</div>
 
 <script src="data/champions.js"></script>
 <script src="scripts/app.js"></script>
