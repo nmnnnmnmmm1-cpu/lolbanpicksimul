@@ -13,6 +13,11 @@
         .winrate-track { width: 100%; height: 30px; background: var(--red); display: none; position: relative; border-radius: 15px; overflow: hidden; margin-top: 10px; }
         #blue-win-bar { width: 50%; height: 100%; background: var(--blue); transition: 1s; }
         .wr-label { position: absolute; width: 100%; display: flex; justify-content: space-between; padding: 0 12px; line-height: 30px; pointer-events: none; font-weight: bold; box-sizing: border-box; }
+        .header-tools { margin-top: 7px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .bgm-label { font-size: 11px; color: #9fb3c2; }
+        .bgm-file { font-size: 11px; color: #cfd8dc; max-width: 180px; }
+        .bgm-btn { padding: 5px 9px; background: #1b2a34; color: #dbe5ec; border: 1px solid #3a4d59; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .bgm-vol { width: 90px; }
 
         /* 레이아웃 */
         .main { display: flex; flex: 1; padding: 15px; gap: 15px; overflow: hidden; }
@@ -85,6 +90,15 @@
         .side-btn.blue { background: #163248; color: #9ad7ff; border-color: #245a80; }
         .side-btn.red { background: #451f24; color: #ffb2b2; border-color: #7c3944; }
         #result-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .result-card { background:#1a2328; border:2px solid var(--gold); padding:28px; text-align:center; width:min(780px, 92vw); border-radius: 15px; max-height: 88vh; overflow: auto; }
+        .sim-wrap { margin: 14px 0; padding: 10px; border: 1px solid #31414d; border-radius: 8px; background: linear-gradient(180deg,#12202a,#0d171e); }
+        .sim-title { color: #ffe082; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
+        .phase-row { display: grid; grid-template-columns: 68px 1fr 68px; gap: 8px; align-items: center; margin-bottom: 7px; font-size: 12px; }
+        .phase-track { height: 12px; background: #3f1f24; border-radius: 999px; overflow: hidden; position: relative; }
+        .phase-fill { height: 100%; background: linear-gradient(90deg,#00a3ff,#41c3ff); transition: width 0.7s ease; }
+        .narrator-feed { text-align: left; margin-top: 10px; border: 1px solid #2e3a45; border-radius: 6px; padding: 10px; background: #0d151c; min-height: 124px; font-size: 12px; line-height: 1.5; color: #d3dee6; }
+        .narrator-line { margin-bottom: 4px; }
+        .narrator-line:last-child { margin-bottom: 0; }
 
         @media (max-width: 900px) {
             body { height: auto; min-height: 100vh; overflow: auto; }
@@ -101,6 +115,8 @@
             .pos-filter-btn { padding: 4px 7px; font-size: 10px; }
             #series-info { font-size: 11px; line-height: 1.4; }
             .tutorial-card { width: 94vw; max-height: 86vh; padding: 14px; }
+            .phase-row { grid-template-columns: 58px 1fr 58px; font-size: 11px; }
+            .result-card { padding: 16px; width: 94vw; }
         }
     </style>
 </head>
@@ -113,6 +129,12 @@
         <span id="red-info" style="color:var(--red)">RED CC: 0 | 딜: 0 | 탱: 0</span>
     </div>
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
+    <div class="header-tools">
+        <span class="bgm-label">BGM</span>
+        <input id="bgm-file" class="bgm-file" type="file" accept="audio/*">
+        <button id="bgm-toggle" class="bgm-btn" type="button" onclick="toggleBgm()">재생</button>
+        <input id="bgm-volume" class="bgm-vol" type="range" min="0" max="1" step="0.05" value="0.35">
+    </div>
     <div class="winrate-track">
         <div id="blue-win-bar"></div>
         <div class="wr-label">
@@ -197,20 +219,22 @@
             <li>챔피언은 <b>단일 유형 + 스케일(1~3)</b>만 가집니다. 예: `포킹 3`, `받아치기 2`.</li>
             <li>유형 상성: <b>포킹 > 받아치기 > 돌진 > 포킹</b>. 상성 우위일수록 승률 차이가 크게 벌어집니다.</li>
             <li>딜링/탱킹/CC는 팀 기본 전투력에 합산됩니다. (각 챔피언별 스탯 합)</li>
+            <li>각 챔피언은 <b>초반/중반/후반 강점(1~10)</b>을 가지며, 팀의 시간대 우세가 승률에 반영됩니다.</li>
             <li>유형 스케일은 역밸런싱으로 계산됩니다: <b>딜/탱/CC가 높을수록 스케일↓, 낮을수록 스케일↑</b>.</li>
-            <li>최종 승률은 완료 시점에만 표시되며, 기본 전투력 + 유형 상성 점수를 함께 반영합니다.</li>
+            <li>밴픽 완료 후 10초 동안 경기 시뮬레이션 내레이터가 진행되고, 이후 최종 결과가 확정됩니다.</li>
         </ol>
         <button class="tutorial-btn" type="button" onclick="closeTutorial()">이해했어요, 시작하기</button>
     </div>
 </div>
 
 <div id="result-modal">
-    <div style="background:#1a2328; border:2px solid var(--gold); padding:40px; text-align:center; width:500px; border-radius: 15px;">
+    <div class="result-card">
         <h1 id="winner-text" style="font-size: 48px; margin-top:0;">BLUE WIN</h1>
         <div id="final-stats" style="margin: 20px 0; line-height: 2;"></div>
         <button id="result-next-btn" onclick="handleNextAction()" style="padding:12px 30px; background:var(--gold); border:none; cursor:pointer; font-weight:bold; font-size: 16px;">다음 세트</button>
     </div>
 </div>
+<audio id="bgm-player" loop></audio>
 
 <script>
 // 1. 모든 챔피언 데이터 (167명) 및 포지션 매핑
@@ -401,6 +425,12 @@ const TYPE_BASE_STATS = {
     Poke: { dmg: 8, tank: 3 },
     Anti: { dmg: 5, tank: 7 }
 };
+const TYPE_PHASE_BASE = {
+    Dive: { early: 8, mid: 6, late: 4 },
+    Poke: { early: 5, mid: 7, late: 8 },
+    Anti: { early: 4, mid: 7, late: 7 }
+};
+const CHAMP_PHASE_OVERRIDES = {};
 const CHAMP_STAT_OVERRIDES = {
     Akshan: { dmg: 9, tank: 2 },
     DrMundo: { dmg: 5, tank: 9 },
@@ -499,6 +529,18 @@ Object.keys(CHAMP_DB).forEach((key) => {
     if (champ.pos[0] === "ADC") dmgType = "AD";
     if (CHAMP_DAMAGE_TYPE_OVERRIDES[key]) dmgType = CHAMP_DAMAGE_TYPE_OVERRIDES[key];
     champ.dmgType = dmgType;
+
+    // 라인전(초반) / 교전(중반) / 한타(후반) 강점 스탯
+    const phaseBase = TYPE_PHASE_BASE[champ.type] || { early: 6, mid: 6, late: 6 };
+    let early = Math.round(phaseBase.early + (champ.dmg - 6) * 0.3 + (champ.tank - 6) * 0.25 + (champ.cc - 1) * 0.2);
+    let mid = Math.round(phaseBase.mid + (champ.dmg - 6) * 0.25 + (champ.tank - 6) * 0.25 + (champ.cc - 1) * 0.25);
+    let late = Math.round(phaseBase.late + (champ.dmg - 6) * 0.35 + (champ.tank - 6) * 0.15 + (champ.cc - 1) * 0.2);
+    if (CHAMP_PHASE_OVERRIDES[key]) {
+        early = CHAMP_PHASE_OVERRIDES[key].early ?? early;
+        mid = CHAMP_PHASE_OVERRIDES[key].mid ?? mid;
+        late = CHAMP_PHASE_OVERRIDES[key].late ?? late;
+    }
+    champ.phase = { early: clampStat(early), mid: clampStat(mid), late: clampStat(late) };
 });
 
 const POSITIONS = ["TOP", "JNG", "MID", "ADC", "SPT"];
@@ -525,6 +567,8 @@ let aiThinking = false;
 let lastSeriesEnded = false;
 const MAX_GAMES = 5;
 const WIN_TARGET = 3;
+let matchNarrationTimer = null;
+let activeBgmUrl = null;
 
 function getChampionImageUrl(key) {
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
@@ -623,6 +667,10 @@ function clearBoardUI() {
 }
 
 function startGameDraft() {
+    if (matchNarrationTimer) {
+        clearInterval(matchNarrationTimer);
+        matchNarrationTimer = null;
+    }
     currentStep = 0;
     picks = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
     bans = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
@@ -630,6 +678,11 @@ function startGameDraft() {
     aiThinking = false;
     clearBoardUI();
     document.getElementById('result-modal').style.display = 'none';
+    const nextBtn = document.getElementById('result-next-btn');
+    if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+    }
     updateSeriesInfo();
     renderLockedChamps();
     renderPool();
@@ -653,6 +706,7 @@ function chooseSide(side) {
 }
 
 function init() {
+    setupBgmControls();
     const bBans = document.getElementById('b-bans');
     const rBans = document.getElementById('r-bans');
     const bPicks = document.getElementById('b-picks');
@@ -715,6 +769,9 @@ function renderPool() {
                 ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
                 ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
                 ${renderStatRow("CC", "🌀", c.cc, 3, "#ffca28")}
+                ${renderStatRow("초반", "⏱", c.phase.early, 10, "#26c6da")}
+                ${renderStatRow("중반", "📈", c.phase.mid, 10, "#66bb6a")}
+                ${renderStatRow("후반", "🏁", c.phase.late, 10, "#ffa726")}
                 ${renderStatRow(TYPE_LABEL[c.profile.type], "◆", c.profile.scale, 3, "#ab47bc")}
                 <div style="margin-top:5px; color:#cfd8dc;">주 포지션: ${c.pos.join(', ')}</div>${isFearlessLocked ? '<div style="margin-top:5px;color:#ef9a9a;">피어리스 잠금됨 (이전 세트 픽)</div>' : ''}
             `);
@@ -797,6 +854,12 @@ function getDominantProfile(stats) {
     return best;
 }
 
+function hasProfileTie(stats) {
+    const values = [stats.dive, stats.poke, stats.anti];
+    const maxValue = Math.max(...values);
+    return values.filter((v) => v === maxValue).length >= 2;
+}
+
 function updateTeamPanels(b, r) {
     const maxProfileSum = 15;
     const makeBars = (teamStats, colorMap) => `
@@ -813,6 +876,7 @@ function updateTeamPanels(b, r) {
     blueSummary.innerHTML = `
         <div class="title">블루팀 요약 (${blueRole})</div>
         <div class="row"><span>기본</span><span>CC ${b.cc} | 딜 ${b.dmg} | 탱 ${b.tank}</span></div>
+        <div class="row"><span>시간대</span><span>초 ${b.early} / 중 ${b.mid} / 후 ${b.late}</span></div>
         <div class="row"><span>AD/AP</span><span>AD ${Math.round(b.adRatio * 100)}% / AP ${Math.round((1 - b.adRatio) * 100)}%</span></div>
         <div class="row"><span>성향</span><span>돌진 ${b.dive} / 포킹 ${b.poke} / 받아치기 ${b.anti}</span></div>
         <div class="row"><span>조합</span><span>${getCompLabel(b)}</span></div>
@@ -821,6 +885,7 @@ function updateTeamPanels(b, r) {
     redSummary.innerHTML = `
         <div class="title">레드팀 요약 (${redRole})</div>
         <div class="row"><span>기본</span><span>CC ${r.cc} | 딜 ${r.dmg} | 탱 ${r.tank}</span></div>
+        <div class="row"><span>시간대</span><span>초 ${r.early} / 중 ${r.mid} / 후 ${r.late}</span></div>
         <div class="row"><span>AD/AP</span><span>AD ${Math.round(r.adRatio * 100)}% / AP ${Math.round((1 - r.adRatio) * 100)}%</span></div>
         <div class="row"><span>성향</span><span>돌진 ${r.dive} / 포킹 ${r.poke} / 받아치기 ${r.anti}</span></div>
         <div class="row"><span>조합</span><span>${getCompLabel(r)}</span></div>
@@ -831,6 +896,7 @@ function updateTeamPanels(b, r) {
 function getTeamStats(team, picksState) {
     let res = {
         cc: 0, dmg: 0, tank: 0, dive: 0, poke: 0, anti: 0,
+        early: 0, mid: 0, late: 0,
         adCount: 0, apCount: 0, hybridCount: 0,
         adDmg: 0, apDmg: 0, adPressure: 0, apPressure: 0, adRatio: 0.5
     };
@@ -840,6 +906,9 @@ function getTeamStats(team, picksState) {
             res.cc += c.cc;
             res.dmg += c.dmg;
             res.tank += c.tank;
+            res.early += c.phase.early;
+            res.mid += c.phase.mid;
+            res.late += c.phase.late;
             if (c.profile.type === "Dive") res.dive += c.profile.scale;
             if (c.profile.type === "Poke") res.poke += c.profile.scale;
             if (c.profile.type === "Anti") res.anti += c.profile.scale;
@@ -888,8 +957,25 @@ function getDamageBalanceBonus(stats) {
     return bonus;
 }
 
+function clampPercent(v) {
+    return Math.min(Math.max(v, 3), 97);
+}
+
+function getPhaseProjection(b, r, overallWin) {
+    const balanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
+    const earlyRaw = (b.early - r.early) * 2.1 + (b.dive - r.dive) * 0.8 + (b.cc - r.cc) * 0.45;
+    const midRaw = (b.mid - r.mid) * 2.2 + (b.dmg - r.dmg) * 0.35 + (b.tank - r.tank) * 0.35 + balanceEdge * 0.25;
+    const lateRaw = (b.late - r.late) * 2.3 + (b.poke - r.poke) * 0.8 + (b.dmg - r.dmg) * 0.4 + balanceEdge * 0.3;
+
+    const earlyWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(earlyRaw / 18) * 45) * 0.55);
+    const midWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(midRaw / 18) * 45) * 0.55);
+    const lateWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(lateRaw / 18) * 45) * 0.55);
+    return { earlyWin, midWin, lateWin };
+}
+
 function getWinRateByStats(b, r) {
     let statEdge = (b.cc - r.cc) * 0.9 + (b.dmg - r.dmg) * 0.8 + (b.tank - r.tank) * 0.8;
+    const phaseEdge = (b.early - r.early) * 0.55 + (b.mid - r.mid) * 0.85 + (b.late - r.late) * 1.1;
     const bMain = getDominantProfile(b);
     const rMain = getDominantProfile(r);
     const beats = { Poke: "Anti", Anti: "Dive", Dive: "Poke" };
@@ -909,6 +995,11 @@ function getWinRateByStats(b, r) {
         }
     }
 
+    // 성향합 동점(혼합 성향) 팀이 있으면 상성 영향 자체를 완화
+    if (hasProfileTie(b) || hasProfileTie(r)) {
+        matchupEdge *= (matchupEdge < 0 ? 0.42 : 0.65);
+    }
+
     const bCorePenalty = getCorePenalty(b);
     const rCorePenalty = getCorePenalty(r);
     const bBalanceBonus = getDamageBalanceBonus(b);
@@ -924,13 +1015,13 @@ function getWinRateByStats(b, r) {
 
     const rawScore =
         statEdge +
+        phaseEdge +
         matchupEdge * compMultiplier +
         (bCorePenalty - rCorePenalty) +
         (bBalanceBonus - rBalanceBonus);
 
     let bWin = 50 + Math.tanh(rawScore / 20) * 46;
-    bWin = Math.min(Math.max(bWin, 3), 97);
-    return bWin;
+    return clampPercent(bWin);
 }
 
 function calculateStats() {
@@ -943,13 +1034,14 @@ function calculateStats() {
     updateTeamPanels(b, r);
 
     const bWin = getWinRateByStats(b, r);
+    const phases = getPhaseProjection(b, r, bWin);
     if (currentStep >= DRAFT_ORDER.length) {
         document.getElementById('blue-win-bar').style.width = bWin + "%";
         document.getElementById('b-wr-txt').innerText = bWin.toFixed(1) + "%";
         document.getElementById('r-wr-txt').innerText = (100-bWin).toFixed(1) + "%";
     }
 
-    return { bWin, b, r };
+    return { bWin, b, r, phases };
 }
 
 function aiTakeTurn() {
@@ -1054,6 +1146,95 @@ function refreshUI(team) {
     });
 }
 
+function teamDisplayName(team) {
+    return team === userTeam ? "MY team" : "AI team";
+}
+
+function randomPick(arr) {
+    if (!arr || arr.length === 0) return "";
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function buildPhaseCommentary(res) {
+    const blueName = teamDisplayName("blue");
+    const redName = teamDisplayName("red");
+    const blueCarry = randomPick(picks.blue.filter(Boolean).map((k) => CHAMP_DB[k].name)) || "블루팀";
+    const redCarry = randomPick(picks.red.filter(Boolean).map((k) => CHAMP_DB[k].name)) || "레드팀";
+    const earlyFav = res.phases.earlyWin >= 50 ? "blue" : "red";
+    const midFav = res.phases.midWin >= 50 ? "blue" : "red";
+    const lateFav = res.phases.lateWin >= 50 ? "blue" : "red";
+
+    const earlyLines = [
+        `${earlyFav === "blue" ? blueName : redName}이 초반 주도권을 잡고 라인 압박을 넣습니다!`,
+        `${earlyFav === "blue" ? blueName : redName} 정글이 첫 오브젝트를 챙깁니다.`,
+        `${earlyFav === "blue" ? blueCarry : redCarry}가 강하게 딜교를 밀어붙입니다.`
+    ];
+    const midLines = [
+        `${midFav === "blue" ? blueName : redName}이 용 교전에서 이득을 봅니다!`,
+        `${midFav === "blue" ? blueCarry : redCarry}가 한타 각을 제대로 열어냅니다.`,
+        `${midFav === "blue" ? redName : blueName} 비상! 한 번 빼야 합니다!`
+    ];
+    const lateLines = [
+        `${lateFav === "blue" ? blueName : redName}이 바론 앞 시야를 완전히 장악합니다.`,
+        `${lateFav === "blue" ? blueCarry : redCarry}가 결정적인 킬을 만들어냅니다!`,
+        `${res.bWin >= 50 ? blueName : redName} 쪽으로 승기가 크게 기웁니다.`
+    ];
+    return [...earlyLines, ...midLines, ...lateLines];
+}
+
+function buildResultBody(res, winner, loser, seriesEnded) {
+    const bComp = getCompLabel(res.b);
+    const rComp = getCompLabel(res.r);
+    return `
+        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>
+        <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
+        <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti} | 시간대: 초 ${res.r.early} / 중 ${res.r.mid} / 후 ${res.r.late}</p>
+        <div class="sim-wrap">
+            <div class="sim-title">10초 경기 시뮬레이션</div>
+            <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.earlyWin.toFixed(1)}%"></div></div><span>${res.phases.earlyWin.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.midWin.toFixed(1)}%"></div></div><span>${res.phases.midWin.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.lateWin.toFixed(1)}%"></div></div><span>${res.phases.lateWin.toFixed(1)}%</span></div>
+            <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
+        </div>
+        <hr style="border-color:#333">
+        <h2 style="color:var(--gold)">최종 승리 확률: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
+        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.`}</p>
+    `;
+}
+
+function startResultNarration(res, seriesEnded) {
+    const nextBtn = document.getElementById('result-next-btn');
+    const feed = document.getElementById('narrator-feed');
+    const lines = buildPhaseCommentary(res);
+    let idx = 0;
+
+    nextBtn.disabled = true;
+    nextBtn.style.opacity = "0.6";
+    nextBtn.innerText = "경기 진행중... 10";
+    feed.innerHTML = `<div class="narrator-line">🎙 해설: 밴픽 결과를 바탕으로 시뮬레이션을 시작합니다.</div>`;
+
+    if (matchNarrationTimer) clearInterval(matchNarrationTimer);
+    matchNarrationTimer = setInterval(() => {
+        idx += 1;
+        const remain = Math.max(10 - idx, 0);
+        if (idx <= 5) {
+            const line = lines[(idx - 1) % lines.length];
+            feed.innerHTML += `<div class="narrator-line">🎙 ${line}</div>`;
+            feed.scrollTop = feed.scrollHeight;
+        }
+        nextBtn.innerText = remain > 0 ? `경기 진행중... ${remain}` : (seriesEnded ? "새 시리즈 시작" : "다음 세트 시작");
+        if (idx >= 10) {
+            clearInterval(matchNarrationTimer);
+            matchNarrationTimer = null;
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = "1";
+            nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
+        }
+    }, 1000);
+}
+
 function showFinalResult() {
     const res = calculateStats();
     const modal = document.getElementById('result-modal');
@@ -1068,26 +1249,19 @@ function showFinalResult() {
     document.getElementById('winner-text').innerText = winner.toUpperCase() + " SET WIN";
     document.getElementById('winner-text').style.color = winner === "blue" ? "var(--blue)" : "var(--red)";
     
-    const bComp = getCompLabel(res.b);
-    const rComp = getCompLabel(res.r);
     const seriesEnded = seriesWins[winner] >= WIN_TARGET || currentGame >= MAX_GAMES;
     lastSeriesEnded = seriesEnded;
     const nextBtn = document.getElementById('result-next-btn');
     nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
-
-    document.getElementById('final-stats').innerHTML = `
-        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>
-        <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti}</p>
-        <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti}</p>
-        <hr style="border-color:#333">
-        <h2 style="color:var(--gold)">승리 확률 예측: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
-        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.`}</p>
-    `;
+    document.getElementById('final-stats').innerHTML = buildResultBody(res, winner, loser, seriesEnded);
+    startResultNarration(res, seriesEnded);
 }
 
 function handleNextAction() {
+    if (matchNarrationTimer) {
+        clearInterval(matchNarrationTimer);
+        matchNarrationTimer = null;
+    }
     document.getElementById('result-modal').style.display = 'none';
     if (lastSeriesEnded) {
         userTeam = null;
@@ -1133,6 +1307,47 @@ function normalizeTypeKey(rawType) {
 }
 function closeTutorial() {
     document.getElementById('tutorial-modal').style.display = 'none';
+}
+
+function setupBgmControls() {
+    const player = document.getElementById('bgm-player');
+    const fileInput = document.getElementById('bgm-file');
+    const volumeInput = document.getElementById('bgm-volume');
+    const toggleBtn = document.getElementById('bgm-toggle');
+    if (!player || !fileInput || !volumeInput || !toggleBtn) return;
+
+    player.volume = parseFloat(volumeInput.value || "0.35");
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (activeBgmUrl) URL.revokeObjectURL(activeBgmUrl);
+        activeBgmUrl = URL.createObjectURL(file);
+        player.src = activeBgmUrl;
+        toggleBtn.innerText = "재생";
+    });
+    volumeInput.addEventListener('input', () => {
+        player.volume = parseFloat(volumeInput.value || "0.35");
+    });
+}
+
+function toggleBgm() {
+    const player = document.getElementById('bgm-player');
+    const toggleBtn = document.getElementById('bgm-toggle');
+    if (!player || !toggleBtn) return;
+    if (!player.src) {
+        alert("먼저 BGM 파일을 선택해주세요.");
+        return;
+    }
+    if (player.paused) {
+        player.play().then(() => {
+            toggleBtn.innerText = "정지";
+        }).catch(() => {
+            alert("브라우저 정책상 사용자 클릭 후 재생됩니다. 다시 재생 버튼을 눌러주세요.");
+        });
+    } else {
+        player.pause();
+        toggleBtn.innerText = "재생";
+    }
 }
 
 function loadProfileEditor() {
