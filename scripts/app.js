@@ -243,8 +243,8 @@ function startYoutubeBgm() {
     const status = document.getElementById("yt-bgm-status");
     if (!iframe) return;
     if (!iframe.src) {
-        iframe.src = "https://www.youtube.com/embed/eMCkLrF8C2s?autoplay=1&loop=1&playlist=eMCkLrF8C2s&controls=1&modestbranding=1&rel=0";
-        if (status) status.innerText = "유튜브 BGM 자동 재생중 (브라우저 정책으로 차단될 수 있음)";
+        iframe.src = "https://www.youtube.com/embed/eMCkLrF8C2s?autoplay=1&mute=1&loop=1&playlist=eMCkLrF8C2s&controls=1&modestbranding=1&rel=0";
+        if (status) status.innerText = "유튜브 BGM 적용됨 (브라우저 정책상 음소거 자동재생)";
     }
 }
 
@@ -285,6 +285,96 @@ function renderStatRow(label, icon, value, maxValue, color) {
             <span class="tip-stat-value">${value}/${maxValue}</span>
         </div>
     `;
+}
+
+
+function renderPhaseLineChart(phase) {
+    const p = [phase.early, phase.mid, phase.late];
+    const x = [18, 110, 202];
+    const y = (v) => 62 - Math.round((v / 10) * 48);
+    const points = `${x[0]},${y(p[0])} ${x[1]},${y(p[1])} ${x[2]},${y(p[2])}`;
+    return `
+        <div class="phase-line-wrap">
+            <div class="phase-line-title">파워커브 (초/중/후)</div>
+            <svg viewBox="0 0 220 74" class="phase-line-svg" role="img" aria-label="초중후반 선 그래프">
+                <line x1="18" y1="62" x2="202" y2="62" class="phase-axis"/>
+                <line x1="18" y1="14" x2="18" y2="62" class="phase-axis"/>
+                <polyline points="${points}" class="phase-polyline"/>
+                <circle cx="${x[0]}" cy="${y(p[0])}" r="3.5" class="phase-dot"/>
+                <circle cx="${x[1]}" cy="${y(p[1])}" r="3.5" class="phase-dot"/>
+                <circle cx="${x[2]}" cy="${y(p[2])}" r="3.5" class="phase-dot"/>
+                <text x="${x[0]}" y="72" text-anchor="middle" class="phase-label">초</text>
+                <text x="${x[1]}" y="72" text-anchor="middle" class="phase-label">중</text>
+                <text x="${x[2]}" y="72" text-anchor="middle" class="phase-label">후</text>
+                <text x="${x[0]}" y="${y(p[0]) - 8}" text-anchor="middle" class="phase-value">${p[0]}</text>
+                <text x="${x[1]}" y="${y(p[1]) - 8}" text-anchor="middle" class="phase-value">${p[1]}</text>
+                <text x="${x[2]}" y="${y(p[2]) - 8}" text-anchor="middle" class="phase-value">${p[2]}</text>
+            </svg>
+        </div>
+    `;
+}
+
+function renderRadarChart(stats, teamClass) {
+    const max = 50;
+    const values = [
+        Math.min(stats.dive * 3 + stats.cc, max),
+        Math.min(stats.poke * 3 + stats.dmg, max),
+        Math.min(stats.tank + stats.anti * 3, max),
+        Math.min(stats.cc * 3 + stats.anti * 2, max),
+        Math.min(stats.dmg + stats.tank, max),
+        Math.min((stats.early + stats.mid + stats.late) / 2, max)
+    ];
+    const labels = ["이니시", "포킹", "유지", "CC", "난전", "운영"];
+    const cx = 110, cy = 100, radius = 76;
+    const points = values.map((v, i) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
+        const r = (v / max) * radius;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    const rings = [0.25, 0.5, 0.75, 1].map((ratio) => {
+        const ringPoints = values.map((_, i) => {
+            const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
+            const x = cx + Math.cos(angle) * radius * ratio;
+            const y = cy + Math.sin(angle) * radius * ratio;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        return `<polygon points="${ringPoints}" class="radar-ring"></polygon>`;
+    }).join("");
+    const axes = values.map((_, i) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="radar-axis"></line>`;
+    }).join("");
+    const labelEls = labels.map((label, i) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
+        const x = cx + Math.cos(angle) * (radius + 16);
+        const y = cy + Math.sin(angle) * (radius + 16);
+        return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" class="radar-label">${label}</text>`;
+    }).join("");
+    return `<div class="radar-wrap ${teamClass}">
+        <svg viewBox="0 0 220 200" class="radar-svg" role="img" aria-label="팀 시너지 레이더 차트">
+            ${rings}
+            ${axes}
+            <polygon points="${points}" class="radar-area"></polygon>
+            ${labelEls}
+        </svg>
+    </div>`;
+}
+
+function renderSynergyMeter(stats, teamClass) {
+    const dominant = getDominantProfile(stats);
+    const level = dominant.value >= 12 ? 3 : dominant.value >= 8 ? 2 : 1;
+    const pct = Math.min((dominant.value / 15) * 100, 100);
+    return `<div class="synergy-wrap ${teamClass}">
+        <div class="synergy-top">
+            <span class="synergy-name">${TYPE_LABEL[dominant.type]} 조합 Lv.${level}</span>
+            <span class="synergy-score">${dominant.value}/15</span>
+        </div>
+        <div class="synergy-track"><span class="synergy-fill" style="width:${pct}%;"></span></div>
+    </div>`;
 }
 
 function canAssignDistinctPositions(championKeys) {
@@ -443,6 +533,7 @@ function init() {
     renderPool();
     updateUI();
     calculateStats();
+    startYoutubeBgm();
     openHome();
 }
 
@@ -471,15 +562,15 @@ function renderPool() {
             `;
             
             div.onmouseover = (e) => showTooltip(e, `
-                <b>${c.name}</b><br>유형: ${TYPE_LABEL[c.profile.type]} ${c.profile.scale}<br>
-                <div style="margin-top:4px; color:#ffe082;">피해 타입: ${c.dmgType}</div>
+                <b>${c.name}</b>
+                <div class="tip-chip-row">
+                    <span class="tip-chip">유형 ${TYPE_LABEL[c.profile.type]} ${c.profile.scale}</span>
+                    <span class="tip-chip">CC ${c.cc}</span>
+                    <span class="tip-chip">${c.dmgType}</span>
+                </div>
                 ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
                 ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
-                ${renderStatRow("CC", "🌀", c.cc, 3, "#ffca28")}
-                ${renderStatRow("초반", "⏱", c.phase.early, 10, "#26c6da")}
-                ${renderStatRow("중반", "📈", c.phase.mid, 10, "#66bb6a")}
-                ${renderStatRow("후반", "🏁", c.phase.late, 10, "#ffa726")}
-                ${renderStatRow(TYPE_LABEL[c.profile.type], "◆", c.profile.scale, 3, "#ab47bc")}
+                ${renderPhaseLineChart(c.phase)}
                 <div style="margin-top:5px; color:#cfd8dc;">주 포지션: ${c.pos.join(', ')}</div>${isFearlessLocked ? '<div style="margin-top:5px;color:#ef9a9a;">피어리스 잠금됨 (이전 세트 픽)</div>' : ''}
             `);
             div.onmousemove = (e) => moveTooltip(e);
@@ -631,6 +722,8 @@ function updateTeamPanels(b, r) {
         <div class="row"><span>AD/AP</span><span>AD ${Math.round(b.adRatio * 100)}% / AP ${Math.round((1 - b.adRatio) * 100)}%</span></div>
         <div class="row"><span>성향</span><span>돌진 ${b.dive} / 포킹 ${b.poke} / 받아치기 ${b.anti}</span></div>
         <div class="row"><span>조합</span><span>${getCompLabel(b)}</span></div>
+        ${renderSynergyMeter(b, "blue")}
+        ${renderRadarChart(b, "blue")}
         ${makeBars(b, { dive: "#29b6f6", poke: "#66bb6a", anti: "#ab47bc" })}
     `;
     redSummary.innerHTML = `
@@ -640,6 +733,8 @@ function updateTeamPanels(b, r) {
         <div class="row"><span>AD/AP</span><span>AD ${Math.round(r.adRatio * 100)}% / AP ${Math.round((1 - r.adRatio) * 100)}%</span></div>
         <div class="row"><span>성향</span><span>돌진 ${r.dive} / 포킹 ${r.poke} / 받아치기 ${r.anti}</span></div>
         <div class="row"><span>조합</span><span>${getCompLabel(r)}</span></div>
+        ${renderSynergyMeter(r, "red")}
+        ${renderRadarChart(r, "red")}
         ${makeBars(r, { dive: "#ef5350", poke: "#ffa726", anti: "#7e57c2" })}
     `;
 }

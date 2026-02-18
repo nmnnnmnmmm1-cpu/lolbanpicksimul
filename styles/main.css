@@ -311,6 +311,35 @@ body {
 .tip-stat-fill { display: block; height: 100%; border-radius: 999px; min-width: 0; }
 .tip-stat-value { width: 36px; text-align: right; color: #e0e0e0; }
 
+.tip-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.tip-chip { font-size: 11px; color: #e8f1f7; background: #1b2b36; border: 1px solid #334957; border-radius: 999px; padding: 2px 7px; }
+.phase-line-wrap { margin-top: 6px; border: 1px solid #2c3e49; border-radius: 6px; padding: 5px 6px 3px; background: #0f171e; }
+.phase-line-title { font-size: 10px; color: #8fa8b7; margin-bottom: 2px; }
+.phase-line-svg { width: 100%; height: 78px; }
+.phase-axis { stroke: #334755; stroke-width: 1; }
+.phase-polyline { fill: none; stroke: #59d0ff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.phase-dot { fill: #ffd166; }
+.phase-label { fill: #c5d3de; font-size: 10px; }
+.phase-value { fill: #f3f7fa; font-size: 10px; }
+
+.synergy-wrap { margin-top: 8px; background: #111c24; border: 1px solid #2f4655; border-radius: 7px; padding: 6px; }
+.synergy-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 5px; }
+.synergy-name { font-weight: 700; color: #e9f2f8; }
+.synergy-score { color: #9fc1d8; }
+.synergy-track { height: 9px; background: #24323d; border-radius: 999px; overflow: hidden; }
+.synergy-fill { display: block; height: 100%; border-radius: 999px; }
+.synergy-wrap.blue .synergy-fill { background: linear-gradient(90deg, #2ab2ff, #6ad5ff); }
+.synergy-wrap.red .synergy-fill { background: linear-gradient(90deg, #ff6a5b, #ff9f80); }
+
+.radar-wrap { margin-top: 8px; border: 1px solid #2e414f; border-radius: 8px; background: #0e171f; padding: 6px; }
+.radar-svg { width: 100%; height: 190px; }
+.radar-ring { fill: none; stroke: #2e4150; stroke-width: 1; }
+.radar-axis { stroke: #324757; stroke-width: 1; }
+.radar-label { fill: #a8bdcb; font-size: 10px; }
+.radar-area { stroke-width: 2; fill-opacity: 0.24; }
+.radar-wrap.blue .radar-area { fill: #45b7ff; stroke: #7ad0ff; }
+.radar-wrap.red .radar-area { fill: #ff816e; stroke: #ffae95; }
+
 .team-summary {
     margin-top: 8px;
     background: linear-gradient(180deg, #121e27, #0c151c);
@@ -352,6 +381,7 @@ body {
 
 #home-modal { display: flex; z-index: 3300; }
 #side-select-modal { z-index: 3250; }
+#tutorial-modal { z-index: 3400; }
 
 .home-card {
     width: min(760px, 92vw);
