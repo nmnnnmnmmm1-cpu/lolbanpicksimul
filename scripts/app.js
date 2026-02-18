@@ -11,127 +11,74 @@ const TYPE_LABEL = {
 
 const clampStat = (value) => Math.min(Math.max(value, 1), 10);
 const clampScale = (value) => Math.min(Math.max(Math.round(value), 1), 3);
-const TYPE_BASE_STATS = {
-    Dive: { dmg: 7, tank: 5 },
-    Poke: { dmg: 8, tank: 3 },
-    Anti: { dmg: 5, tank: 7 }
-};
-const TYPE_PHASE_BASE = {
-    Dive: { early: 8, mid: 6, late: 4 },
-    Poke: { early: 5, mid: 7, late: 8 },
-    Anti: { early: 4, mid: 7, late: 7 }
-};
-const CHAMP_PHASE_OVERRIDES = {};
-const CHAMP_STAT_OVERRIDES = {
-    Akshan: { dmg: 9, tank: 2 },
-    DrMundo: { dmg: 5, tank: 9 },
-    Malphite: { dmg: 6, tank: 9 },
-    Ornn: { dmg: 5, tank: 10 },
-    Ksante: { dmg: 6, tank: 10 },
-    Karthus: { dmg: 9, tank: 2 },
-    Vayne: { dmg: 9, tank: 2 },
-    Zeri: { dmg: 9, tank: 2 },
-    Leona: { dmg: 4, tank: 9 },
-    Nautilus: { dmg: 5, tank: 9 }
-};
-const CHAMP_PROFILE_OVERRIDES = {
-    Brand: { type: "Anti", scale: 2, pos: "SPT" },
-    Xerath: { type: "Poke", scale: 3, pos: "MID" },
-    Poppy: { type: "Anti", scale: 3, pos: "TOP" },
-    Akali: { type: "Dive", scale: 3, pos: "MID" },
-    Garen: { type: "Dive", scale: 1, pos: "TOP" },
-    Ambessa: { type: "Dive", scale: 3, pos: "TOP" },
-    Ksante: { type: "Anti", scale: 3, pos: "TOP" }
-};
-const CHAMP_POSITION_OVERRIDES = {};
-const CHAMP_DAMAGE_TYPE_OVERRIDES = {
-    Akali: "AP",
-    Diana: "AP",
-    Ekko: "AP",
-    Elise: "AP",
-    Fizz: "AP",
-    Katarina: "AP",
-    Lillia: "AP",
-    Evelynn: "AP",
-    Nidalee: "AP",
-    Karthus: "AP",
-    Gragas: "AP",
-    Sylas: "AP",
-    Tristana: "AD",
-    Corki: "Hybrid",
-    KaiSa: "Hybrid",
-    Kaisa: "Hybrid",
-    Varus: "Hybrid",
-    Twitch: "AD",
-    Teemo: "AP",
-    Yone: "AD",
-    Yasuo: "AD",
-    Jax: "Hybrid",
-    Gwen: "AP",
-    Volibear: "Hybrid",
-    Udyr: "Hybrid",
-    Zac: "AP",
-    ChoGath: "AP",
-    Chogath: "AP",
-    Malphite: "AP",
-    Rumble: "AP",
-    Swain: "AP",
-    Veigar: "AP",
-    Viktor: "AP",
-    Xerath: "AP",
-    Ziggs: "AP",
-    Zoe: "AP",
-    Zyra: "AP"
-};
+const VALID_POSITIONS = new Set(["TOP", "JNG", "MID", "ADC", "SPT"]);
+const VALID_PROFILE_TYPES = new Set(["Dive", "Poke", "Anti"]);
+const VALID_DMG_TYPES = new Set(["AD", "AP", "Hybrid"]);
+
+function warnInvalidField(key, field, value, fallback) {
+    console.warn(`[CHAMP_DB] ${key}.${field} 값이 잘못되어 기본값을 사용합니다.`, { value, fallback });
+}
+
+function normalizeChampion(key, raw) {
+    const champ = raw || {};
+    const name = typeof champ.name === "string" && champ.name.trim() ? champ.name.trim() : key;
+    if (name === key && champ.name !== key) warnInvalidField(key, "name", champ.name, key);
+
+    const pos0 = Array.isArray(champ.pos) ? champ.pos[0] : null;
+    const pos = VALID_POSITIONS.has(pos0) ? pos0 : "MID";
+    if (!VALID_POSITIONS.has(pos0)) warnInvalidField(key, "pos[0]", pos0, "MID");
+
+    const cc = Number.isFinite(champ.cc) ? Math.min(Math.max(Math.round(champ.cc), 0), 3) : 1;
+    if (cc !== champ.cc) warnInvalidField(key, "cc", champ.cc, cc);
+
+    const dmg = Number.isFinite(champ.dmg) ? clampStat(champ.dmg) : 6;
+    if (dmg !== champ.dmg) warnInvalidField(key, "dmg", champ.dmg, dmg);
+
+    const tank = Number.isFinite(champ.tank) ? clampStat(champ.tank) : 6;
+    if (tank !== champ.tank) warnInvalidField(key, "tank", champ.tank, tank);
+
+    const profileTypeRaw = champ.profile && champ.profile.type;
+    const profileType = VALID_PROFILE_TYPES.has(profileTypeRaw) ? profileTypeRaw : "Dive";
+    if (!VALID_PROFILE_TYPES.has(profileTypeRaw)) warnInvalidField(key, "profile.type", profileTypeRaw, "Dive");
+
+    const profileScale = Number.isFinite(champ.profile && champ.profile.scale) ? clampScale(champ.profile.scale) : 2;
+    if (!champ.profile || profileScale !== champ.profile.scale) warnInvalidField(key, "profile.scale", champ.profile && champ.profile.scale, profileScale);
+
+    const dmgTypeRaw = champ.dmgType;
+    const dmgType = VALID_DMG_TYPES.has(dmgTypeRaw) ? dmgTypeRaw : "AD";
+    if (!VALID_DMG_TYPES.has(dmgTypeRaw)) warnInvalidField(key, "dmgType", dmgTypeRaw, "AD");
+
+    const phase = champ.phase || {};
+    const early = Number.isFinite(phase.early) ? clampStat(phase.early) : 6;
+    const mid = Number.isFinite(phase.mid) ? clampStat(phase.mid) : 6;
+    const late = Number.isFinite(phase.late) ? clampStat(phase.late) : 6;
+    if (early !== phase.early) warnInvalidField(key, "phase.early", phase.early, early);
+    if (mid !== phase.mid) warnInvalidField(key, "phase.mid", phase.mid, mid);
+    if (late !== phase.late) warnInvalidField(key, "phase.late", phase.late, late);
+
+    return {
+        name,
+        pos: [pos],
+        cc,
+        dmg,
+        tank,
+        profile: { type: profileType, scale: profileScale },
+        dmgType,
+        phase: { early, mid, late }
+    };
+}
 
 Object.keys(CHAMP_DB).forEach((key) => {
-    const champ = CHAMP_DB[key];
-    const base = TYPE_BASE_STATS[champ.type] || { dmg: 6, tank: 6 };
-    const ccBonus = champ.cc >= 2 ? 1 : 0;
+    CHAMP_DB[key] = normalizeChampion(key, CHAMP_DB[key]);
+});
 
-    champ.dmg = clampStat(base.dmg + (champ.cc === 0 ? 1 : 0) + (champ.type === "Poke" ? 1 : 0) - (champ.type === "Anti" ? 1 : 0));
-    champ.tank = clampStat(base.tank + ccBonus - (champ.type === "Poke" ? 1 : 0));
-
-    if (CHAMP_STAT_OVERRIDES[key]) {
-        champ.dmg = CHAMP_STAT_OVERRIDES[key].dmg;
-        champ.tank = CHAMP_STAT_OVERRIDES[key].tank;
-    }
-
-    // 챔피언당 포지션 1개로 강제 고정
-    champ.pos = [CHAMP_POSITION_OVERRIDES[key] || champ.pos[0]];
-
-    let profileType = champ.type;
-    // 역밸런싱: 강한 기본 스탯일수록 유형 스케일을 낮게 부여
-    const powerScore = champ.dmg + champ.tank + champ.cc * 2;
-    let profileScale = 3;
-    if (powerScore >= 19) profileScale = 1;
-    else if (powerScore >= 14) profileScale = 2;
-    if (CHAMP_PROFILE_OVERRIDES[key]) {
-        profileType = CHAMP_PROFILE_OVERRIDES[key].type;
-        profileScale = CHAMP_PROFILE_OVERRIDES[key].scale;
-        if (CHAMP_PROFILE_OVERRIDES[key].pos) {
-            champ.pos = [CHAMP_PROFILE_OVERRIDES[key].pos];
-        }
-    }
-    champ.profile = { type: profileType, scale: clampScale(profileScale) };
-
-    // AD / AP / 하이브리드 분류
-    let dmgType = champ.type === "Dive" ? "AD" : "AP";
-    if (champ.pos[0] === "ADC") dmgType = "AD";
-    if (CHAMP_DAMAGE_TYPE_OVERRIDES[key]) dmgType = CHAMP_DAMAGE_TYPE_OVERRIDES[key];
-    champ.dmgType = dmgType;
-
-    // 라인전(초반) / 교전(중반) / 한타(후반) 강점 스탯
-    const phaseBase = TYPE_PHASE_BASE[champ.type] || { early: 6, mid: 6, late: 6 };
-    let early = Math.round(phaseBase.early + (champ.dmg - 6) * 0.3 + (champ.tank - 6) * 0.25 + (champ.cc - 1) * 0.2);
-    let mid = Math.round(phaseBase.mid + (champ.dmg - 6) * 0.25 + (champ.tank - 6) * 0.25 + (champ.cc - 1) * 0.25);
-    let late = Math.round(phaseBase.late + (champ.dmg - 6) * 0.35 + (champ.tank - 6) * 0.15 + (champ.cc - 1) * 0.2);
-    if (CHAMP_PHASE_OVERRIDES[key]) {
-        early = CHAMP_PHASE_OVERRIDES[key].early ?? early;
-        mid = CHAMP_PHASE_OVERRIDES[key].mid ?? mid;
-        late = CHAMP_PHASE_OVERRIDES[key].late ?? late;
-    }
-    champ.phase = { early: clampStat(early), mid: clampStat(mid), late: clampStat(late) };
+const CHAMP_KEYS = Object.keys(CHAMP_DB);
+const CHAMP_KEYS_KO_SORTED = [...CHAMP_KEYS].sort((a, b) => {
+    const nameA = CHAMP_DB[a]?.name || a;
+    const nameB = CHAMP_DB[b]?.name || b;
+    const byName = nameA.localeCompare(nameB, "ko-KR");
+    if (byName !== 0) return byName;
+    return a.localeCompare(b, "en");
 });
 
 const POSITIONS = ["TOP", "JNG", "MID", "ADC", "SPT"];
@@ -169,14 +116,38 @@ const MODE_CONFIGS = {
     bo5: { label: "5전제 (하드피어리스)", maxGames: 5, winTarget: 3, hardFearless: true }
 };
 const TUTORIAL_STEPS = [
-    "“이 게임은 리그 오브 레전드 밴픽 시뮬레이션을 통해 승패를 가르는 게임입니다.”",
-    "“각 챔피언에는 딜링/탱킹/CC기 스탯, 데미지 종류, 챔피언 유형, 파워커브가 존재합니다.”",
-    "1. 딜링 & 탱킹 스탯 각 챔피언은 1~10 사이의 공격/방어 수치를 가집니다. 스탯이 높을수록 승률이 조금씩 상승하지만, 팀 전체의 균형이 더 중요합니다. 5명 챔피언의 스탯 총합이 어느 한쪽이라도 20 미만일 경우, 승률이 크게 떨어지니 주의하세요!",
-    "2. CC기 스탯 챔피언당 0~3의 CC 수치를 보유합니다. 팀의 CC 합계가 5 이하면 승리가 매우 어려워지지만, 10 이상을 확보하면 승률이 비약적으로 상승하여 게임을 유리하게 이끌 수 있습니다.",
-    "3. 데미지 밸런스 (AD/AP) 챔피언은 AD, AP, 하이브리드 중 하나의 속성을 가집니다. 각 속성의 비중은 챔피언의 '공격 스탯'에 따라 결정됩니다. 데미지 비중이 한쪽으로 너무 쏠리면 적의 방어에 막혀 승률이 하락하므로, AD와 AP의 비율을 적절히 섞는 것이 핵심입니다.",
-    "4. 챔피언 상성 (유형) 모든 챔피언은 [돌진 > 포킹 > 받아치기 > 돌진]의 가위바위보 상성을 가집니다(1~3단계).\n* 수치가 높을수록 상성 이득(또는 손해)을 크게 보고, 낮을수록 상성 영향을 덜 받습니다.\n* 만약 수치가 동일해 '밸런스 유형'이 되면 모든 상성에서 조금씩 불리해지니, 확실한 팀 컬러를 정하는 것이 좋습니다.",
-    "5. 파워 커브 챔피언마다 전성기(초/중/후반)가 다릅니다. 만약 상대 팀과 특정 시점의 전력 차이가 너무 크게 벌어진다면, 게임이 그 즉시 종료될 수도 있습니다.",
-    "그럼 즐거운 게임 되세요!"
+    {
+        title: "게임 소개",
+        body: "이 게임은 리그 오브 레전드 밴픽 시뮬레이션을 통해 승패를 가르는 게임입니다."
+    },
+    {
+        title: "기본 스탯 구성",
+        body: "각 챔피언에는 딜링/탱킹/CC기 스탯, 데미지 종류, 챔피언 유형, 파워커브가 존재합니다."
+    },
+    {
+        title: "1. 딜링 & 탱킹 스탯",
+        body: "각 챔피언은 1~10 사이의 공격/방어 수치를 가집니다. 스탯이 높을수록 승률이 조금씩 상승하지만, 팀 전체의 균형이 더 중요합니다. 5명 챔피언의 스탯 총합이 어느 한쪽이라도 20 미만일 경우, 승률이 크게 떨어지니 주의하세요!"
+    },
+    {
+        title: "2. CC기 스탯",
+        body: "챔피언당 0~3의 CC 수치를 보유합니다. 팀의 CC 합계가 5 이하면 승리가 매우 어려워지지만, 10 이상을 확보하면 승률이 비약적으로 상승하여 게임을 유리하게 이끌 수 있습니다."
+    },
+    {
+        title: "3. 데미지 밸런스 (AD/AP)",
+        body: "챔피언은 AD, AP, 하이브리드 중 하나의 속성을 가집니다. 각 속성의 비중은 챔피언의 공격 스탯에 따라 결정됩니다. 데미지 비중이 한쪽으로 너무 쏠리면 적의 방어에 막혀 승률이 하락하므로, AD와 AP의 비율을 적절히 섞는 것이 핵심입니다."
+    },
+    {
+        title: "4. 챔피언 상성 (유형)",
+        body: "모든 챔피언은 [돌진 > 포킹 > 받아치기 > 돌진]의 가위바위보 상성을 가집니다(1~3단계).\n* 수치가 높을수록 상성 이득(또는 손해)을 크게 보고, 낮을수록 상성 영향을 덜 받습니다.\n* 만약 수치가 동일해 '밸런스 유형'이 되면 모든 상성에서 조금씩 불리해지니, 확실한 팀 컬러를 정하는 것이 좋습니다."
+    },
+    {
+        title: "5. 파워 커브",
+        body: "챔피언마다 전성기(초/중/후반)가 다릅니다. 만약 상대 팀과 특정 시점의 전력 차이가 너무 크게 벌어진다면, 게임이 그 즉시 종료될 수도 있습니다."
+    },
+    {
+        title: "마무리",
+        body: "그럼 즐거운 게임 되세요!"
+    }
 ];
 let tutorialStepIndex = 0;
 let modeRecords = loadModeRecords();
@@ -286,8 +257,11 @@ function openTutorial() {
 function renderTutorialStep() {
     const body = document.getElementById("tutorial-step-body");
     const idx = document.getElementById("tutorial-step-index");
-    if (!body || !idx) return;
-    body.innerText = TUTORIAL_STEPS[tutorialStepIndex];
+    const title = document.getElementById("tutorial-title");
+    if (!body || !idx || !title) return;
+    const step = TUTORIAL_STEPS[tutorialStepIndex];
+    title.innerText = step.title;
+    body.innerText = step.body;
     idx.innerText = `${tutorialStepIndex + 1} / ${TUTORIAL_STEPS.length}`;
 }
 
@@ -479,7 +453,7 @@ function renderPool() {
     const step = currentStep < DRAFT_ORDER.length ? DRAFT_ORDER[currentStep] : null;
     const pickingTeam = step && step.type === 'pick' ? step.t : null;
 
-    Object.keys(CHAMP_DB).forEach(key => {
+    CHAMP_KEYS_KO_SORTED.forEach((key) => {
         const c = CHAMP_DB[key];
         const isSelected = [...picks.blue, ...picks.red, ...bans.blue, ...bans.red].includes(key);
         const isFearlessLocked = fearlessLocked.has(key);
@@ -827,12 +801,12 @@ function aiTakeTurn() {
     if (step.t !== aiTeam) return;
 
     const taken = new Set([...picks.blue, ...picks.red, ...bans.blue, ...bans.red, ...fearlessLocked]);
-    let candidates = Object.keys(CHAMP_DB).filter((key) => !taken.has(key));
+    let candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
     if (step.type === 'pick') {
         candidates = candidates.filter((key) => canPickForTeam(aiTeam, key));
     }
     if (candidates.length === 0) {
-        if (step.type === 'pick') candidates = Object.keys(CHAMP_DB).filter((key) => !taken.has(key));
+        if (step.type === 'pick') candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
         else {
             aiThinking = false;
             return;
