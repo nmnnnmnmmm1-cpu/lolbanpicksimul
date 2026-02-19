@@ -257,6 +257,20 @@ body {
     font-weight: 700;
 }
 
+.mobile-info-btn {
+    display: none;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
+    border: 1px solid #4f6775;
+    background: rgba(8, 15, 20, 0.92);
+    color: #d9e9f2;
+    border-radius: 999px;
+    font-size: 10px;
+    padding: 2px 7px;
+}
+
 .card img {
     width: 100%;
     border: 2px solid #333;
@@ -289,6 +303,51 @@ body {
 .pos-nav { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .pos-filter-btn { padding: 5px 8px; font-size: 11px; border: 1px solid #3a4952; background: #11191f; color: #cfd8dc; border-radius: 4px; cursor: pointer; }
 .pos-filter-btn.active { border-color: var(--gold); color: var(--gold); background: #202c34; }
+
+.mobile-champ-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 3600;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.mobile-champ-modal.show { display: flex; }
+
+.mobile-champ-sheet {
+    width: 100%;
+    max-width: 560px;
+    max-height: 72vh;
+    overflow: auto;
+    border-radius: 14px 14px 0 0;
+    border: 1px solid #314653;
+    background: linear-gradient(180deg, #12202a, #0b1318);
+    padding: 12px;
+}
+
+.mobile-champ-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    color: #eaf2f8;
+}
+
+.mobile-close-btn {
+    border: 1px solid #446070;
+    background: #1e3440;
+    color: #dce8ef;
+    border-radius: 6px;
+    font-size: 12px;
+    padding: 5px 8px;
+}
+
+.mobile-champ-body {
+    font-size: 12px;
+    line-height: 1.45;
+}
 
 .tooltip {
     position: fixed;
@@ -523,19 +582,22 @@ body {
         overflow: auto;
     }
 
-    #blue-info,
-    #red-info {
-        font-size: 11px;
-        max-width: 32%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    #header-main-row {
+        justify-content: center !important;
+        gap: 8px;
     }
 
-    #step-msg { font-size: 16px !important; }
+    #blue-info,
+    #red-info,
+    .header-tools,
+    #series-info {
+        display: none;
+    }
+
+    #step-msg { font-size: 17px !important; }
 
     .header {
-        padding: 8px 8px;
+        padding: 7px 8px;
     }
 
     .main {
@@ -612,6 +674,12 @@ body {
     .card {
         font-size: 10px;
     }
+
+    .mobile-info-btn {
+        display: inline-block;
+    }
+
+    .tooltip { display: none !important; }
 
     .card p {
         font-size: 11px;

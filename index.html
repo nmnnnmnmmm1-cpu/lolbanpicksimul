@@ -9,7 +9,7 @@
 <body>
 
 <div class="header">
-    <div style="display:flex; justify-content: space-between; font-weight: bold;">
+    <div id="header-main-row" style="display:flex; justify-content: space-between; font-weight: bold;">
         <span id="blue-info" style="color:var(--blue)">BLUE CC: 0 | 딜: 0 | 탱: 0</span>
         <span id="step-msg" style="color:var(--gold); font-size: 20px;">밴픽 시작</span>
         <span id="red-info" style="color:var(--red)">RED CC: 0 | 딜: 0 | 탱: 0</span>
@@ -17,8 +17,7 @@
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
     <div class="header-tools">
         <span class="bgm-label">BGM: YouTube</span>
-        <a class="bgm-btn" href="https://www.youtube.com/watch?v=eMCkLrF8C2s" target="_blank" rel="noopener noreferrer">원본 링크</a>
-        <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
+                <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
     </div>
     <div class="winrate-track">
         <div id="blue-win-bar"></div>
@@ -65,7 +64,7 @@
             </div>
             <p id="pos-guide" class="pos-guide">💡 픽 단계에서는 어떤 챔피언이든 자유롭게 선택할 수 있습니다.</p>
             <div id="pick-confirm" class="pick-confirm hidden">
-                <div class="pick-confirm-text">선택됨: <b id="pick-confirm-name">-</b></div>
+                <div class="pick-confirm-text">선택됨: <b id="pick-confirm-name">-</b> <span id="pick-confirm-type" style="color:#9fb3c2;"></span></div>
                 <div class="pick-confirm-actions">
                     <button type="button" class="pick-confirm-btn primary" onclick="confirmPendingPick()">픽 확정</button>
                     <button type="button" class="pick-confirm-btn" onclick="cancelPendingPick()">취소</button>
@@ -83,6 +82,15 @@
 </div>
 
 <div id="tooltip" class="tooltip"></div>
+<div id="mobile-champ-modal" class="mobile-champ-modal">
+    <div class="mobile-champ-sheet">
+        <div class="mobile-champ-head">
+            <strong id="mobile-champ-title">챔피언 정보</strong>
+            <button type="button" class="mobile-close-btn" onclick="closeMobileChampionInfo()">닫기</button>
+        </div>
+        <div id="mobile-champ-body" class="mobile-champ-body"></div>
+    </div>
+</div>
 <div id="home-modal">
     <div class="home-card">
         <h1 class="home-title">LoL Banpick Simulator</h1>

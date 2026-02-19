@@ -107,7 +107,7 @@ let maxGames = 5;
 let winTarget = 3;
 let hardFearless = true;
 let selectedModeKey = "bo5";
-let pendingPickKey = null;
+let pendingAction = null;
 let matchNarrationTimer = null;
 const MODE_RECORDS_KEY = "lol_draft_mode_records_v1";
 const MODE_CONFIGS = {
@@ -285,6 +285,42 @@ function renderStatRow(label, icon, value, maxValue, color) {
             <span class="tip-stat-value">${value}/${maxValue}</span>
         </div>
     `;
+}
+
+
+function isMobileView() {
+    return window.matchMedia('(max-width: 900px)').matches;
+}
+
+function buildChampionInfoHtml(c, isFearlessLocked) {
+    return `
+        <b>${c.name}</b>
+        <div class="tip-chip-row">
+            <span class="tip-chip">유형 ${TYPE_LABEL[c.profile.type]} ${c.profile.scale}</span>
+            <span class="tip-chip">CC ${c.cc}</span>
+            <span class="tip-chip">${c.dmgType}</span>
+        </div>
+        ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
+        ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
+        ${renderPhaseLineChart(c.phase)}
+        <div style="margin-top:5px; color:#cfd8dc;">주 포지션: ${c.pos.join(', ')}</div>${isFearlessLocked ? '<div style="margin-top:5px;color:#ef9a9a;">피어리스 잠금됨 (이전 세트 픽)</div>' : ''}
+    `;
+}
+
+function openMobileChampionInfo(key, isFearlessLocked) {
+    const modal = document.getElementById('mobile-champ-modal');
+    const body = document.getElementById('mobile-champ-body');
+    const title = document.getElementById('mobile-champ-title');
+    if (!modal || !body || !CHAMP_DB[key]) return;
+    const c = CHAMP_DB[key];
+    if (title) title.innerText = `${c.name} 정보`;
+    body.innerHTML = buildChampionInfoHtml(c, isFearlessLocked);
+    modal.classList.add('show');
+}
+
+function closeMobileChampionInfo() {
+    const modal = document.getElementById('mobile-champ-modal');
+    if (modal) modal.classList.remove('show');
 }
 
 
@@ -471,7 +507,7 @@ function startGameDraft() {
     picks = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
     bans = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
     swapSource = null;
-    pendingPickKey = null;
+    pendingAction = null;
     aiThinking = false;
     clearBoardUI();
     document.getElementById('result-modal').style.display = 'none';
@@ -533,6 +569,12 @@ function init() {
     renderPool();
     updateUI();
     calculateStats();
+    const mobileModal = document.getElementById('mobile-champ-modal');
+    if (mobileModal) {
+        mobileModal.addEventListener('click', (e) => {
+            if (e.target === mobileModal) closeMobileChampionInfo();
+        });
+    }
     startYoutubeBgm();
     openHome();
 }
@@ -555,31 +597,33 @@ function renderPool() {
 
         if (matchesSearch && matchesPosFilter && matchesTypeFilter) {
             const div = document.createElement('div');
-            div.className = `card ${key === pendingPickKey ? 'selected' : ''} ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
+            const isPending = pendingAction && pendingAction.key === key;
+            div.className = `card ${isPending ? 'selected' : ''} ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
             div.innerHTML = `
                 <img src="${getChampionImageUrl(key)}" onerror="this.onerror=null;this.src='https://placehold.co/120x120/121c23/c8aa6e?text=${encodeURIComponent(c.name)}';">
+                <button type="button" class="mobile-info-btn">정보</button>
                 <p>${c.name}</p>
             `;
-            
-            div.onmouseover = (e) => showTooltip(e, `
-                <b>${c.name}</b>
-                <div class="tip-chip-row">
-                    <span class="tip-chip">유형 ${TYPE_LABEL[c.profile.type]} ${c.profile.scale}</span>
-                    <span class="tip-chip">CC ${c.cc}</span>
-                    <span class="tip-chip">${c.dmgType}</span>
-                </div>
-                ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
-                ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
-                ${renderPhaseLineChart(c.phase)}
-                <div style="margin-top:5px; color:#cfd8dc;">주 포지션: ${c.pos.join(', ')}</div>${isFearlessLocked ? '<div style="margin-top:5px;color:#ef9a9a;">피어리스 잠금됨 (이전 세트 픽)</div>' : ''}
-            `);
-            div.onmousemove = (e) => moveTooltip(e);
-            div.onmouseout = hideTooltip;
+
+            const infoHtml = buildChampionInfoHtml(c, isFearlessLocked);
+            if (!isMobileView()) {
+                div.onmouseover = (e) => showTooltip(e, infoHtml);
+                div.onmousemove = (e) => moveTooltip(e);
+                div.onmouseout = hideTooltip;
+            }
+
+            const infoBtn = div.querySelector('.mobile-info-btn');
+            if (infoBtn) {
+                infoBtn.onclick = (ev) => {
+                    ev.stopPropagation();
+                    openMobileChampionInfo(key, isFearlessLocked);
+                };
+            }
             
             if (!isSelected && !isFearlessLocked && isPickValid) {
                 div.onclick = () => {
-                    if (step && step.type === 'pick' && step.t === userTeam) {
-                        pendingPickKey = key;
+                    if (step && step.t === userTeam) {
+                        pendingAction = { key, type: step.type };
                         updatePickConfirmUI();
                         renderPool();
                         return;
@@ -595,31 +639,35 @@ function renderPool() {
 function updatePickConfirmUI() {
     const panel = document.getElementById("pick-confirm");
     const nameEl = document.getElementById("pick-confirm-name");
+    const typeEl = document.getElementById("pick-confirm-type");
+    const confirmBtn = panel ? panel.querySelector('.pick-confirm-btn.primary') : null;
     if (!panel || !nameEl) return;
     if (currentStep >= DRAFT_ORDER.length) {
         panel.classList.add("hidden");
         return;
     }
     const step = DRAFT_ORDER[currentStep];
-    const canShow = step.type === "pick" && step.t === userTeam && !!pendingPickKey;
+    const canShow = !!pendingAction && step.t === userTeam;
     if (!canShow) {
         panel.classList.add("hidden");
         return;
     }
-    nameEl.innerText = CHAMP_DB[pendingPickKey]?.name || pendingPickKey;
+    nameEl.innerText = CHAMP_DB[pendingAction.key]?.name || pendingAction.key;
+    if (typeEl) typeEl.innerText = pendingAction.type === 'ban' ? '(밴)' : '(픽)';
+    if (confirmBtn) confirmBtn.innerText = pendingAction.type === 'ban' ? '밴 확정' : '픽 확정';
     panel.classList.remove("hidden");
 }
 
 function confirmPendingPick() {
-    if (!pendingPickKey) return;
-    const key = pendingPickKey;
-    pendingPickKey = null;
+    if (!pendingAction) return;
+    const key = pendingAction.key;
+    pendingAction = null;
     updatePickConfirmUI();
     selectChamp(key);
 }
 
 function cancelPendingPick() {
-    pendingPickKey = null;
+    pendingAction = null;
     updatePickConfirmUI();
     renderPool();
 }
@@ -638,7 +686,7 @@ function selectChamp(key, byAI = false) {
         refreshUI(step.t);
     }
 
-    pendingPickKey = null;
+    pendingAction = null;
     currentStep++;
     document.getElementById('search').value = '';
     renderPool();
@@ -661,7 +709,7 @@ function updateUI() {
         document.getElementById('step-msg').innerText = isAiTurn ? `AI(${nextTeam}) ${step.type.toUpperCase()}...` : `${nextTeam} ${step.type.toUpperCase()}...`;
         document.getElementById('pos-guide').innerText = step.type === 'pick'
             ? "💡 챔피언을 선택한 뒤 '픽 확정' 버튼을 눌러야 반영됩니다."
-            : "💡 상대의 핵심 챔피언을 밴하세요.";
+            : "💡 챔피언을 선택한 뒤 '밴 확정' 버튼을 눌러야 반영됩니다.";
         if (isAiTurn && !aiThinking) {
             aiThinking = true;
             setTimeout(aiTakeTurn, 550);
