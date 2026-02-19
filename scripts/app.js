@@ -998,19 +998,39 @@ function getWinRateByStats(b, r) {
     return getWinRateDetails(b, r).blueWin;
 }
 
-function renderMobileTeamMini(b, r) {
+function renderMobileTeamMini(b, r, phases) {
     const wrap = document.getElementById('mobile-team-mini');
     if (!wrap) return;
-    const maxCore = 50;
-    const row = (label, color, dmg, tank, cc) => {
-        const core = Math.min(((dmg + tank + cc * 2) / (maxCore + maxCore + 30)) * 100, 100);
-        return `<div class="mini-team-row ${label}">
-            <span class="mini-team-name">${label === 'blue' ? 'BLUE' : 'RED'}</span>
-            <div class="mini-team-track"><span class="mini-team-fill" style="width:${core}%; background:${color};"></span></div>
-            <span class="mini-team-txt">딜${dmg}/탱${tank}/CC${cc}</span>
+    const makeType = (stats) => {
+        const d = getDominantProfile(stats);
+        return `${TYPE_LABEL[d.type]} ${d.value}`;
+    };
+    const phaseValues = (team) => {
+        if (!phases) return { early: 0, mid: 0, late: 0 };
+        return {
+            early: team === 'blue' ? phases.earlyWin : (100 - phases.earlyWin),
+            mid: team === 'blue' ? phases.midWin : (100 - phases.midWin),
+            late: team === 'blue' ? phases.lateWin : (100 - phases.lateWin)
+        };
+    };
+    const row = (team, stats) => {
+        const color = team === 'blue' ? '#3db9ff' : '#ff7b6a';
+        const apRatio = Math.max(0, Math.min(100, (1 - stats.adRatio) * 100));
+        const adRatio = 100 - apRatio;
+        const role = team === 'blue' ? 'BLUE' : 'RED';
+        const pv = phaseValues(team);
+        return `<div class="mini-team-card ${team}">
+            <div class="mini-team-head"><span class="mini-team-name">${role}</span><span class="mini-team-type">${makeType(stats)}</span></div>
+            <div class="mini-team-phase-bars">
+                <div class="mini-phase-row"><span>초</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${pv.early.toFixed(1)}%; background:${color};"></span></div><em>${pv.early.toFixed(0)}</em></div>
+                <div class="mini-phase-row"><span>중</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${pv.mid.toFixed(1)}%; background:${color};"></span></div><em>${pv.mid.toFixed(0)}</em></div>
+                <div class="mini-phase-row"><span>후</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${pv.late.toFixed(1)}%; background:${color};"></span></div><em>${pv.late.toFixed(0)}</em></div>
+            </div>
+            <div class="mini-team-line"><span>AD/AP</span><span>${adRatio.toFixed(0)} / ${apRatio.toFixed(0)}</span></div>
+            <div class="mini-team-adap-track"><span class="mini-team-ad" style="width:${adRatio.toFixed(1)}%; background:${color};"></span></div>
         </div>`;
     };
-    wrap.innerHTML = row('blue', '#3db9ff', b.dmg, b.tank, b.cc) + row('red', '#ff7b6a', r.dmg, r.tank, r.cc);
+    wrap.innerHTML = row('blue', b) + row('red', r);
 }
 
 function calculateStats() {
@@ -1021,11 +1041,10 @@ function calculateStats() {
     document.getElementById('blue-info').innerText = `${blueRole} (BLUE)`;
     document.getElementById('red-info').innerText = `${redRole} (RED)`;
     updateTeamPanels(b, r);
-    renderMobileTeamMini(b, r);
-
     const details = getWinRateDetails(b, r);
     const bWin = details.blueWin;
     const phases = getPhaseProjection(b, r, bWin);
+    renderMobileTeamMini(b, r, phases);
     if (currentStep >= DRAFT_ORDER.length) {
         document.getElementById('blue-win-bar').style.width = bWin + "%";
         document.getElementById('b-wr-txt').innerText = bWin.toFixed(1) + "%";
@@ -1180,25 +1199,41 @@ function rollWinnerFromWinRate(blueWinRate) {
     return Math.random() * 100 < blueWinRate ? "blue" : "red";
 }
 
+function getPerspectiveWinBundle(res) {
+    const isBlueMyTeam = userTeam !== "red";
+    const myOverall = isBlueMyTeam ? res.bWin : (100 - res.bWin);
+    const myEarly = isBlueMyTeam ? res.phases.earlyWin : (100 - res.phases.earlyWin);
+    const myMid = isBlueMyTeam ? res.phases.midWin : (100 - res.phases.midWin);
+    const myLate = isBlueMyTeam ? res.phases.lateWin : (100 - res.phases.lateWin);
+    const myColor = isBlueMyTeam ? "#00a3ff" : "#e74c3c";
+    return { myOverall, myEarly, myMid, myLate, myColor };
+}
+
+function renderPhaseRowsForPerspective(res) {
+    const p = getPerspectiveWinBundle(res);
+    return `
+            <div style="font-size:11px;color:#9fb3c2;margin:0 0 4px;">우리 팀 기준 승률</div>
+            <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${p.myEarly.toFixed(1)}%; background:${p.myColor};"></div></div><span>${p.myEarly.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:${p.myMid.toFixed(1)}%; background:${p.myColor};"></div></div><span>${p.myMid.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${p.myLate.toFixed(1)}%; background:${p.myColor};"></div></div><span>${p.myLate.toFixed(1)}%</span></div>
+    `;
+}
+
 function buildNarrationOnlyBody(res) {
     return `
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
-            <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.earlyWin.toFixed(1)}%"></div></div><span>${res.phases.earlyWin.toFixed(1)}%</span></div>
-            <div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.midWin.toFixed(1)}%"></div></div><span>${res.phases.midWin.toFixed(1)}%</span></div>
-            <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.lateWin.toFixed(1)}%"></div></div><span>${res.phases.lateWin.toFixed(1)}%</span></div>
+            ${renderPhaseRowsForPerspective(res)}
             <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
         </div>
     `;
 }
 
 function buildSimulationLobbyBody(res) {
-    return         '<div class="sim-wrap">' +
+    return '<div class="sim-wrap">' +
             '<div class="sim-title">시뮬레이션 준비 완료</div>' +
             '<p style="margin:0 0 10px; color:#c8d7e2; font-size:13px;">밴픽 결과를 바탕으로 10초 해설 시뮬레이션을 시작합니다.</p>' +
-            '<div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:' + res.phases.earlyWin.toFixed(1) + '%"></div></div><span>' + res.phases.earlyWin.toFixed(1) + '%</span></div>' +
-            '<div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:' + res.phases.midWin.toFixed(1) + '%"></div></div><span>' + res.phases.midWin.toFixed(1) + '%</span></div>' +
-            '<div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:' + res.phases.lateWin.toFixed(1) + '%"></div></div><span>' + res.phases.lateWin.toFixed(1) + '%</span></div>' +
+            renderPhaseRowsForPerspective(res) +
         '</div>';
 }
 
@@ -1385,9 +1420,7 @@ function buildResultBody(res, winner, loser, seriesEnded) {
         </div>
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
-            <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.earlyWin.toFixed(1)}%"></div></div><span>${res.phases.earlyWin.toFixed(1)}%</span></div>
-            <div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.midWin.toFixed(1)}%"></div></div><span>${res.phases.midWin.toFixed(1)}%</span></div>
-            <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.lateWin.toFixed(1)}%"></div></div><span>${res.phases.lateWin.toFixed(1)}%</span></div>
+            ${renderPhaseRowsForPerspective(res)}
             <div class="narrator-feed"><div class="narrator-line">해설 종료. 결과가 확정되었습니다.</div></div>
         </div>
         <hr style="border-color:#333">
@@ -1502,8 +1535,10 @@ function handleNextAction() {
         openHome();
         return;
     }
-    // 다전제 모드에서는 세트마다 진영 자동 교대
-    userTeam = userTeam === "blue" ? "red" : "blue";
+    // 하드 피어리스 다전제에서는 세트마다 진영 자동 교대
+    if (hardFearless && maxGames > 1) {
+        userTeam = userTeam === "blue" ? "red" : "blue";
+    }
     aiTeam = userTeam === "blue" ? "red" : "blue";
     currentGame += 1;
     startGameDraft();

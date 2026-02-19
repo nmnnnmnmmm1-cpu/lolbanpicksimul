@@ -97,6 +97,24 @@ body {
 .mini-team-fill { display: block; height: 100%; border-radius: 999px; }
 .mini-team-txt { text-align: right; color: #a8bcc9; }
 
+.mini-team-card {
+    border: 1px solid #2a3a47;
+    border-radius: 8px;
+    background: #0f171e;
+    padding: 6px;
+    margin-top: 6px;
+}
+.mini-team-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.mini-team-type { font-size:10px; color:#a9bfce; }
+.mini-team-phase-bars { display:flex; flex-direction:column; gap:3px; }
+.mini-phase-row { display:grid; grid-template-columns: 12px 1fr 22px; gap:4px; align-items:center; font-size:10px; color:#b9cad6; }
+.mini-phase-row em { font-style:normal; text-align:right; color:#d9e5ee; font-size:10px; }
+.mini-phase-track { height: 6px; background:#273641; border-radius:999px; overflow:hidden; }
+.mini-phase-fill { display:block; height:100%; border-radius:999px; }
+.mini-team-line { display:flex; justify-content:space-between; margin-top:4px; font-size:10px; color:#a8bcc9; }
+.mini-team-adap-track { margin-top:3px; height:7px; background:#273641; border-radius:999px; overflow:hidden; }
+.mini-team-ad { display:block; height:100%; border-radius:999px; }
+
 .action-confirm-modal {
     position: fixed;
     inset: 0;
@@ -713,6 +731,8 @@ body {
         padding: 6px 8px 2px;
         border-bottom: 1px solid #1f2c36;
     }
+
+    .mobile-team-mini { display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:stretch; }
 
     .center {
         grid-area: center;
