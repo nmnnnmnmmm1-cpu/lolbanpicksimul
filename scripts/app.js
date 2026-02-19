@@ -797,15 +797,29 @@ function clearBoardUI() {
         const rBan = document.getElementById(`r-ban-${i}`);
         const bSlot = document.getElementById(`b-slot-${i}`);
         const rSlot = document.getElementById(`r-slot-${i}`);
-        if (bBan) bBan.style.backgroundImage = "";
-        if (rBan) rBan.style.backgroundImage = "";
+        if (bBan) {
+            bBan.style.backgroundImage = "";
+            bBan.dataset.champKey = "";
+            bBan.classList.remove("has-info");
+        }
+        if (rBan) {
+            rBan.style.backgroundImage = "";
+            rBan.dataset.champKey = "";
+            rBan.classList.remove("has-info");
+        }
         if (bSlot) {
-            bSlot.querySelector('.champ-img').style.backgroundImage = "";
+            const img = bSlot.querySelector('.champ-img');
+            img.style.backgroundImage = "";
+            img.dataset.champKey = "";
+            img.classList.remove("has-info");
             bSlot.querySelector('.name').innerText = "-";
             bSlot.style.borderColor = "#222";
         }
         if (rSlot) {
-            rSlot.querySelector('.champ-img').style.backgroundImage = "";
+            const img = rSlot.querySelector('.champ-img');
+            img.style.backgroundImage = "";
+            img.dataset.champKey = "";
+            img.classList.remove("has-info");
             rSlot.querySelector('.name').innerText = "-";
             rSlot.style.borderColor = "#222";
         }
@@ -911,6 +925,21 @@ function init() {
         rBans.innerHTML += `<div class="ban-slot" id="r-ban-${i}"></div>`;
         bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div style="margin-left:10px;"><div class="name">-</div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
         rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div style="margin-right:10px;"><div class="name">-</div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
+
+        const bBan = document.getElementById(`b-ban-${i}`);
+        const rBan = document.getElementById(`r-ban-${i}`);
+        const bImg = document.querySelector(`#b-slot-${i} .champ-img`);
+        const rImg = document.querySelector(`#r-slot-${i} .champ-img`);
+        if (bBan) bBan.addEventListener("click", () => openChampionInfoByKey(bBan.dataset.champKey, bBan));
+        if (rBan) rBan.addEventListener("click", () => openChampionInfoByKey(rBan.dataset.champKey, rBan));
+        if (bImg) bImg.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openChampionInfoByKey(bImg.dataset.champKey, bImg);
+        });
+        if (rImg) rImg.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openChampionInfoByKey(rImg.dataset.champKey, rImg);
+        });
     });
     document.querySelectorAll('.pos-filter-btn').forEach((btn) => {
         if (btn.dataset.pos) {
@@ -1108,7 +1137,10 @@ function selectChamp(key, byAI = false) {
     
     if (step.type === 'ban') {
         bans[step.t][step.id] = key;
-        document.getElementById(`${step.t[0]}-ban-${step.id}`).style.backgroundImage = `url(${getChampionImageUrl(key)})`;
+        const banEl = document.getElementById(`${step.t[0]}-ban-${step.id}`);
+        banEl.style.backgroundImage = `url(${getChampionImageUrl(key)})`;
+        banEl.dataset.champKey = key;
+        banEl.classList.add("has-info");
     } else {
         picks[step.t][step.id] = key;
         refreshUI(step.t);
@@ -1920,7 +1952,10 @@ function refreshUI(team) {
     // 슬롯 표시 기준은 픽 순서가 아니라 챔피언의 실제 포지션
     POSITIONS.forEach((_, i) => {
         const slot = document.getElementById(`${team[0]}-slot-${i}`);
-        slot.querySelector('.champ-img').style.backgroundImage = "";
+        const img = slot.querySelector('.champ-img');
+        img.style.backgroundImage = "";
+        img.dataset.champKey = "";
+        img.classList.remove("has-info");
         slot.querySelector('.name').innerText = "-";
     });
 
@@ -1930,7 +1965,10 @@ function refreshUI(team) {
         const slotIdx = POSITIONS.indexOf(pos);
         if (slotIdx < 0) return;
         const slot = document.getElementById(`${team[0]}-slot-${slotIdx}`);
-        slot.querySelector('.champ-img').style.backgroundImage = `url(${getChampionImageUrl(key)})`;
+        const img = slot.querySelector('.champ-img');
+        img.style.backgroundImage = `url(${getChampionImageUrl(key)})`;
+        img.dataset.champKey = key;
+        img.classList.add("has-info");
         slot.querySelector('.name').innerText = CHAMP_DB[key].name;
     });
 }
@@ -1938,6 +1976,19 @@ function refreshUI(team) {
 function teamDisplayName(team) {
     if (!userTeam) return team.toUpperCase();
     return team === userTeam ? teamProfile.myTeamName : teamProfile.aiTeamName;
+}
+
+function openChampionInfoByKey(key, anchorEl = null) {
+    if (!key || !CHAMP_DB[key]) return;
+    const isFearlessLocked = fearlessLocked.has(key);
+    if (isMobileView()) {
+        openMobileChampionInfo(key, isFearlessLocked);
+        return;
+    }
+    const infoHtml = buildChampionInfoHtml(CHAMP_DB[key], isFearlessLocked);
+    if (anchorEl) {
+        showTooltipByElement(anchorEl, infoHtml);
+    }
 }
 
 function randomPick(arr) {
@@ -2562,24 +2613,42 @@ function handleNextAction() {
 }
 
 function showTooltip(e, txt) {
+    showTooltipAtPoint(e.clientX, e.clientY, txt);
+}
+
+function showTooltipAtPoint(clientX, clientY, txt) {
     const tip = document.getElementById('tooltip');
     tip.innerHTML = `<button type="button" class="tip-close" onclick="hideTooltip()">닫기</button>${txt}`;
     tip.style.display = 'block';
-    moveTooltip(e);
+    positionTooltip(clientX, clientY);
 }
-function moveTooltip(e) {
+
+function showTooltipByElement(el, txt) {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    showTooltipAtPoint(cx, cy, txt);
+}
+
+function positionTooltip(clientX, clientY) {
     const tip = document.getElementById('tooltip');
-    if (tip.style.display !== 'block') return;
     const pad = 14;
     const tipRect = tip.getBoundingClientRect();
-    let left = e.clientX + pad;
-    let top = e.clientY + pad;
-    if (left + tipRect.width > window.innerWidth - pad) left = e.clientX - tipRect.width - pad;
-    if (top + tipRect.height > window.innerHeight - pad) top = e.clientY - tipRect.height - pad;
+    let left = clientX + pad;
+    let top = clientY + pad;
+    if (left + tipRect.width > window.innerWidth - pad) left = clientX - tipRect.width - pad;
+    if (top + tipRect.height > window.innerHeight - pad) top = clientY - tipRect.height - pad;
     if (left < pad) left = pad;
     if (top < pad) top = pad;
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
+}
+
+function moveTooltip(e) {
+    const tip = document.getElementById('tooltip');
+    if (tip.style.display !== 'block') return;
+    positionTooltip(e.clientX, e.clientY);
 }
 function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
 

@@ -191,6 +191,14 @@ body {
     filter: grayscale(1);
 }
 
+.ban-slot.has-info {
+    cursor: pointer;
+}
+
+.ban-slot.has-info:hover {
+    border-color: var(--gold);
+}
+
 .ban-slot.active { border-color: var(--gold); box-shadow: 0 0 5px var(--gold); }
 
 .slot {
@@ -226,6 +234,14 @@ body {
     height: 60px;
     background-size: cover;
     border: 1px solid #444;
+}
+
+.champ-img.has-info {
+    cursor: pointer;
+}
+
+.champ-img.has-info:hover {
+    border-color: var(--gold);
 }
 
 .swap-btn {
