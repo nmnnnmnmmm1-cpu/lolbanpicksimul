@@ -1978,14 +1978,30 @@ function teamDisplayName(team) {
     return team === userTeam ? teamProfile.myTeamName : teamProfile.aiTeamName;
 }
 
-function openChampionInfoByKey(key, anchorEl = null) {
-    if (!key || !CHAMP_DB[key]) return;
-    const isFearlessLocked = fearlessLocked.has(key);
-    if (isMobileView()) {
-        openMobileChampionInfo(key, isFearlessLocked);
-        return;
+function resolveChampionKeyFromElement(el) {
+    if (!el) return null;
+    const direct = el.dataset ? el.dataset.champKey : null;
+    if (direct && CHAMP_DB[direct]) return direct;
+
+    const slot = el.closest ? el.closest(".slot") : null;
+    if (slot) {
+        const nameEl = slot.querySelector(".name");
+        const champName = nameEl ? String(nameEl.innerText || "").trim() : "";
+        if (champName && champName !== "-") {
+            const key = CHAMP_KEY_BY_KO_NAME[normalizeNameToken(champName)];
+            if (key && CHAMP_DB[key]) return key;
+        }
     }
-    const infoHtml = buildChampionInfoHtml(CHAMP_DB[key], isFearlessLocked);
+    return null;
+}
+
+function openChampionInfoByKey(key, anchorEl = null) {
+    const resolvedKey = key && CHAMP_DB[key] ? key : resolveChampionKeyFromElement(anchorEl);
+    if (!resolvedKey || !CHAMP_DB[resolvedKey]) return;
+    const isFearlessLocked = fearlessLocked.has(resolvedKey);
+    const infoHtml = buildChampionInfoHtml(CHAMP_DB[resolvedKey], isFearlessLocked);
+    // 클릭 시에는 환경과 무관하게 모달을 우선 띄워 상세정보 접근성을 보장
+    openMobileChampionInfo(resolvedKey, isFearlessLocked);
     if (anchorEl) {
         showTooltipByElement(anchorEl, infoHtml);
     }
