@@ -457,7 +457,8 @@ function selectMode(modeKey) {
     applyModeConfig(modeKey);
     saveTeamNameInputs();
     setDisplayById("home-page", "none");
-    setDisplayById("game-shell", "none");
+    // side-select/strategy 모달이 game-shell 내부에 있으므로 shell을 먼저 노출해야 함
+    setDisplayById("game-shell", "block");
     const sideTitle = document.getElementById("side-title");
     const sideDesc = document.getElementById("side-desc");
     const sideModal = document.getElementById("side-select-modal");
