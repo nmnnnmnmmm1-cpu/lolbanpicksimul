@@ -262,6 +262,13 @@ function setDisplayById(id, display) {
     if (el) el.style.display = display;
 }
 
+function isElementVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+    return el.getClientRects().length > 0;
+}
+
 function loadModeRecords() {
     const empty = {
         single: { wins: 0, losses: 0, streak: 0, bestStreak: 0 },
@@ -466,6 +473,20 @@ function selectMode(modeKey) {
     if (sideDesc) sideDesc.innerText = "진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 밴픽합니다.";
     if (sideModal) {
         sideModal.style.display = "flex";
+        // 일부 환경에서 모달이 비정상 표시되는 경우 검은 화면 방지 폴백
+        setTimeout(() => {
+            const modalNow = document.getElementById("side-select-modal");
+            const cardNow = modalNow ? modalNow.querySelector(".side-select-card") : null;
+            const looksBroken = !isElementVisible(modalNow) || !cardNow || cardNow.getBoundingClientRect().height < 40;
+            if (!looksBroken) return;
+            console.warn("[MODE] side-select 모달 표시 실패로 폴백 시작");
+            userTeam = "blue";
+            aiTeam = "red";
+            setDisplayById("side-select-modal", "none");
+            setDisplayById("strategy-modal", "none");
+            setDisplayById("game-shell", "block");
+            resetSeries();
+        }, 120);
     } else {
         // 안전 폴백: 모달이 없으면 기본 블루 진영으로 즉시 시작
         userTeam = "blue";
