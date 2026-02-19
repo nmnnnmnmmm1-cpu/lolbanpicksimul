@@ -109,6 +109,8 @@ let hardFearless = true;
 let selectedModeKey = "bo5";
 let pendingAction = null;
 let matchNarrationTimer = null;
+let pendingSimulationResult = null;
+let resultFlowState = "idle"; // idle | ready | simulating | done
 const MODE_RECORDS_KEY = "lol_draft_mode_records_v1";
 const MODE_CONFIGS = {
     single: { label: "단판", maxGames: 1, winTarget: 1, hardFearless: false },
@@ -508,6 +510,8 @@ function startGameDraft() {
     bans = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
     swapSource = null;
     pendingAction = null;
+    pendingSimulationResult = null;
+    resultFlowState = "idle";
     aiThinking = false;
     clearBoardUI();
     document.getElementById('result-modal').style.display = 'none';
@@ -854,10 +858,10 @@ function getTeamStats(team, picksState) {
             }
         }
     });
-    res.adPressure = res.adCount * res.adDmg;
-    res.apPressure = res.apCount * res.apDmg;
-    const totalPressure = res.adPressure + res.apPressure;
-    res.adRatio = totalPressure > 0 ? (res.adPressure / totalPressure) : 0.5;
+    res.adPower = res.adDmg;
+    res.apPower = res.apDmg;
+    const totalPower = res.adPower + res.apPower;
+    res.adRatio = totalPower > 0 ? (res.adPower / totalPower) : 0.5;
     return res;
 }
 
@@ -870,84 +874,81 @@ function getCorePenalty(stats) {
 }
 
 function getDamageBalanceBonus(stats) {
-    const total = stats.adPressure + stats.apPressure;
+    const total = stats.adPower + stats.apPower;
     if (total <= 0) return 0;
-    const adShare = stats.adPressure / total;
-    const dominantShare = Math.max(adShare, 1 - adShare);
-    const symmetry = 1 - Math.abs(0.5 - adShare) * 2; // 0~1
-    let bonus = symmetry * 4.5;
-    if (dominantShare >= 0.8) {
-        // AD/AP 한쪽이 80% 이상이면 큰 페널티
-        bonus -= 16 + (dominantShare - 0.8) * 35;
-    }
-    return bonus;
+    const ratio = Math.max(stats.adPower, stats.apPower) / total;
+    let penalty = 0;
+    if (ratio > 0.65) penalty += 8;
+    if (ratio > 0.8) penalty += 15;
+    if (ratio > 0.9) penalty += 25;
+    // Bonus 함수명을 유지하기 위해 음수 반환(페널티)
+    return -penalty;
 }
 
 function clampPercent(v) {
     return Math.min(Math.max(v, 3), 97);
 }
 
-function getPhaseProjection(b, r, overallWin) {
-    const balanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
-    const earlyRaw = (b.early - r.early) * 2.1 + (b.dive - r.dive) * 0.8 + (b.cc - r.cc) * 0.45;
-    const midRaw = (b.mid - r.mid) * 2.2 + (b.dmg - r.dmg) * 0.35 + (b.tank - r.tank) * 0.35 + balanceEdge * 0.25;
-    const lateRaw = (b.late - r.late) * 2.3 + (b.poke - r.poke) * 0.8 + (b.dmg - r.dmg) * 0.4 + balanceEdge * 0.3;
+function getArchetypeCounterBonus(blueType, blueValue, redType, redValue) {
+    // Dive > Poke > Anti > Dive
+    const beats = { Dive: "Poke", Poke: "Anti", Anti: "Dive" };
+    if (blueType === redType) return 0;
+    if (beats[blueType] === redType) return (blueValue - redValue) * 2.5;
+    if (beats[redType] === blueType) return -(redValue - blueValue) * 2.5;
+    return 0;
+}
 
-    const earlyWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(earlyRaw / 18) * 45) * 0.55);
-    const midWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(midRaw / 18) * 45) * 0.55);
-    const lateWin = clampPercent(overallWin * 0.45 + (50 + Math.tanh(lateRaw / 18) * 45) * 0.55);
+function calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge) {
+    let blueWin = 50;
+    blueWin += powerEdge * 0.4;
+    blueWin += dmgBalanceEdge;
+    blueWin += archetypeEdge;
+    return clampPercent(blueWin);
+}
+
+function getScalingEdge(b, r) {
+    const blueCurve = b.early * 0.8 + b.mid * 1.0 + b.late * 1.2;
+    const redCurve = r.early * 0.8 + r.mid * 1.0 + r.late * 1.2;
+    return (blueCurve - redCurve) * 0.22;
+}
+
+function getWinRateDetails(b, r) {
+    const blueTeamScore = b.dmg + b.tank + b.cc * 3;
+    const redTeamScore = r.dmg + r.tank + r.cc * 3;
+    const powerEdge = blueTeamScore - redTeamScore;
+    const dmgBalanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
+    const bMain = getDominantProfile(b);
+    const rMain = getDominantProfile(r);
+    const archetypeEdge = getArchetypeCounterBonus(bMain.type, bMain.value, rMain.type, rMain.value);
+    const scalingEdge = getScalingEdge(b, r);
+    const blueWin = clampPercent(calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge) + scalingEdge);
+    return { blueWin, powerEdge, dmgBalanceEdge, archetypeEdge, scalingEdge };
+}
+
+function getPhaseProjection(b, r, overallWin) {
+    const bMain = getDominantProfile(b);
+    const rMain = getDominantProfile(r);
+    const dmgBalanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
+    const archetypeEdge = getArchetypeCounterBonus(bMain.type, bMain.value, rMain.type, rMain.value);
+
+    // Step 2/3/4를 Early/Mid/Late에 각각 적용
+    const earlyPowerEdge = (b.early * 2 + b.cc * 3) - (r.early * 2 + r.cc * 3);
+    const midPowerEdge = (b.mid * 2 + b.cc * 3) - (r.mid * 2 + r.cc * 3);
+    const latePowerEdge = (b.late * 2 + b.cc * 3) - (r.late * 2 + r.cc * 3);
+
+    const earlyWinRaw = calcWinRateFromEdges(earlyPowerEdge, dmgBalanceEdge, archetypeEdge);
+    const midWinRaw = calcWinRateFromEdges(midPowerEdge, dmgBalanceEdge, archetypeEdge);
+    const lateWinRaw = calcWinRateFromEdges(latePowerEdge, dmgBalanceEdge, archetypeEdge);
+
+    // 전체 기대승률과 완전히 분리되지 않도록 약하게 섞음
+    const earlyWin = clampPercent(earlyWinRaw * 0.75 + overallWin * 0.25);
+    const midWin = clampPercent(midWinRaw * 0.75 + overallWin * 0.25);
+    const lateWin = clampPercent(lateWinRaw * 0.75 + overallWin * 0.25);
     return { earlyWin, midWin, lateWin };
 }
 
 function getWinRateByStats(b, r) {
-    let statEdge = (b.cc - r.cc) * 0.9 + (b.dmg - r.dmg) * 0.8 + (b.tank - r.tank) * 0.8;
-    const phaseEdge = (b.early - r.early) * 0.55 + (b.mid - r.mid) * 0.85 + (b.late - r.late) * 1.1;
-    const bMain = getDominantProfile(b);
-    const rMain = getDominantProfile(r);
-    const beats = { Poke: "Anti", Anti: "Dive", Dive: "Poke" };
-    let matchupEdge = 0;
-    if (bMain.type === rMain.type) {
-        // 같은 조합이면 조합 점수 우위만 약하게 반영
-        matchupEdge = (bMain.value - rMain.value) * 0.9;
-    } else {
-        const bVal = Math.max(bMain.value, 1);
-        const rVal = Math.max(rMain.value, 1);
-        if (beats[bMain.type] === rMain.type) {
-            // 우상성: 내 주유형이 높을수록 더 강하게 누름
-            matchupEdge = Math.pow(bVal, 1.35) * Math.pow(rVal, 0.95);
-        } else {
-            // 역상성: 내 주유형이 높을수록 카운터 당할 때 페널티도 더 큼
-            matchupEdge = -Math.pow(rVal, 1.35) * Math.pow(bVal, 1.15);
-        }
-    }
-
-    // 성향합 동점(혼합 성향) 팀이 있으면 상성 영향 자체를 완화
-    if (hasProfileTie(b) || hasProfileTie(r)) {
-        matchupEdge *= (matchupEdge < 0 ? 0.42 : 0.65);
-    }
-
-    const bCorePenalty = getCorePenalty(b);
-    const rCorePenalty = getCorePenalty(r);
-    const bBalanceBonus = getDamageBalanceBonus(b);
-    const rBalanceBonus = getDamageBalanceBonus(r);
-
-    // 딜/탱 20 이상 팀이 많을수록 조합 상성 영향도를 더 키움
-    const bStable = b.dmg > 20 && b.tank > 20;
-    const rStable = r.dmg > 20 && r.tank > 20;
-    const stableCount = (bStable ? 1 : 0) + (rStable ? 1 : 0);
-    if (stableCount === 2) statEdge *= 0.55;
-    else if (stableCount === 1) statEdge *= 0.75;
-    const compMultiplier = stableCount === 2 ? 0.9 : (stableCount === 1 ? 0.78 : 0.65);
-
-    const rawScore =
-        statEdge +
-        phaseEdge +
-        matchupEdge * compMultiplier +
-        (bCorePenalty - rCorePenalty) +
-        (bBalanceBonus - rBalanceBonus);
-
-    let bWin = 50 + Math.tanh(rawScore / 20) * 46;
-    return clampPercent(bWin);
+    return getWinRateDetails(b, r).blueWin;
 }
 
 function renderMobileTeamMini(b, r) {
@@ -975,7 +976,8 @@ function calculateStats() {
     updateTeamPanels(b, r);
     renderMobileTeamMini(b, r);
 
-    const bWin = getWinRateByStats(b, r);
+    const details = getWinRateDetails(b, r);
+    const bWin = details.blueWin;
     const phases = getPhaseProjection(b, r, bWin);
     if (currentStep >= DRAFT_ORDER.length) {
         document.getElementById('blue-win-bar').style.width = bWin + "%";
@@ -983,7 +985,7 @@ function calculateStats() {
         document.getElementById('r-wr-txt').innerText = (100-bWin).toFixed(1) + "%";
     }
 
-    return { bWin, b, r, phases };
+    return { bWin, b, r, phases, details };
 }
 
 function aiTakeTurn() {
@@ -1089,7 +1091,7 @@ function refreshUI(team) {
 }
 
 function teamDisplayName(team) {
-    return team === userTeam ? "MY team" : "AI team";
+    return team === userTeam ? "우리 팀" : "AI 팀";
 }
 
 function randomPick(arr) {
@@ -1105,34 +1107,34 @@ function buildPhaseCommentary(res) {
     const earlyFav = res.phases.earlyWin >= 50 ? "blue" : "red";
     const midFav = res.phases.midWin >= 50 ? "blue" : "red";
     const lateFav = res.phases.lateWin >= 50 ? "blue" : "red";
-
-    const earlyLines = [
-        `${earlyFav === "blue" ? blueName : redName}이 초반 주도권을 잡고 라인 압박을 넣습니다!`,
-        `${earlyFav === "blue" ? blueName : redName} 정글이 첫 오브젝트를 챙깁니다.`,
-        `${earlyFav === "blue" ? blueCarry : redCarry}가 강하게 딜교를 밀어붙입니다.`
+    const bMain = getDominantProfile(res.b);
+    const rMain = getDominantProfile(res.r);
+    const blueType = TYPE_LABEL[bMain.type];
+    const redType = TYPE_LABEL[rMain.type];
+    const bluePenalty = -getDamageBalanceBonus(res.b);
+    const redPenalty = -getDamageBalanceBonus(res.r);
+    const lines = [
+        "해설: 밴픽 결과를 바탕으로 경기 시뮬레이션을 시작합니다.",
+        (earlyFav === "blue" ? blueName : redName) + "이 초반 동선을 선점하며 퍼스트 블러드를 만들어냅니다!",
+        (midFav === "blue" ? blueCarry : redCarry) + "가 오브젝트 교전에서 이니시를 열고 한타를 찢어냅니다!",
+        (midFav === "blue" ? blueName : redName) + "의 " + (midFav === "blue" ? blueType : redType) + " 조합이 중반 교전 구도를 강하게 장악합니다.",
+        (lateFav === "blue" ? blueName : redName) + "이 후반 핵심 한타에서 결정타를 꽂습니다!",
+        (res.bWin >= 50 ? blueName : redName) + " 쪽으로 경기의 무게추가 완전히 기웁니다."
     ];
-    const midLines = [
-        `${midFav === "blue" ? blueName : redName}이 용 교전에서 이득을 봅니다!`,
-        `${midFav === "blue" ? blueCarry : redCarry}가 한타 각을 제대로 열어냅니다.`,
-        `${midFav === "blue" ? redName : blueName} 비상! 한 번 빼야 합니다!`
-    ];
-    const lateLines = [
-        `${lateFav === "blue" ? blueName : redName}이 바론 앞 시야를 완전히 장악합니다.`,
-        `${lateFav === "blue" ? blueCarry : redCarry}가 결정적인 킬을 만들어냅니다!`,
-        `${res.bWin >= 50 ? blueName : redName} 쪽으로 승기가 크게 기웁니다.`
-    ];
-    return [...earlyLines, ...midLines, ...lateLines];
+    if (bluePenalty > 0) {
+        lines[3] = blueName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.";
+    } else if (redPenalty > 0) {
+        lines[3] = redName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.";
+    }
+    return lines;
 }
 
-function buildResultBody(res, winner, loser, seriesEnded) {
-    const bComp = getCompLabel(res.b);
-    const rComp = getCompLabel(res.r);
+function rollWinnerFromWinRate(blueWinRate) {
+    return Math.random() * 100 < blueWinRate ? "blue" : "red";
+}
+
+function buildNarrationOnlyBody(res) {
     return `
-        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>
-        <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
-        <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti} | 시간대: 초 ${res.r.early} / 중 ${res.r.mid} / 후 ${res.r.late}</p>
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
             <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.earlyWin.toFixed(1)}%"></div></div><span>${res.phases.earlyWin.toFixed(1)}%</span></div>
@@ -1140,13 +1142,199 @@ function buildResultBody(res, winner, loser, seriesEnded) {
             <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.lateWin.toFixed(1)}%"></div></div><span>${res.phases.lateWin.toFixed(1)}%</span></div>
             <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
         </div>
+    `;
+}
+
+function buildSimulationLobbyBody(res) {
+    return         '<div class="sim-wrap">' +
+            '<div class="sim-title">시뮬레이션 준비 완료</div>' +
+            '<p style="margin:0 0 10px; color:#c8d7e2; font-size:13px;">밴픽 결과를 바탕으로 10초 해설 시뮬레이션을 시작합니다.</p>' +
+            '<div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:' + res.phases.earlyWin.toFixed(1) + '%"></div></div><span>' + res.phases.earlyWin.toFixed(1) + '%</span></div>' +
+            '<div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:' + res.phases.midWin.toFixed(1) + '%"></div></div><span>' + res.phases.midWin.toFixed(1) + '%</span></div>' +
+            '<div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:' + res.phases.lateWin.toFixed(1) + '%"></div></div><span>' + res.phases.lateWin.toFixed(1) + '%</span></div>' +
+        '</div>';
+}
+
+function getTeamFactorBreakdown(team, res) {
+    const own = team === "blue" ? res.b : res.r;
+    const enemy = team === "blue" ? res.r : res.b;
+    const edgeSign = team === "blue" ? 1 : -1;
+    const factors = {
+        Stat: ((own.dmg + own.tank) - (enemy.dmg + enemy.tank)) * 0.4,
+        CC: (own.cc - enemy.cc) * 1.2,
+        Synergy: (res.details?.archetypeEdge || 0) * edgeSign,
+        Scaling: (res.details?.scalingEdge || 0) * edgeSign
+    };
+    let factor = "RawPower";
+    let best = -Infinity;
+    Object.entries(factors).forEach(([k, v]) => {
+        if (v > best) {
+            best = v;
+            factor = k;
+        }
+    });
+    if (best <= 0) factor = "RawPower";
+    return { factor, value: best, factors };
+}
+
+function pickMvpChampionKey(team, res, factor) {
+    const teamKeys = picks[team].filter(Boolean);
+    const own = team === "blue" ? res.b : res.r;
+    if (teamKeys.length === 0) return null;
+    const dominant = getDominantProfile(own).type;
+    const scoreByFactor = (key) => {
+        const c = CHAMP_DB[key];
+        if (!c) return -Infinity;
+        if (factor === "Synergy") {
+            const sameTypeBonus = c.profile.type === dominant ? 50 : 0;
+            return sameTypeBonus + c.profile.scale * 10 + c.cc;
+        }
+        if (factor === "CC") return c.cc * 100 + c.profile.scale * 5 + c.tank;
+        if (factor === "Scaling") return (c.phase.late + c.dmg) * 10 + c.phase.mid;
+        return c.dmg + c.tank;
+    };
+    return [...teamKeys].sort((a, b) => scoreByFactor(b) - scoreByFactor(a))[0];
+}
+
+function getMvpTitleAndReason(champ, factor, team) {
+    const teamName = teamDisplayName(team);
+    const typeLabel = TYPE_LABEL[champ.profile.type] || "유형";
+    const isLateCarry = champ.phase.late >= 8;
+    const isEarlyCarry = champ.phase.early >= 8;
+    const isTankCore = champ.tank >= 8;
+    const isDmgCore = champ.dmg >= 8;
+
+    if (factor === "Synergy") {
+        if (champ.profile.type === "Dive") {
+            return {
+                title: champ.profile.scale >= 3 ? "돌진 선봉장" : "교전 개시자",
+                reason: typeLabel + " 중심 조합의 진입 타이밍을 만들어 " + teamName + "의 시너지를 완성했습니다."
+            };
+        }
+        if (champ.profile.type === "Poke") {
+            return {
+                title: champ.profile.scale >= 3 ? "견제 포격수" : "라인 압박가",
+                reason: typeLabel + " 압박을 유지하며 상대 체력을 깎아 한타 전 구도를 유리하게 설계했습니다."
+            };
+        }
+        return {
+            title: champ.profile.scale >= 3 ? "반격 지휘관" : "역습 설계자",
+            reason: typeLabel + " 구도에서 카운터 타이밍을 정확히 잡아 팀 시너지를 극대화했습니다."
+        };
+    }
+
+    if (factor === "CC") {
+        if (champ.cc >= 3) {
+            return {
+                title: "군중제어 지배자",
+                reason: "핵심 CC 연계로 " + teamName + "의 한타 시작과 마무리를 모두 책임졌습니다."
+            };
+        }
+        if (champ.cc === 2) {
+            return {
+                title: "교전 메이커",
+                reason: "중요 교전마다 이니시 각을 열어 전투 흐름을 주도했습니다."
+            };
+        }
+        return {
+            title: "보조 제어자",
+            reason: "한정된 CC를 핵심 순간에 정확히 사용해 승리 교두보를 만들었습니다."
+        };
+    }
+
+    if (factor === "Scaling") {
+        if (isLateCarry && isDmgCore) {
+            return {
+                title: "후반 캐리 코어",
+                reason: "후반 파워커브와 화력이 맞물리며 게임의 결정 구간을 장악했습니다."
+            };
+        }
+        if (isLateCarry && isTankCore) {
+            return {
+                title: "후반 철벽 엔진",
+                reason: "후반 생존력으로 전선을 유지해 " + teamName + "의 승리 각을 끝까지 지켰습니다."
+            };
+        }
+        return {
+            title: "성장 완성형",
+            reason: "시간이 지날수록 전투 가치가 커지며 결정적인 후반 교전에 영향력을 행사했습니다."
+        };
+    }
+
+    if (isDmgCore && isTankCore) {
+        return {
+            title: "만능 전투병기",
+            reason: "딜링과 탱킹을 동시에 수행하며 모든 교전 국면에서 높은 기여도를 보였습니다."
+        };
+    }
+    if (isDmgCore) {
+        return {
+            title: isEarlyCarry ? "초반 파괴자" : "화력 핵심",
+            reason: "순수 딜링 우위로 교전 피해량 격차를 만들어 승리 확률을 끌어올렸습니다."
+        };
+    }
+    if (isTankCore) {
+        return {
+            title: "전선 버팀목",
+            reason: "높은 탱킹 기여로 전투 지속 시간을 벌어 " + teamName + "의 운영 안정성을 높였습니다."
+        };
+    }
+
+    return {
+        title: "전장의 조율자",
+        reason: "기본 전투 지표에서 고른 기여를 보이며 팀 승리에 핵심 역할을 수행했습니다."
+    };
+}
+function buildTeamMvp(team, res) {
+    const breakdown = getTeamFactorBreakdown(team, res);
+    const key = pickMvpChampionKey(team, res, breakdown.factor);
+    if (!key || !CHAMP_DB[key]) return null;
+    const champ = CHAMP_DB[key];
+    const meta = getMvpTitleAndReason(champ, breakdown.factor, team);
+    return {
+        name: champ.name,
+        title: meta.title,
+        reason: meta.reason
+    };
+}
+
+function buildResultBody(res, winner, loser, seriesEnded) {
+    const bComp = getCompLabel(res.b);
+    const rComp = getCompLabel(res.r);
+    const blueMvp = buildTeamMvp("blue", res);
+    const redMvp = buildTeamMvp("red", res);
+    return `
+        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>
+        <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
+        <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti} | 시간대: 초 ${res.r.early} / 중 ${res.r.mid} / 후 ${res.r.late}</p>
+        <div class="mvp-wrap">
+            <div class="mvp-card blue">
+                <div class="mvp-title">블루팀 MVP</div>
+                <div class="mvp-name">${blueMvp ? `${blueMvp.name} (${blueMvp.title})` : "-"}</div>
+                <div class="mvp-reason">${blueMvp ? blueMvp.reason : "선수 데이터가 없습니다."}</div>
+            </div>
+            <div class="mvp-card red">
+                <div class="mvp-title">레드팀 MVP</div>
+                <div class="mvp-name">${redMvp ? `${redMvp.name} (${redMvp.title})` : "-"}</div>
+                <div class="mvp-reason">${redMvp ? redMvp.reason : "선수 데이터가 없습니다."}</div>
+            </div>
+        </div>
+        <div class="sim-wrap">
+            <div class="sim-title">10초 경기 시뮬레이션</div>
+            <div class="phase-row"><span>초반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.earlyWin.toFixed(1)}%"></div></div><span>${res.phases.earlyWin.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>중반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.midWin.toFixed(1)}%"></div></div><span>${res.phases.midWin.toFixed(1)}%</span></div>
+            <div class="phase-row"><span>후반</span><div class="phase-track"><div class="phase-fill" style="width:${res.phases.lateWin.toFixed(1)}%"></div></div><span>${res.phases.lateWin.toFixed(1)}%</span></div>
+            <div class="narrator-feed"><div class="narrator-line">해설 종료. 결과가 확정되었습니다.</div></div>
+        </div>
         <hr style="border-color:#333">
         <h2 style="color:var(--gold)">최종 승리 확률: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
         <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : (hardFearless ? `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.` : `다음 SET ${currentGame + 1}은 잠금 없이 진행됩니다.`)}</p>
     `;
 }
 
-function startResultNarration(res, seriesEnded) {
+function startResultNarration(res, onComplete) {
     const nextBtn = document.getElementById('result-next-btn');
     const feed = document.getElementById('narrator-feed');
     const lines = buildPhaseCommentary(res);
@@ -1156,6 +1344,7 @@ function startResultNarration(res, seriesEnded) {
     nextBtn.style.opacity = "0.6";
     nextBtn.innerText = "경기 진행중... 10";
     feed.innerHTML = `<div class="narrator-line">🎙 해설: 밴픽 결과를 바탕으로 시뮬레이션을 시작합니다.</div>`;
+    resultFlowState = "simulating";
 
     if (matchNarrationTimer) clearInterval(matchNarrationTimer);
     matchNarrationTimer = setInterval(() => {
@@ -1166,51 +1355,85 @@ function startResultNarration(res, seriesEnded) {
             feed.innerHTML += `<div class="narrator-line">🎙 ${line}</div>`;
             feed.scrollTop = feed.scrollHeight;
         }
-        nextBtn.innerText = remain > 0 ? `경기 진행중... ${remain}` : (seriesEnded ? "새 시리즈 시작" : "다음 세트 시작");
+        nextBtn.innerText = remain > 0 ? `경기 진행중... ${remain}` : "결과 계산중...";
         if (idx >= 10) {
             clearInterval(matchNarrationTimer);
             matchNarrationTimer = null;
-            nextBtn.disabled = false;
-            nextBtn.style.opacity = "1";
-            nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
+            if (typeof onComplete === 'function') onComplete();
         }
     }, 1000);
 }
 
 function showFinalResult() {
+    if (resultFlowState === "ready" || resultFlowState === "simulating" || resultFlowState === "done") return;
     const res = calculateStats();
+    pendingSimulationResult = res;
+    resultFlowState = "ready";
     const modal = document.getElementById('result-modal');
     modal.style.display = 'flex';
-    const winner = res.bWin >= 50 ? "blue" : "red";
-    const loser = winner === "blue" ? "red" : "blue";
-    seriesWins[winner] += 1;
-    if (hardFearless) {
-        [...picks.blue, ...picks.red].forEach((key) => { if (key) fearlessLocked.add(key); });
-    }
-    updateSeriesInfo();
-    renderLockedChamps();
 
-    document.getElementById('winner-text').innerText = winner.toUpperCase() + " SET WIN";
-    document.getElementById('winner-text').style.color = winner === "blue" ? "var(--blue)" : "var(--red)";
-    
-    const seriesEnded = seriesWins[winner] >= winTarget || currentGame >= maxGames;
-    lastSeriesEnded = seriesEnded;
-    if (seriesEnded) {
-        const userWonSeries = (userTeam === winner);
-        updateModeRecord(userWonSeries);
-    }
     const nextBtn = document.getElementById('result-next-btn');
-    nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
-    document.getElementById('final-stats').innerHTML = buildResultBody(res, winner, loser, seriesEnded);
-    startResultNarration(res, seriesEnded);
+    nextBtn.disabled = false;
+    nextBtn.style.opacity = "1";
+    nextBtn.innerText = "시뮬레이션 시작";
+
+    document.getElementById('winner-text').innerText = "밴픽 완료";
+    document.getElementById('winner-text').style.color = "var(--gold)";
+    document.getElementById('final-stats').innerHTML = buildSimulationLobbyBody(res);
+}
+
+function startSimulationMatch() {
+    if (resultFlowState !== "ready" || !pendingSimulationResult) return;
+    const res = pendingSimulationResult;
+    const nextBtn = document.getElementById('result-next-btn');
+    document.getElementById('winner-text').innerText = "경기 시뮬레이션 진행중";
+    document.getElementById('winner-text').style.color = "var(--gold)";
+    document.getElementById('final-stats').innerHTML = buildNarrationOnlyBody(res);
+    nextBtn.disabled = true;
+    nextBtn.style.opacity = "0.6";
+    nextBtn.innerText = "경기 진행중... 10";
+
+    startResultNarration(res, () => {
+        const winner = rollWinnerFromWinRate(res.bWin);
+        const loser = winner === "blue" ? "red" : "blue";
+
+        seriesWins[winner] += 1;
+        if (hardFearless) {
+            [...picks.blue, ...picks.red].forEach((key) => { if (key) fearlessLocked.add(key); });
+        }
+        updateSeriesInfo();
+        renderLockedChamps();
+
+        const seriesEnded = seriesWins[winner] >= winTarget || currentGame >= maxGames;
+        lastSeriesEnded = seriesEnded;
+        if (seriesEnded) {
+            const userWonSeries = (userTeam === winner);
+            updateModeRecord(userWonSeries);
+        }
+
+        document.getElementById('winner-text').innerText = winner.toUpperCase() + " SET WIN";
+        document.getElementById('winner-text').style.color = winner === "blue" ? "var(--blue)" : "var(--red)";
+        document.getElementById('final-stats').innerHTML = buildResultBody(res, winner, loser, seriesEnded);
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+        nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
+        resultFlowState = "done";
+    });
 }
 
 function handleNextAction() {
+    if (resultFlowState === "ready") {
+        startSimulationMatch();
+        return;
+    }
+    if (resultFlowState === "simulating") return;
     if (matchNarrationTimer) {
         clearInterval(matchNarrationTimer);
         matchNarrationTimer = null;
     }
     document.getElementById('result-modal').style.display = 'none';
+    pendingSimulationResult = null;
+    resultFlowState = "idle";
     if (lastSeriesEnded) {
         userTeam = null;
         aiTeam = null;
