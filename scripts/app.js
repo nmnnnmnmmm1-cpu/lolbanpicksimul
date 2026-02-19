@@ -465,7 +465,7 @@ function selectMode(modeKey) {
     saveTeamNameInputs();
     setDisplayById("home-page", "none");
     // side-select/strategy 모달이 game-shell 내부에 있으므로 shell을 먼저 노출해야 함
-    setDisplayById("game-shell", "block");
+    setDisplayById("game-shell", "flex");
     const sideTitle = document.getElementById("side-title");
     const sideDesc = document.getElementById("side-desc");
     const sideModal = document.getElementById("side-select-modal");
@@ -488,7 +488,7 @@ function selectMode(modeKey) {
         // 안전 폴백: 모달이 없으면 기본 블루 진영으로 즉시 시작
         userTeam = "blue";
         aiTeam = "red";
-        setDisplayById("game-shell", "block");
+        setDisplayById("game-shell", "flex");
         resetSeries();
     }
     startYoutubeBgm();
@@ -867,7 +867,7 @@ function selectStrategy(key) {
 
 function confirmStrategyAndStart() {
     setDisplayById("strategy-modal", "none");
-    setDisplayById("game-shell", "block");
+    setDisplayById("game-shell", "flex");
     resetSeries();
 }
 

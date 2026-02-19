@@ -21,6 +21,7 @@ body {
 
 #game-shell {
     display: none;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
 }
@@ -157,6 +158,7 @@ body {
 .main {
     display: flex;
     flex: 1;
+    min-height: 0;
     padding: 12px;
     gap: 12px;
     overflow: hidden;
@@ -236,6 +238,7 @@ body {
 
 .center {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     background: rgba(0, 0, 0, 0.5);
@@ -307,8 +310,13 @@ body {
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    flex: 1;
+    min-height: 0;
     gap: 10px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding-top: 10px;
 }
 
@@ -912,7 +920,8 @@ body {
             "center center";
         padding: 8px;
         gap: 8px;
-        overflow: visible;
+        overflow: hidden;
+        min-height: 0;
     }
 
     #blue-side { grid-area: blue; }
@@ -965,6 +974,7 @@ body {
         padding: 8px;
         min-height: 64vh;
         max-height: none;
+        overflow: hidden;
     }
 
     .center-toolbar {
@@ -980,8 +990,8 @@ body {
     .grid {
         grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
         gap: 8px;
-        min-height: 300px;
-        max-height: 58vh;
+        min-height: 0;
+        max-height: none;
         padding-top: 8px;
     }
 
