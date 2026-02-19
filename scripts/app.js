@@ -1945,7 +1945,7 @@ function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function buildPhaseCommentary(res, finalWinner) {
+function buildPhaseCommentary(res, finalWinner, projection) {
     const blueName = teamDisplayName("blue");
     const redName = teamDisplayName("red");
     const blueCarry = randomPick(picks.blue.filter(Boolean).map((k) => CHAMP_DB[k].name)) || "블루팀";
@@ -1959,7 +1959,7 @@ function buildPhaseCommentary(res, finalWinner) {
     const redType = TYPE_LABEL[rMain.type];
     const bluePenalty = -getDamageBalanceBonus(res.b);
     const redPenalty = -getDamageBalanceBonus(res.r);
-    const goldKill = buildGoldKillProjection(res);
+    const goldKill = projection || buildGoldKillProjection(res);
     const winner = finalWinner || (res.bWin >= 50 ? "blue" : "red");
     const loser = winner === "blue" ? "red" : "blue";
     const winnerName = winner === "blue" ? blueName : redName;
@@ -2048,6 +2048,7 @@ function buildGoldKillProjection(res) {
 
         const myPhasePower = (myStats[p.key] || 0) * 2 + myStats.cc * 2 + myStats.dmg * 0.8 + myStats.tank * 0.5;
         const enemyPhasePower = (enemyStats[p.key] || 0) * 2 + enemyStats.cc * 2 + enemyStats.dmg * 0.8 + enemyStats.tank * 0.5;
+        const combatDiff = Math.round(myPhasePower - enemyPhasePower);
         const freq = Math.max(2, Math.round(2 + Math.abs(myPhasePower - enemyPhasePower) / 10 + Math.abs(edge) / 12));
         const killEdge = Math.max(1, Math.round(Math.abs(edge) / 14));
         const myGain = edge >= 0 ? (freq + killEdge) : Math.max(0, freq - killEdge);
@@ -2060,6 +2061,7 @@ function buildGoldKillProjection(res) {
         return {
             ...p,
             edge,
+            combatDiff,
             goldDiff: cumulativeGold,
             myKills,
             enemyKills,
@@ -2074,9 +2076,90 @@ function buildGoldKillProjection(res) {
         enemyTeamName: teamDisplayName(enemyTeam),
         points,
         finalGoldDiff: cumulativeGold,
+        finalCombatDiff: points.length > 0 ? points[points.length - 1].combatDiff : 0,
         finalMyKills: myKills,
         finalEnemyKills: enemyKills
     };
+}
+
+function lerp(a, b, t) {
+    return a + (b - a) * t;
+}
+
+function getLiveProjectionState(projection, progress) {
+    const p = Math.max(0, Math.min(1, progress));
+    const timeline = [{ goldDiff: 0, combatDiff: 0, myKills: 0, enemyKills: 0 }, ...(projection?.points || [])];
+    if (timeline.length <= 1) return { goldDiff: 0, combatDiff: 0, myKills: 0, enemyKills: 0 };
+    const scaled = p * (timeline.length - 1);
+    const idx = Math.floor(scaled);
+    const nextIdx = Math.min(idx + 1, timeline.length - 1);
+    const t = scaled - idx;
+    const a = timeline[idx];
+    const b = timeline[nextIdx];
+    return {
+        goldDiff: Math.round(lerp(a.goldDiff, b.goldDiff, t)),
+        combatDiff: Math.round(lerp(a.combatDiff, b.combatDiff, t)),
+        myKills: Math.round(lerp(a.myKills, b.myKills, t)),
+        enemyKills: Math.round(lerp(a.enemyKills, b.enemyKills, t))
+    };
+}
+
+function toCenteredPercent(value, maxAbs) {
+    const v = Math.max(-maxAbs, Math.min(maxAbs, value));
+    return 50 + (v / maxAbs) * 50;
+}
+
+function renderLiveBattleHeader(projection) {
+    const myName = projection?.myTeamName || "MY TEAM";
+    const enemyName = projection?.enemyTeamName || "AI TEAM";
+    return `<div class="live-battle-wrap">
+        <div class="live-battle-title">실시간 전황 (시뮬레이션 중 변동)</div>
+        <div id="live-battle-stage" class="live-battle-stage">초반 준비중</div>
+        <div class="live-battle-grid">
+            <div class="live-metric-card">
+                <span class="live-metric-label">자금 격차</span>
+                <b id="live-gold-value" class="live-metric-value">0G</b>
+                <div class="live-metric-track"><span id="live-gold-fill" class="live-metric-fill"></span></div>
+            </div>
+            <div class="live-metric-card">
+                <span class="live-metric-label">전투력 격차</span>
+                <b id="live-combat-value" class="live-metric-value">0</b>
+                <div class="live-metric-track"><span id="live-combat-fill" class="live-metric-fill"></span></div>
+            </div>
+            <div class="live-metric-card">
+                <span class="live-metric-label">킬스코어</span>
+                <b id="live-kill-value" class="live-metric-value">${myName} 0 : 0 ${enemyName}</b>
+                <div class="live-metric-track"><span id="live-kill-fill" class="live-metric-fill"></span></div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function updateLiveBattlePanel(projection, progress) {
+    const goldEl = document.getElementById("live-gold-value");
+    const combatEl = document.getElementById("live-combat-value");
+    const killEl = document.getElementById("live-kill-value");
+    const goldFill = document.getElementById("live-gold-fill");
+    const combatFill = document.getElementById("live-combat-fill");
+    const killFill = document.getElementById("live-kill-fill");
+    const stageEl = document.getElementById("live-battle-stage");
+    if (!goldEl || !combatEl || !killEl || !goldFill || !combatFill || !killFill || !stageEl) return;
+
+    const state = getLiveProjectionState(projection, progress);
+    const stage = progress < 0.34 ? "초반 교전" : (progress < 0.74 ? "중반 한타" : "후반 결정타");
+    const myName = projection?.myTeamName || "MY TEAM";
+    const enemyName = projection?.enemyTeamName || "AI TEAM";
+    const combatSign = state.combatDiff > 0 ? "+" : "";
+    const killDiff = state.myKills - state.enemyKills;
+
+    goldEl.innerText = formatGoldDiff(state.goldDiff);
+    combatEl.innerText = `${combatSign}${state.combatDiff}`;
+    killEl.innerText = `${myName} ${state.myKills} : ${state.enemyKills} ${enemyName}`;
+    stageEl.innerText = stage;
+
+    goldFill.style.width = `${toCenteredPercent(state.goldDiff, 12000).toFixed(1)}%`;
+    combatFill.style.width = `${toCenteredPercent(state.combatDiff, 40).toFixed(1)}%`;
+    killFill.style.width = `${toCenteredPercent(killDiff, 14).toFixed(1)}%`;
 }
 
 function renderGoldGraphSvg(points) {
@@ -2115,23 +2198,23 @@ function renderGoldKillSection(res) {
     </div>`;
 }
 
-function buildNarrationOnlyBody(res) {
+function buildNarrationOnlyBody(res, projection) {
     return `
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
+            ${renderLiveBattleHeader(projection)}
             ${renderPhaseRowsForPerspective(res)}
-            ${renderGoldKillSection(res)}
             <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
         </div>
     `;
 }
 
-function buildSimulationLobbyBody(res) {
+function buildSimulationLobbyBody(res, projection) {
     return '<div class="sim-wrap">' +
             '<div class="sim-title">시뮬레이션 준비 완료</div>' +
             '<p style="margin:0 0 10px; color:#c8d7e2; font-size:13px;">밴픽 결과를 바탕으로 10초 해설 시뮬레이션을 시작합니다.</p>' +
+            renderLiveBattleHeader(projection) +
             renderPhaseRowsForPerspective(res) +
-            renderGoldKillSection(res) +
         '</div>';
 }
 
@@ -2343,10 +2426,10 @@ function buildResultBody(res, winner, loser, seriesEnded) {
     `;
 }
 
-function startResultNarration(res, finalWinner, onComplete) {
+function startResultNarration(res, finalWinner, projection, onComplete) {
     const nextBtn = document.getElementById('result-next-btn');
     const feed = document.getElementById('narrator-feed');
-    const lines = buildPhaseCommentary(res, finalWinner);
+    const lines = buildPhaseCommentary(res, finalWinner, projection);
     let idx = 0;
 
     nextBtn.disabled = true;
@@ -2354,11 +2437,13 @@ function startResultNarration(res, finalWinner, onComplete) {
     nextBtn.innerText = "경기 진행중... 10";
     feed.innerHTML = `<div class="narrator-line">🎙 해설: 밴픽 결과를 바탕으로 시뮬레이션을 시작합니다.</div>`;
     resultFlowState = "simulating";
+    updateLiveBattlePanel(projection, 0);
 
     if (matchNarrationTimer) clearInterval(matchNarrationTimer);
     matchNarrationTimer = setInterval(() => {
         idx += 1;
         const remain = Math.max(10 - idx, 0);
+        updateLiveBattlePanel(projection, Math.min(idx / 10, 1));
         const maxNarrationLines = Math.min(lines.length, 9);
         if (idx <= maxNarrationLines) {
             const line = lines[idx - 1];
@@ -2389,22 +2474,25 @@ function showFinalResult() {
 
     document.getElementById('winner-text').innerText = "밴픽 완료";
     document.getElementById('winner-text').style.color = "var(--gold)";
-    document.getElementById('final-stats').innerHTML = buildSimulationLobbyBody(res);
+    const projection = buildGoldKillProjection(res);
+    document.getElementById('final-stats').innerHTML = buildSimulationLobbyBody(res, projection);
+    updateLiveBattlePanel(projection, 0);
 }
 
 function startSimulationMatch() {
     if (resultFlowState !== "ready" || !pendingSimulationResult) return;
     const res = pendingSimulationResult;
+    const projection = buildGoldKillProjection(res);
     const simulatedWinner = rollWinnerFromWinRate(res.bWin);
     const nextBtn = document.getElementById('result-next-btn');
     document.getElementById('winner-text').innerText = "경기 시뮬레이션 진행중";
     document.getElementById('winner-text').style.color = "var(--gold)";
-    document.getElementById('final-stats').innerHTML = buildNarrationOnlyBody(res);
+    document.getElementById('final-stats').innerHTML = buildNarrationOnlyBody(res, projection);
     nextBtn.disabled = true;
     nextBtn.style.opacity = "0.6";
     nextBtn.innerText = "경기 진행중... 10";
 
-    startResultNarration(res, simulatedWinner, () => {
+    startResultNarration(res, simulatedWinner, projection, () => {
         const winner = simulatedWinner;
         const loser = winner === "blue" ? "red" : "blue";
         const winnerRole = winner === userTeam ? "user" : "ai";
