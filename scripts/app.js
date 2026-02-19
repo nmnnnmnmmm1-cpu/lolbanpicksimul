@@ -917,10 +917,23 @@ function clampPercent(v) {
 
 function getArchetypeCounterBonus(blueType, blueValue, redType, redValue) {
     // Dive > Poke > Anti > Dive
+    // 핵심: 양 팀 유형 점수가 높을수록 상성 유불리가 더 크게 벌어짐
     const beats = { Dive: "Poke", Poke: "Anti", Anti: "Dive" };
     if (blueType === redType) return 0;
-    if (beats[blueType] === redType) return (blueValue - redValue) * 2.5;
-    if (beats[redType] === blueType) return -(redValue - blueValue) * 2.5;
+
+    const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+    const calcImpact = (winnerValue, loserValue) => {
+        const sumIntensity = (winnerValue + loserValue) * 1.05;
+        const diffIntensity = (winnerValue - loserValue) * 2.1;
+        return clamp(2.0 + sumIntensity + diffIntensity, 0, 30);
+    };
+
+    if (beats[blueType] === redType) {
+        return calcImpact(blueValue, redValue);
+    }
+    if (beats[redType] === blueType) {
+        return -calcImpact(redValue, blueValue);
+    }
     return 0;
 }
 
