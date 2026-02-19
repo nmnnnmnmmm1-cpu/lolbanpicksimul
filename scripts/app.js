@@ -475,17 +475,14 @@ function selectMode(modeKey) {
         sideModal.style.display = "flex";
         // 일부 환경에서 모달이 비정상 표시되는 경우 검은 화면 방지 폴백
         setTimeout(() => {
+            if (userTeam) return;
             const modalNow = document.getElementById("side-select-modal");
             const cardNow = modalNow ? modalNow.querySelector(".side-select-card") : null;
             const looksBroken = !isElementVisible(modalNow) || !cardNow || cardNow.getBoundingClientRect().height < 40;
             if (!looksBroken) return;
             console.warn("[MODE] side-select 모달 표시 실패로 폴백 시작");
-            userTeam = "blue";
-            aiTeam = "red";
-            setDisplayById("side-select-modal", "none");
-            setDisplayById("strategy-modal", "none");
-            setDisplayById("game-shell", "block");
-            resetSeries();
+            const isBlue = window.confirm("진영 선택 UI를 표시하지 못했습니다.\n확인: 블루팀 / 취소: 레드팀");
+            chooseSide(isBlue ? "blue" : "red");
         }, 120);
     } else {
         // 안전 폴백: 모달이 없으면 기본 블루 진영으로 즉시 시작
@@ -870,6 +867,15 @@ function chooseSide(side) {
     const strategyModal = document.getElementById("strategy-modal");
     if (strategyModal) {
         strategyModal.style.display = "flex";
+        setTimeout(() => {
+            if (currentStep > 0) return;
+            const modalNow = document.getElementById("strategy-modal");
+            const cardNow = modalNow ? modalNow.querySelector(".strategy-card") : null;
+            const looksBroken = !isElementVisible(modalNow) || !cardNow || cardNow.getBoundingClientRect().height < 40;
+            if (!looksBroken) return;
+            console.warn("[MODE] strategy 모달 표시 실패로 자동 시작");
+            confirmStrategyAndStart();
+        }, 120);
     } else {
         // 안전 폴백: 전략 모달이 없으면 기본 전략으로 즉시 시작
         confirmStrategyAndStart();
