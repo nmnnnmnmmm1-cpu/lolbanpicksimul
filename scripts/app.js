@@ -9,6 +9,22 @@ const TYPE_LABEL = {
     Anti: "받아치기"
 };
 
+function getTypeColorClass(type) {
+    if (type === "Dive") return "type-dive";
+    if (type === "Poke") return "type-poke";
+    return "type-anti";
+}
+
+function getDmgTypeColorClass(dmgType) {
+    if (dmgType === "AD") return "dmg-ad";
+    if (dmgType === "AP") return "dmg-ap";
+    return "dmg-hybrid";
+}
+
+function normalizeNameToken(v) {
+    return String(v || "").toLowerCase().replace(/\s+/g, "");
+}
+
 const clampStat = (value) => Math.min(Math.max(value, 1), 10);
 const clampScale = (value) => Math.min(Math.max(Math.round(value), 1), 3);
 const VALID_POSITIONS = new Set(["TOP", "JNG", "MID", "ADC", "SPT"]);
@@ -80,6 +96,10 @@ const CHAMP_KEYS_KO_SORTED = [...CHAMP_KEYS].sort((a, b) => {
     if (byName !== 0) return byName;
     return a.localeCompare(b, "en");
 });
+
+const CHAMP_KEY_BY_KO_NAME = Object.fromEntries(
+    CHAMP_KEYS.map((k) => [normalizeNameToken(CHAMP_DB[k]?.name || k), k])
+);
 
 const POSITIONS = ["TOP", "JNG", "MID", "ADC", "SPT"];
 // 공식 밴픽 순서: 3밴-3픽-2밴-2픽 (전술적 스왑 고려하지 않은 정석 포지션 매핑 버전)
@@ -812,7 +832,7 @@ function hasProfileTie(stats) {
     return values.filter((v) => v === maxValue).length >= 2;
 }
 
-function updateTeamPanels(b, r) {
+function updateTeamPanels(b, r, traitCtx = null) {
     const maxProfileSum = 15;
     const makeBars = (teamStats, colorMap) => `
         <div class="mini-bars">
@@ -829,23 +849,25 @@ function updateTeamPanels(b, r) {
         <div class="title">블루팀 요약 (${blueRole})</div>
         <div class="row"><span>기본</span><span>CC ${b.cc} | 딜 ${b.dmg} | 탱 ${b.tank}</span></div>
         <div class="row"><span>시간대</span><span>초 ${b.early} / 중 ${b.mid} / 후 ${b.late}</span></div>
-        <div class="row"><span>AD/AP</span><span>AD ${Math.round(b.adRatio * 100)}% / AP ${Math.round((1 - b.adRatio) * 100)}%</span></div>
-        <div class="row"><span>성향</span><span>돌진 ${b.dive} / 포킹 ${b.poke} / 받아치기 ${b.anti}</span></div>
-        <div class="row"><span>조합</span><span>${getCompLabel(b)}</span></div>
+        <div class="row"><span>AD/AP</span><span><span class="dmg-ad">AD ${Math.round(b.adRatio * 100)}%</span> / <span class="dmg-ap">AP ${Math.round((1 - b.adRatio) * 100)}%</span> / <span class="dmg-hybrid">HYB ${Math.round((b.hybridCount / 5) * 100)}%</span></span></div>
+        <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${b.dive}</span> / <span class="type-poke">포킹 ${b.poke}</span> / <span class="type-anti">받아치기 ${b.anti}</span></span></div>
+        <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(b).type)}">${getCompLabel(b)}</span></div>
         ${renderSynergyMeter(b, "blue")}
         ${renderRadarChart(b, "blue")}
-        ${makeBars(b, { dive: "#29b6f6", poke: "#66bb6a", anti: "#ab47bc" })}
+        ${makeBars(b, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
+        <div class="trait-panel"><div class="trait-title">발동 특성</div>${renderTraitListHtml((traitCtx && traitCtx.traits && traitCtx.traits.blue) || [])}</div>
     `;
     redSummary.innerHTML = `
         <div class="title">레드팀 요약 (${redRole})</div>
         <div class="row"><span>기본</span><span>CC ${r.cc} | 딜 ${r.dmg} | 탱 ${r.tank}</span></div>
         <div class="row"><span>시간대</span><span>초 ${r.early} / 중 ${r.mid} / 후 ${r.late}</span></div>
-        <div class="row"><span>AD/AP</span><span>AD ${Math.round(r.adRatio * 100)}% / AP ${Math.round((1 - r.adRatio) * 100)}%</span></div>
-        <div class="row"><span>성향</span><span>돌진 ${r.dive} / 포킹 ${r.poke} / 받아치기 ${r.anti}</span></div>
-        <div class="row"><span>조합</span><span>${getCompLabel(r)}</span></div>
+        <div class="row"><span>AD/AP</span><span><span class="dmg-ad">AD ${Math.round(r.adRatio * 100)}%</span> / <span class="dmg-ap">AP ${Math.round((1 - r.adRatio) * 100)}%</span> / <span class="dmg-hybrid">HYB ${Math.round((r.hybridCount / 5) * 100)}%</span></span></div>
+        <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${r.dive}</span> / <span class="type-poke">포킹 ${r.poke}</span> / <span class="type-anti">받아치기 ${r.anti}</span></span></div>
+        <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(r).type)}">${getCompLabel(r)}</span></div>
         ${renderSynergyMeter(r, "red")}
         ${renderRadarChart(r, "red")}
-        ${makeBars(r, { dive: "#ef5350", poke: "#ffa726", anti: "#7e57c2" })}
+        ${makeBars(r, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
+        <div class="trait-panel"><div class="trait-title">발동 특성</div>${renderTraitListHtml((traitCtx && traitCtx.traits && traitCtx.traits.red) || [])}</div>
     `;
 }
 
@@ -889,6 +911,307 @@ function getTeamStats(team, picksState) {
     const totalPower = res.adPower + res.apPower;
     res.adRatio = totalPower > 0 ? (res.adPower / totalPower) : 0.5;
     return res;
+}
+
+function getChampionKeyByName(name) {
+    return CHAMP_KEY_BY_KO_NAME[normalizeNameToken(name)] || null;
+}
+
+function getTeamKeys(team, picksState) {
+    return (picksState[team] || []).filter(Boolean);
+}
+
+function getTeamChampByPos(team, picksState, pos) {
+    return getTeamKeys(team, picksState).find((k) => CHAMP_DB[k]?.pos?.[0] === pos) || null;
+}
+
+function teamHasChampionName(team, picksState, name) {
+    const key = getChampionKeyByName(name);
+    if (!key) return false;
+    return getTeamKeys(team, picksState).includes(key);
+}
+
+function teamHasAnyChampionName(team, picksState, names) {
+    return names.some((n) => teamHasChampionName(team, picksState, n));
+}
+
+function getCombatRoleByKey(key) {
+    const c = CHAMP_DB[key];
+    if (!c) return "Dealer";
+    return c.dmg >= c.tank ? "Dealer" : "Tanker";
+}
+
+function renderTraitListHtml(list) {
+    if (!list || list.length === 0) return '<div class="trait-empty">발동 없음</div>';
+    return list.map((t) => '<div class="trait-item"><b>' + t.champName + ' · ' + t.traitName + '</b><span>' + t.effectText + '</span></div>').join('');
+}
+
+function evaluateTraitContext(picksState) {
+    const stats = {
+        blue: getTeamStats('blue', picksState),
+        red: getTeamStats('red', picksState)
+    };
+    const traits = { blue: [], red: [] };
+    const bonus = {
+        blue: { win: 0, early: 0, mid: 0, late: 0, lateBias: 0 },
+        red: { win: 0, early: 0, mid: 0, late: 0, lateBias: 0 }
+    };
+
+    const addStats = (team, delta) => {
+        const t = stats[team];
+        Object.keys(delta).forEach((k) => {
+            if (!Number.isFinite(delta[k])) return;
+            if (!Number.isFinite(t[k])) t[k] = 0;
+            t[k] += delta[k];
+        });
+    };
+
+    const addTrait = (team, champName, traitName, effectText, fn) => {
+        if (!teamHasChampionName(team, picksState, champName)) return;
+        const enemy = team === 'blue' ? 'red' : 'blue';
+        if (!fn(team, enemy)) return;
+        traits[team].push({ champName, traitName, effectText });
+    };
+
+    const applyTeamTraits = (team) => {
+        const enemy = team === 'blue' ? 'red' : 'blue';
+        const getMid = (t) => getTeamChampByPos(t, picksState, 'MID');
+        const getTop = (t) => getTeamChampByPos(t, picksState, 'TOP');
+        const getJng = (t) => getTeamChampByPos(t, picksState, 'JNG');
+        const getAdc = (t) => getTeamChampByPos(t, picksState, 'ADC');
+        const getSpt = (t) => getTeamChampByPos(t, picksState, 'SPT');
+
+        addTrait(team, '리 신', '솔랭 박살', '초반 +5', () => {
+            const mid = getMid(team); if (!mid) return false;
+            if (!['르블랑', '아리'].includes(CHAMP_DB[mid].name)) return false;
+            addStats(team, { early: 5 }); return true;
+        });
+
+        addTrait(team, '니달리', '핵창', '딜링 +3', () => {
+            if (stats[team].cc < 10) return false;
+            addStats(team, { dmg: 3 }); return true;
+        });
+
+        addTrait(team, '세주아니', '빙결 저항', '팀 탱킹 +3', () => {
+            if (!teamHasAnyChampionName(enemy, picksState, ['애쉬', '신지드'])) return false;
+            addStats(team, { tank: 3 }); return true;
+        });
+
+        addTrait(team, '엘리스', '렛츠 다이브', '초반/중반 +3', () => {
+            const top = getTop(team); if (!top) return false;
+            if (!['레넥톤', '다리우스'].includes(CHAMP_DB[top].name)) return false;
+            addStats(team, { early: 3, mid: 3 }); return true;
+        });
+
+        addTrait(team, '바이', '기동타격 연계', '상대 원딜 딜링 -20%', () => {
+            if (!teamHasAnyChampionName(team, picksState, ['아리', '리산드라'])) return false;
+            const enemyAdc = getAdc(enemy); if (!enemyAdc) return false;
+            addStats(enemy, { dmg: -(CHAMP_DB[enemyAdc].dmg * 0.2) }); return true;
+        });
+
+        addTrait(team, '마오카이', '대자연의 마력', '팀 탱킹 +10', () => {
+            const jng = getJng(team), spt = getSpt(team);
+            if (!jng || !spt) return false;
+            if (getCombatRoleByKey(jng) !== 'Tanker' || getCombatRoleByKey(spt) !== 'Tanker') return false;
+            addStats(team, { tank: 10 }); return true;
+        });
+
+        addTrait(team, '아이번', '숲의 친구', '팀 초/중/후 +2', () => {
+            if (!teamHasChampionName(team, picksState, '렝가')) return false;
+            addStats(team, { early: 2, mid: 2, late: 2 }); return true;
+        });
+
+        addTrait(team, '녹턴', '일단 불꺼', '승률 +12%', () => {
+            if (!teamHasAnyChampionName(team, picksState, ['트위스티드 페이트', '쉔'])) return false;
+            bonus[team].win += 12; return true;
+        });
+
+        addTrait(team, '헤카림', '돌격하라', '돌진 +1', () => {
+            if (!teamHasAnyChampionName(team, picksState, ['유미', '룰루'])) return false;
+            addStats(team, { dive: 1 }); return true;
+        });
+
+        addTrait(team, '킨드레드', '그건 제 정글이에요', '중반 +4', () => {
+            const ej = getJng(enemy); if (!ej) return false;
+            if ((CHAMP_DB[ej].tank || 0) < 7) return false;
+            addStats(team, { mid: 4 }); return true;
+        });
+
+        addTrait(team, '트런들', '안티 탱커', '상대 탱킹 -4 / 우리 탱킹 +4', () => {
+            if (stats[enemy].tank < 27) return false;
+            addStats(team, { tank: 4 }); addStats(enemy, { tank: -4 }); return true;
+        });
+
+        addTrait(team, '카직스', '메뚜기 월드', '초반 +4', () => {
+            const ej = getJng(enemy); if (!ej) return false;
+            if ((CHAMP_DB[ej].phase?.early || 0) > 3) return false;
+            addStats(team, { early: 4 }); return true;
+        });
+
+        ['람머스', '말파이트'].forEach((nm) => {
+            addTrait(team, nm, '가시 갑옷', '탱킹 +5', () => {
+                if (stats[enemy].adRatio < 0.7) return false;
+                addStats(team, { tank: 5 }); return true;
+            });
+        });
+
+        addTrait(team, '라칸', '커플', '초반 +2 / 딜+1 / 탱+1 / 초반 승률보정 +5', () => {
+            const adc = getAdc(team); if (!adc || CHAMP_DB[adc].name !== '자야') return false;
+            addStats(team, { early: 2, dmg: 1, tank: 1 }); bonus[team].early += 5; return true;
+        });
+
+        addTrait(team, '나미', '근본 조합', '초반 +2 / 딜 +5', () => {
+            const adc = getAdc(team); if (!adc || CHAMP_DB[adc].name !== '루시안') return false;
+            addStats(team, { early: 2, dmg: 5 }); return true;
+        });
+
+        addTrait(team, '룰루', '요정의 친구', '후반 +10', () => {
+            const adc = getAdc(team); if (!adc) return false;
+            if (!['코그모', '징크스', '베인'].includes(CHAMP_DB[adc].name)) return false;
+            addStats(team, { late: 10 }); return true;
+        });
+
+        addTrait(team, '유미', '완벽한 밀착', '딜링 +4', () => {
+            const adc = getAdc(team); if (!adc) return false;
+            if (!['제리', '이즈리얼'].includes(CHAMP_DB[adc].name)) return false;
+            addStats(team, { dmg: 4 }); return true;
+        });
+
+        addTrait(team, '밀리오', '아늑한 캠프파이어', '초반 +4', () => {
+            const adc = getAdc(team); if (!adc) return false;
+            if (!['루시안', '케이틀린'].includes(CHAMP_DB[adc].name)) return false;
+            addStats(team, { early: 4 }); return true;
+        });
+
+        addTrait(team, '브라움', '프렐요드의 방패', 'CC +1 / 탱킹 +2', () => {
+            const adc = getAdc(team); if (!adc) return false;
+            if (!['애쉬', '루시안'].includes(CHAMP_DB[adc].name)) return false;
+            addStats(team, { cc: 1, tank: 2 }); return true;
+        });
+
+        addTrait(team, '노틸러스', '심해의 압박', '딜링 +2', () => {
+            const adc = getAdc(team); if (!adc) return false;
+            if (!['카이사', '사미라'].includes(CHAMP_DB[adc].name)) return false;
+            addStats(team, { dmg: 2 }); return true;
+        });
+
+        addTrait(team, '카르마', '렛츠 두 포킹', '포킹 +4', () => {
+            const adc = getAdc(team); if (!adc) return false;
+            if (!['이즈리얼', '시비르'].includes(CHAMP_DB[adc].name)) return false;
+            addStats(team, { poke: 4 }); return true;
+        });
+
+        addTrait(team, '타릭', '우주의 광휘', '중반 +6', () => {
+            const jng = getJng(team); if (!jng || CHAMP_DB[jng].name !== '마스터 이') return false;
+            addStats(team, { mid: 6 }); return true;
+        });
+
+        addTrait(team, '카사딘', '못 버티겠어', '상대 미드 AP면 후반 +5 / AD면 초반 -5', () => {
+            const em = getMid(enemy); if (!em) return false;
+            if (CHAMP_DB[em].dmgType === 'AP') addStats(team, { late: 5 });
+            else if (CHAMP_DB[em].dmgType === 'AD') addStats(team, { early: -5 });
+            else return false;
+            return true;
+        });
+
+        addTrait(team, '피오라', '치명적인 검무', '후반 +3', () => {
+            const et = getTop(enemy); if (!et || (CHAMP_DB[et].tank || 0) < 8) return false;
+            addStats(team, { late: 3 }); return true;
+        });
+
+        addTrait(team, '벡스', '우울', 'CC +3', () => {
+            const c = getTeamKeys(enemy, picksState).filter((k) => CHAMP_DB[k].profile.type === 'Dive').length;
+            if (c < 4) return false;
+            addStats(team, { cc: 3 }); return true;
+        });
+
+        addTrait(team, '모르가나', '블쉴좀 써라', '상대 CC -5', () => {
+            if (stats[enemy].cc < 12) return false;
+            addStats(enemy, { cc: -5 }); return true;
+        });
+
+        addTrait(team, '베인', '탱커 사냥', '딜링 +5', () => {
+            if (stats[enemy].tank < 27) return false;
+            addStats(team, { dmg: 5 }); return true;
+        });
+
+        addTrait(team, '시비르', '사냥 개시', '딜링 +5', () => {
+            const c = getTeamKeys(team, picksState).filter((k) => CHAMP_DB[k].profile.type === 'Dive').length;
+            if (c < 3) return false;
+            addStats(team, { dmg: 5 }); return true;
+        });
+
+        addTrait(team, '직스', '포탑부터 지켜', '후반 확률 보정', () => {
+            addStats(team, { late: 3 }); bonus[team].late += 3; bonus[team].lateBias += 1; return true;
+        });
+
+        addTrait(team, '아지르', '넘겨잇', '받아치기 +3', () => {
+            if (getDominantProfile(stats[enemy]).type !== 'Dive') return false;
+            addStats(team, { anti: 3 }); return true;
+        });
+
+        addTrait(team, '블리츠크랭크', '이게 끌리네', '딜링 +6', () => {
+            const ea = getAdc(enemy), es = getSpt(enemy);
+            if (!ea || !es) return false;
+            if (CHAMP_DB[ea].profile.type !== 'Poke' || CHAMP_DB[es].profile.type !== 'Poke') return false;
+            addStats(team, { dmg: 6 }); return true;
+        });
+
+        addTrait(team, '오른', '간이 대장간', '기본 스탯 +3, 후반 +4', () => {
+            addStats(team, { dmg: 3, tank: 3, cc: 3, late: 4 }); return true;
+        });
+
+        addTrait(team, '갱플랭크', '화약통', '딜링 +10', () => {
+            if (Math.abs(stats[team].adRatio - 0.5) > 0.05) return false;
+            addStats(team, { dmg: 10 }); return true;
+        });
+
+        addTrait(team, '야스오', '탑님 말파 가능?', '딜링 +10', () => {
+            if (stats[team].cc < 10) return false;
+            addStats(team, { dmg: 10 }); return true;
+        });
+
+        addTrait(team, '리산드라', '얼음 무덤', 'CC +2', () => {
+            const em = getMid(enemy); if (!em || CHAMP_DB[em].profile.type !== 'Dive') return false;
+            addStats(team, { cc: 2 }); return true;
+        });
+
+        addTrait(team, '질리언', '시간 역행', '초반/후반 스왑', () => {
+            const t = stats[team].early;
+            stats[team].early = stats[team].late;
+            stats[team].late = t;
+            return true;
+        });
+
+        addTrait(team, '오리아나', '내 공을 부탁해', '딜링 +3 + 정글 돌진 스케일', () => {
+            const j = getJng(team); if (!j) return false;
+            const cj = CHAMP_DB[j];
+            if (cj.profile.type !== 'Dive') return false;
+            addStats(team, { dmg: 3 + cj.profile.scale }); return true;
+        });
+
+        addTrait(team, '스몰더', '쌍포', '중반 +4', () => {
+            const adc = getAdc(team); if (!adc || CHAMP_DB[adc].name !== '직스') return false;
+            addStats(team, { mid: 4 }); return true;
+        });
+
+        addTrait(team, '갈리오', '안티 AP', '초반 +3', () => {
+            const em = getMid(enemy); if (!em || CHAMP_DB[em].dmgType !== 'AP') return false;
+            addStats(team, { early: 3 }); return true;
+        });
+    };
+
+    applyTeamTraits('blue');
+    applyTeamTraits('red');
+
+    ['blue', 'red'].forEach((team) => {
+        const t = stats[team];
+        ['cc','dmg','tank','early','mid','late','dive','poke','anti'].forEach((k) => {
+            t[k] = Math.max(0, t[k]);
+        });
+    });
+
+    return { stats, traits, bonus };
 }
 
 function getCorePenalty(stats) {
@@ -998,12 +1321,12 @@ function getWinRateByStats(b, r) {
     return getWinRateDetails(b, r).blueWin;
 }
 
-function renderMobileTeamMini(b, r, phases) {
+function renderMobileTeamMini(b, r, phases, traitCtx = null) {
     const wrap = document.getElementById('mobile-team-mini');
     if (!wrap) return;
     const makeType = (stats) => {
         const d = getDominantProfile(stats);
-        return `${TYPE_LABEL[d.type]} ${d.value}`;
+        return `<span class="${getTypeColorClass(d.type)}">${TYPE_LABEL[d.type]} ${d.value}</span>`;
     };
     const phaseValues = (team) => {
         if (!phases) return { early: 0, mid: 0, late: 0 };
@@ -1019,6 +1342,8 @@ function renderMobileTeamMini(b, r, phases) {
         const adRatio = 100 - apRatio;
         const role = team === 'blue' ? 'BLUE' : 'RED';
         const pv = phaseValues(team);
+        const traitList = ((traitCtx && traitCtx.traits && traitCtx.traits[team]) || []);
+        const traitPreview = traitList.slice(0, 2).map((t) => t.champName + '·' + t.traitName).join(', ');
         return `<div class="mini-team-card ${team}">
             <div class="mini-team-head"><span class="mini-team-name">${role}</span><span class="mini-team-type">${makeType(stats)}</span></div>
             <div class="mini-team-phase-bars">
@@ -1026,32 +1351,40 @@ function renderMobileTeamMini(b, r, phases) {
                 <div class="mini-phase-row"><span>중</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${pv.mid.toFixed(1)}%; background:${color};"></span></div><em>${pv.mid.toFixed(0)}</em></div>
                 <div class="mini-phase-row"><span>후</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${pv.late.toFixed(1)}%; background:${color};"></span></div><em>${pv.late.toFixed(0)}</em></div>
             </div>
-            <div class="mini-team-line"><span>AD/AP</span><span>${adRatio.toFixed(0)} / ${apRatio.toFixed(0)}</span></div>
-            <div class="mini-team-adap-track"><span class="mini-team-ad" style="width:${adRatio.toFixed(1)}%; background:${color};"></span></div>
+            <div class="mini-team-line"><span>AD/AP</span><span><span class="dmg-ad">${adRatio.toFixed(0)}</span> / <span class="dmg-ap">${apRatio.toFixed(0)}</span> / <span class="dmg-hybrid">${((stats.hybridCount / 5) * 100).toFixed(0)}</span></span></div>
+            <div class="mini-team-line"><span>특성</span><span>${traitList.length}개</span></div>
+            ${traitPreview ? `<div class="mini-team-traits">${traitPreview}${traitList.length > 2 ? ' ...' : ''}</div>` : ''}
+            <div class="mini-team-adap-track">
+                <span class="mini-team-ad" style="width:${adRatio.toFixed(1)}%; background:#ff9800;"></span><span class="mini-team-ap" style="width:${apRatio.toFixed(1)}%; background:#9c27b0;"></span>
+            </div>
         </div>`;
     };
     wrap.innerHTML = row('blue', b) + row('red', r);
 }
 
 function calculateStats() {
-    const b = getTeamStats('blue', picks);
-    const r = getTeamStats('red', picks);
+    const traitCtx = evaluateTraitContext(picks);
+    const b = traitCtx.stats.blue;
+    const r = traitCtx.stats.red;
     const blueRole = getTeamRoleLabel('blue');
     const redRole = getTeamRoleLabel('red');
     document.getElementById('blue-info').innerText = `${blueRole} (BLUE)`;
     document.getElementById('red-info').innerText = `${redRole} (RED)`;
-    updateTeamPanels(b, r);
+    updateTeamPanels(b, r, traitCtx);
     const details = getWinRateDetails(b, r);
-    const bWin = details.blueWin;
+    const bWin = clampPercent(details.blueWin + (traitCtx.bonus.blue.win - traitCtx.bonus.red.win));
     const phases = getPhaseProjection(b, r, bWin);
-    renderMobileTeamMini(b, r, phases);
+    phases.earlyWin = clampPercent(phases.earlyWin + (traitCtx.bonus.blue.early - traitCtx.bonus.red.early));
+    phases.midWin = clampPercent(phases.midWin + (traitCtx.bonus.blue.mid - traitCtx.bonus.red.mid));
+    phases.lateWin = clampPercent(phases.lateWin + (traitCtx.bonus.blue.late - traitCtx.bonus.red.late) + (traitCtx.bonus.blue.lateBias - traitCtx.bonus.red.lateBias) * 2);
+    renderMobileTeamMini(b, r, phases, traitCtx);
     if (currentStep >= DRAFT_ORDER.length) {
         document.getElementById('blue-win-bar').style.width = bWin + "%";
         document.getElementById('b-wr-txt').innerText = bWin.toFixed(1) + "%";
         document.getElementById('r-wr-txt').innerText = (100-bWin).toFixed(1) + "%";
     }
 
-    return { bWin, b, r, phases, details };
+    return { bWin, b, r, phases, details, traitCtx };
 }
 
 function aiTakeTurn() {
@@ -1380,6 +1713,11 @@ function buildTeamMvp(team, res) {
     };
 }
 
+function renderTraitResultSection(list) {
+    if (!list || list.length === 0) return "<div class=\"trait-empty\">발동된 특성이 없습니다.</div>";
+    return list.map((t) => "<div class=\"trait-item\"><b>" + t.champName + " · " + t.traitName + "</b><span>" + t.effectText + "</span></div>").join("");
+}
+
 function getFinishPhaseSummary(res, winner) {
     const blueWin = winner === "blue";
     const early = blueWin ? res.phases.earlyWin : (100 - res.phases.earlyWin);
@@ -1417,6 +1755,10 @@ function buildResultBody(res, winner, loser, seriesEnded) {
                 <div class="mvp-name">${redMvp ? `${redMvp.name} (${redMvp.title})` : "-"}</div>
                 <div class="mvp-reason">${redMvp ? redMvp.reason : "선수 데이터가 없습니다."}</div>
             </div>
+        </div>
+        <div class="mvp-wrap">
+            <div class="mvp-card blue"><div class="mvp-title">블루팀 특성</div>${renderTraitResultSection(res.traitCtx && res.traitCtx.traits && res.traitCtx.traits.blue)}</div>
+            <div class="mvp-card red"><div class="mvp-title">레드팀 특성</div>${renderTraitResultSection(res.traitCtx && res.traitCtx.traits && res.traitCtx.traits.red)}</div>
         </div>
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
