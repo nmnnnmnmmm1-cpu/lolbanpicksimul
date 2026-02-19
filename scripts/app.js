@@ -289,6 +289,16 @@ function renderStatRow(label, icon, value, maxValue, color) {
     `;
 }
 
+function renderCcPips(cc) {
+    const pips = [1, 2, 3].map((i) => `<span class="cc-pip ${i <= cc ? "on" : "off"}"></span>`).join("");
+    return `
+        <div class="tip-stat tip-stat-cc">
+            <span class="tip-stat-label">🧩 CC</span>
+            <span class="cc-pips">${pips}</span>
+            <span class="tip-stat-value">${cc}/3</span>
+        </div>
+    `;
+}
 
 function isMobileView() {
     return window.matchMedia('(max-width: 900px)').matches;
@@ -296,16 +306,15 @@ function isMobileView() {
 
 function buildChampionInfoHtml(c, isFearlessLocked) {
     return `
-        <b>${c.name}</b>
-        <div class="tip-chip-row">
-            <span class="tip-chip">유형 ${TYPE_LABEL[c.profile.type]} ${c.profile.scale}</span>
-            <span class="tip-chip">CC ${c.cc}</span>
-            <span class="tip-chip">${c.dmgType}</span>
+        <div class="tip-title-row">
+            <b class="tip-title-name">${c.name}</b>
+            <span class="tip-title-meta">${c.pos[0]} | ${TYPE_LABEL[c.profile.type]} ${c.profile.scale} | ${c.dmgType}</span>
         </div>
+        ${renderCcPips(c.cc)}
         ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
         ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
         ${renderPhaseLineChart(c.phase)}
-        <div style="margin-top:5px; color:#cfd8dc;">주 포지션: ${c.pos.join(', ')}</div>${isFearlessLocked ? '<div style="margin-top:5px;color:#ef9a9a;">피어리스 잠금됨 (이전 세트 픽)</div>' : ''}
+        ${isFearlessLocked ? "<div style=\"margin-top:5px;color:#ef9a9a;\">피어리스 잠금됨 (이전 세트 픽)</div>" : ""}
     `;
 }
 
@@ -315,7 +324,7 @@ function openMobileChampionInfo(key, isFearlessLocked) {
     const title = document.getElementById('mobile-champ-title');
     if (!modal || !body || !CHAMP_DB[key]) return;
     const c = CHAMP_DB[key];
-    if (title) title.innerText = `${c.name} 정보`;
+    if (title) title.innerText = c.name;
     body.innerHTML = buildChampionInfoHtml(c, isFearlessLocked);
     modal.classList.add('show');
 }
@@ -453,9 +462,7 @@ function canPickForTeam(team, key) {
 
 function updateSeriesInfo() {
     const mode = MODE_CONFIGS[selectedModeKey];
-    const sideTxt = userTeam ? `MY TEAM: ${userTeam.toUpperCase()} / AI TEAM: ${aiTeam.toUpperCase()}` : "MY TEAM: 선택 전";
-    const lockTxt = hardFearless ? `누적 잠금 ${fearlessLocked.size}` : "잠금 없음";
-    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R | ${sideTxt} | ${lockTxt}`;
+    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R`;
 }
 
 function getTeamRoleLabel(team) {
@@ -743,9 +750,6 @@ function updateUI() {
         const nextTeam = step.t.toUpperCase();
         const isAiTurn = userTeam && step.t === aiTeam;
         document.getElementById('step-msg').innerText = isAiTurn ? `AI(${nextTeam}) ${step.type.toUpperCase()}...` : `${nextTeam} ${step.type.toUpperCase()}...`;
-        document.getElementById('pos-guide').innerText = step.type === 'pick'
-            ? "💡 챔피언을 선택한 뒤 '픽 확정' 버튼을 눌러야 반영됩니다."
-            : "💡 챔피언을 선택한 뒤 '밴 확정' 버튼을 눌러야 반영됩니다.";
         if (isAiTurn && !aiThinking) {
             aiThinking = true;
             setTimeout(aiTakeTurn, 550);
@@ -971,8 +975,8 @@ function calculateStats() {
     const r = getTeamStats('red', picks);
     const blueRole = getTeamRoleLabel('blue');
     const redRole = getTeamRoleLabel('red');
-    document.getElementById('blue-info').innerText = `${blueRole} (BLUE) CC: ${b.cc} | 딜: ${b.dmg} | 탱: ${b.tank}`;
-    document.getElementById('red-info').innerText = `${redRole} (RED) CC: ${r.cc} | 딜: ${r.dmg} | 탱: ${r.tank}`;
+    document.getElementById('blue-info').innerText = `${blueRole} (BLUE)`;
+    document.getElementById('red-info').innerText = `${redRole} (RED)`;
     updateTeamPanels(b, r);
     renderMobileTeamMini(b, r);
 
@@ -1298,13 +1302,28 @@ function buildTeamMvp(team, res) {
     };
 }
 
+function getFinishPhaseSummary(res, winner) {
+    const blueWin = winner === "blue";
+    const early = blueWin ? res.phases.earlyWin : (100 - res.phases.earlyWin);
+    const mid = blueWin ? res.phases.midWin : (100 - res.phases.midWin);
+    const late = blueWin ? res.phases.lateWin : (100 - res.phases.lateWin);
+
+    if (early >= 66 && early >= mid + 6) {
+        return { phase: "초반", reason: "초반 우위 " + early.toFixed(1) + "%로 스노우볼을 굴려 빠르게 끝냈습니다." };
+    }
+    if (mid >= 60 && mid >= late + 4) {
+        return { phase: "중반", reason: "중반 한타 우위 " + mid.toFixed(1) + "%를 바탕으로 오브젝트를 연달아 가져가며 마무리했습니다." };
+    }
+    return { phase: "후반", reason: "후반 운영/한타 우위(후반 " + late.toFixed(1) + "%)로 최종 승부를 결정했습니다." };
+}
 function buildResultBody(res, winner, loser, seriesEnded) {
     const bComp = getCompLabel(res.b);
     const rComp = getCompLabel(res.r);
     const blueMvp = buildTeamMvp("blue", res);
     const redMvp = buildTeamMvp("red", res);
+    const finish = getFinishPhaseSummary(res, winner);
     return `
-        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>
+        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
         <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
         <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
         <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
