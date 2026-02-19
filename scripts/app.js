@@ -1868,7 +1868,7 @@ function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function buildPhaseCommentary(res) {
+function buildPhaseCommentary(res, finalWinner) {
     const blueName = teamDisplayName("blue");
     const redName = teamDisplayName("red");
     const blueCarry = randomPick(picks.blue.filter(Boolean).map((k) => CHAMP_DB[k].name)) || "블루팀";
@@ -1883,13 +1883,17 @@ function buildPhaseCommentary(res) {
     const bluePenalty = -getDamageBalanceBonus(res.b);
     const redPenalty = -getDamageBalanceBonus(res.r);
     const goldKill = buildGoldKillProjection(res);
+    const winner = finalWinner || (res.bWin >= 50 ? "blue" : "red");
+    const loser = winner === "blue" ? "red" : "blue";
+    const winnerName = winner === "blue" ? blueName : redName;
+    const loserName = loser === "blue" ? blueName : redName;
+    const winnerCarry = winner === "blue" ? blueCarry : redCarry;
     const lines = [
         "해설: 밴픽 결과를 바탕으로 경기 시뮬레이션을 시작합니다.",
         (earlyFav === "blue" ? blueName : redName) + "이 초반 동선을 선점하며 퍼스트 블러드를 만들어냅니다!",
         (midFav === "blue" ? blueCarry : redCarry) + "가 오브젝트 교전에서 이니시를 열고 한타를 찢어냅니다!",
         (midFav === "blue" ? blueName : redName) + "의 " + (midFav === "blue" ? blueType : redType) + " 조합이 중반 교전 구도를 강하게 장악합니다.",
-        (lateFav === "blue" ? blueName : redName) + "이 후반 핵심 한타에서 결정타를 꽂습니다!",
-        (res.bWin >= 50 ? blueName : redName) + " 쪽으로 경기의 무게추가 완전히 기웁니다."
+        (lateFav === "blue" ? blueName : redName) + "이 후반 핵심 한타에서 결정타를 꽂습니다!"
     ];
     goldKill.points.forEach((p) => lines.splice(Math.min(lines.length, 2 + goldKill.points.indexOf(p)), 0, p.line));
     if (bluePenalty > 0) {
@@ -1897,6 +1901,14 @@ function buildPhaseCommentary(res) {
     } else if (redPenalty > 0) {
         lines.push(redName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.");
     }
+    if (earlyFav !== winner && lateFav === winner) {
+        lines.push(`${winnerName}이(가) 초반 열세를 버티고 후반 운영으로 경기를 뒤집습니다!`);
+    } else if (midFav !== winner && lateFav === winner) {
+        lines.push(`${winnerCarry}가 막판 교전에서 대역전 각을 만들며 흐름을 바꿉니다!`);
+    } else {
+        lines.push(`${winnerName} 쪽으로 경기의 무게추가 완전히 기웁니다.`);
+    }
+    lines.push(`최종 승자: ${winnerName}. ${loserName}은(는) 아쉽게 세트를 내줍니다.`);
     return lines;
 }
 
@@ -2254,10 +2266,10 @@ function buildResultBody(res, winner, loser, seriesEnded) {
     `;
 }
 
-function startResultNarration(res, onComplete) {
+function startResultNarration(res, finalWinner, onComplete) {
     const nextBtn = document.getElementById('result-next-btn');
     const feed = document.getElementById('narrator-feed');
-    const lines = buildPhaseCommentary(res);
+    const lines = buildPhaseCommentary(res, finalWinner);
     let idx = 0;
 
     nextBtn.disabled = true;
@@ -2306,6 +2318,7 @@ function showFinalResult() {
 function startSimulationMatch() {
     if (resultFlowState !== "ready" || !pendingSimulationResult) return;
     const res = pendingSimulationResult;
+    const simulatedWinner = rollWinnerFromWinRate(res.bWin);
     const nextBtn = document.getElementById('result-next-btn');
     document.getElementById('winner-text').innerText = "경기 시뮬레이션 진행중";
     document.getElementById('winner-text').style.color = "var(--gold)";
@@ -2314,8 +2327,8 @@ function startSimulationMatch() {
     nextBtn.style.opacity = "0.6";
     nextBtn.innerText = "경기 진행중... 10";
 
-    startResultNarration(res, () => {
-        const winner = rollWinnerFromWinRate(res.bWin);
+    startResultNarration(res, simulatedWinner, () => {
+        const winner = simulatedWinner;
         const loser = winner === "blue" ? "red" : "blue";
         const winnerRole = winner === userTeam ? "user" : "ai";
         const loserRole = winnerRole === "user" ? "ai" : "user";
