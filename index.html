@@ -8,6 +8,53 @@
 </head>
 <body>
 
+<div id="home-page" class="home-page">
+    <div class="home-card">
+        <h1 class="home-title">LoL Banpick Simulator</h1>
+        <p class="home-desc">모드를 고르고 팀 이름/전략을 설정한 뒤 밴픽으로 승패를 가르는 게임입니다.</p>
+        <div class="home-team-setup">
+            <div class="home-input-wrap">
+                <label for="my-team-name">내 팀 이름</label>
+                <input id="my-team-name" type="text" maxlength="24" placeholder="MY TEAM">
+            </div>
+            <div class="home-input-wrap">
+                <label for="ai-team-name">AI 팀 이름</label>
+                <input id="ai-team-name" type="text" maxlength="24" placeholder="AI TEAM">
+            </div>
+            <button type="button" class="home-save-btn" onclick="saveTeamNameInputs()">팀 이름 저장</button>
+        </div>
+        <div class="mode-grid">
+            <button type="button" class="mode-btn" onclick="selectMode('single')">
+                <span class="mode-name">단판</span>
+                <span id="record-single" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+            <button type="button" class="mode-btn" onclick="selectMode('bo3')">
+                <span class="mode-name">3전제 (하드피어리스)</span>
+                <span id="record-bo3" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+            <button type="button" class="mode-btn" onclick="selectMode('bo5')">
+                <span class="mode-name">5전제 (하드피어리스)</span>
+                <span id="record-bo5" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+        </div>
+        <div class="home-stats-grid">
+            <div class="home-log-panel">
+                <h3>최근 경기 기록</h3>
+                <div id="home-log-list" class="home-log-list"></div>
+            </div>
+            <div class="home-log-panel">
+                <h3>로컬 랭킹</h3>
+                <div id="home-ranking-list" class="home-ranking-list"></div>
+            </div>
+        </div>
+        <div class="home-actions">
+            <button type="button" class="tutorial-btn" onclick="openTutorial()">게임 설명 보기</button>
+        </div>
+        <p class="home-note">기록/랭킹은 현재 브라우저(이 기기) 기준으로 저장됩니다.</p>
+    </div>
+</div>
+
+<div id="game-shell">
 <div class="header">
     <div id="header-main-row" style="display:flex; justify-content: space-between; font-weight: bold;">
         <span id="blue-info" style="color:var(--blue)">AI TEAM (BLUE)</span>
@@ -17,7 +64,7 @@
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
     <div class="header-tools">
         <span class="bgm-label">BGM: YouTube</span>
-                <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
+        <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
     </div>
     <div class="winrate-track">
         <div id="blue-win-bar"></div>
@@ -121,29 +168,6 @@
         <div id="mobile-champ-body" class="mobile-champ-body"></div>
     </div>
 </div>
-<div id="home-modal">
-    <div class="home-card">
-        <h1 class="home-title">LoL Banpick Simulator</h1>
-        <p class="home-desc">모드를 고르고 진영을 선택한 뒤 밴픽으로 승패를 가르는 게임입니다.</p>
-        <div class="mode-grid">
-            <button type="button" class="mode-btn" onclick="selectMode('single')">
-                <span class="mode-name">단판</span>
-                <span id="record-single" class="mode-record">승률 0% | 연승 0</span>
-            </button>
-            <button type="button" class="mode-btn" onclick="selectMode('bo3')">
-                <span class="mode-name">3전제 (하드피어리스)</span>
-                <span id="record-bo3" class="mode-record">승률 0% | 연승 0</span>
-            </button>
-            <button type="button" class="mode-btn" onclick="selectMode('bo5')">
-                <span class="mode-name">5전제 (하드피어리스)</span>
-                <span id="record-bo5" class="mode-record">승률 0% | 연승 0</span>
-            </button>
-        </div>
-        <div class="home-actions">
-            <button type="button" class="tutorial-btn" onclick="openTutorial()">게임 설명 보기</button>
-        </div>
-    </div>
-</div>
 <div id="side-select-modal">
     <div class="side-select-card">
         <h2 class="side-title" id="side-title">모드 선택됨</h2>
@@ -151,6 +175,16 @@
         <div class="side-btn-wrap">
             <button class="side-btn blue" type="button" onclick="chooseSide('blue')">블루팀 선택</button>
             <button class="side-btn red" type="button" onclick="chooseSide('red')">레드팀 선택</button>
+        </div>
+    </div>
+</div>
+<div id="strategy-modal">
+    <div class="strategy-card">
+        <h2 class="side-title">팀 전략 설정</h2>
+        <p class="side-desc">이번 세트 컨셉을 선택하면 적합 챔피언 보너스와 부조화 페널티가 적용됩니다.</p>
+        <div id="strategy-list" class="strategy-list"></div>
+        <div class="strategy-actions">
+            <button type="button" class="tutorial-btn" onclick="confirmStrategyAndStart()">이 전략으로 시작</button>
         </div>
     </div>
 </div>
@@ -183,6 +217,7 @@
         referrerpolicy="strict-origin-when-cross-origin"
         allowfullscreen
     ></iframe>
+</div>
 </div>
 
 <script src="data/champions.js"></script>

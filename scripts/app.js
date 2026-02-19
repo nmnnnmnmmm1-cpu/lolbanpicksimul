@@ -8,6 +8,48 @@ const TYPE_LABEL = {
     Poke: "포킹",
     Anti: "받아치기"
 };
+const CHAMP_TRAIT_UI = {
+    "리 신": [{ name: "솔랭 박살", condition: "아군 MID가 르블랑/아리", effect: "팀 초반 +5" }],
+    "니달리": [{ name: "핵창", condition: "아군 CC 합 10 이상", effect: "팀 딜링 +3" }],
+    "세주아니": [{ name: "빙결 저항", condition: "상대에 애쉬/신지드 존재", effect: "팀 탱킹 +3" }],
+    "엘리스": [{ name: "렛츠 다이브", condition: "아군 TOP이 레넥톤/다리우스", effect: "팀 초반/중반 +3" }],
+    "바이": [{ name: "기동타격 연계", condition: "아군에 아리/리산드라 존재", effect: "상대 ADC 딜링 -20%" }],
+    "마오카이": [{ name: "대자연의 마력", condition: "아군 JNG/SPT 모두 탱커", effect: "팀 탱킹 +10" }],
+    "아이번": [{ name: "숲의 친구", condition: "아군에 렝가 존재", effect: "팀 초/중/후 +2" }],
+    "녹턴": [{ name: "일단 불꺼", condition: "아군에 트위스티드 페이트/쉔", effect: "팀 승률 +12%" }],
+    "헤카림": [{ name: "돌격하라", condition: "아군에 유미/룰루", effect: "팀 돌진 +1" }],
+    "킨드레드": [{ name: "그건 제 정글이에요", condition: "상대 JNG 탱킹 7 이상", effect: "팀 중반 +4" }],
+    "트런들": [{ name: "안티 탱커", condition: "상대 팀 탱킹 27 이상", effect: "상대 탱킹 -4 / 우리 탱킹 +4" }],
+    "카직스": [{ name: "메뚜기 월드", condition: "상대 JNG 초반 3 이하", effect: "팀 초반 +4" }],
+    "람머스": [{ name: "가시 갑옷", condition: "상대 AD 비율 70% 이상", effect: "본인 탱킹 +5" }],
+    "말파이트": [{ name: "가시 갑옷", condition: "상대 AD 비율 70% 이상", effect: "본인 탱킹 +5" }],
+    "라칸": [{ name: "커플", condition: "아군 ADC가 자야", effect: "팀 초반 +2 / 딜+1 / 탱+1 / 초반 승률 +5" }],
+    "나미": [{ name: "근본 조합", condition: "아군 ADC가 루시안", effect: "팀 초반 +2 / 딜링 +5" }],
+    "룰루": [{ name: "요정의 친구", condition: "아군 ADC가 코그모/징크스/베인", effect: "팀 후반 +10" }],
+    "유미": [{ name: "완벽한 밀착", condition: "아군 ADC가 제리/이즈리얼", effect: "팀 딜링 +4" }],
+    "밀리오": [{ name: "아늑한 캠프파이어", condition: "아군 ADC가 루시안/케이틀린", effect: "팀 초반 +4" }],
+    "브라움": [{ name: "프렐요드의 방패", condition: "아군 ADC가 애쉬/루시안", effect: "팀 CC +1 / 팀 탱킹 +2" }],
+    "노틸러스": [{ name: "심해의 압박", condition: "아군 ADC가 카이사/사미라", effect: "팀 딜링 +2" }],
+    "카르마": [{ name: "렛츠 두 포킹", condition: "아군 ADC가 이즈리얼/시비르", effect: "팀 포킹 +4" }],
+    "타릭": [{ name: "우주의 광휘", condition: "아군 JNG가 마스터 이", effect: "팀 중반 +6" }],
+    "카사딘": [{ name: "못 버티겠어", condition: "상대 MID AP면", effect: "팀 후반 +5 (상대 MID AD면 초반 -5)" }],
+    "피오라": [{ name: "치명적인 검무", condition: "상대 TOP 탱킹 8 이상", effect: "팀 후반 +3" }],
+    "벡스": [{ name: "우울", condition: "상대 돌진 챔피언 4명 이상", effect: "팀 CC +3" }],
+    "모르가나": [{ name: "블쉴좀 써라", condition: "상대 CC 합 12 이상", effect: "상대 CC -5" }],
+    "베인": [{ name: "탱커 사냥", condition: "상대 팀 탱킹 27 이상", effect: "팀 딜링 +5" }],
+    "시비르": [{ name: "사냥 개시", condition: "아군 돌진형 3명 이상", effect: "팀 딜링 +5" }],
+    "직스": [{ name: "포탑부터 지켜", condition: "기본 발동", effect: "팀 후반 가중치 증가" }],
+    "아지르": [{ name: "넘겨잇", condition: "상대 주 조합이 돌진", effect: "팀 받아치기 +3" }],
+    "블리츠크랭크": [{ name: "이게 끌리네", condition: "상대 ADC/SPT가 모두 포킹", effect: "팀 딜링 +6" }],
+    "오른": [{ name: "간이 대장간", condition: "기본 발동", effect: "팀 기본 스탯 +3 / 후반 +4" }],
+    "갱플랭크": [{ name: "화약통", condition: "아군 AD/AP 밸런스 완벽", effect: "팀 딜링 +10" }],
+    "야스오": [{ name: "탑님 말파 가능?", condition: "아군 CC 합 10 이상", effect: "팀 딜링 +10" }],
+    "리산드라": [{ name: "얼음 무덤", condition: "상대 MID가 돌진형", effect: "팀 CC +2" }],
+    "질리언": [{ name: "시간 역행", condition: "기본 발동", effect: "팀 초반/후반 스탯 교환" }],
+    "오리아나": [{ name: "내 공을 부탁해", condition: "아군 JNG가 돌진형", effect: "팀 딜링 +3 + 정글 돌진 스케일" }],
+    "스몰더": [{ name: "쌍포", condition: "아군 ADC가 직스", effect: "팀 중반 +4" }],
+    "갈리오": [{ name: "안티 AP", condition: "상대 MID가 AP", effect: "팀 초반 +3" }]
+};
 
 function getTypeColorClass(type) {
     if (type === "Dive") return "type-dive";
@@ -134,10 +176,40 @@ let matchNarrationTimer = null;
 let pendingSimulationResult = null;
 let resultFlowState = "idle"; // idle | ready | simulating | done
 const MODE_RECORDS_KEY = "lol_draft_mode_records_v1";
+const TEAM_PROFILE_KEY = "lol_draft_team_profile_v1";
+const MATCH_HISTORY_KEY = "lol_draft_match_history_v1";
+const MAX_MATCH_HISTORY = 80;
 const MODE_CONFIGS = {
     single: { label: "단판", maxGames: 1, winTarget: 1, hardFearless: false },
     bo3: { label: "3전제 (하드피어리스)", maxGames: 3, winTarget: 2, hardFearless: true },
     bo5: { label: "5전제 (하드피어리스)", maxGames: 5, winTarget: 3, hardFearless: true }
+};
+const STRATEGY_CONFIGS = {
+    Dive: {
+        key: "Dive",
+        label: "돌진",
+        desc: "돌진 챔피언 위주로 강한 이니시를 노립니다."
+    },
+    Poke: {
+        key: "Poke",
+        label: "포킹",
+        desc: "포킹 챔피언 위주로 체력 우위를 누적합니다."
+    },
+    Anti: {
+        key: "Anti",
+        label: "받아치기",
+        desc: "받아치기 챔피언 위주로 교전 역습을 노립니다."
+    },
+    Early: {
+        key: "Early",
+        label: "초반 스노우볼",
+        desc: "초반 강세 챔피언으로 빠른 우위를 굴립니다."
+    },
+    Late: {
+        key: "Late",
+        label: "후반 밸류",
+        desc: "후반 강세 챔피언으로 시간 가치를 확보합니다."
+    }
 };
 const TUTORIAL_STEPS = [
     {
@@ -175,6 +247,9 @@ const TUTORIAL_STEPS = [
 ];
 let tutorialStepIndex = 0;
 let modeRecords = loadModeRecords();
+let selectedStrategyKey = "Dive";
+let teamProfile = loadTeamProfile();
+let matchHistory = loadMatchHistory();
 
 function getChampionImageUrl(key) {
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
@@ -211,6 +286,131 @@ function saveModeRecords() {
     }
 }
 
+function loadTeamProfile() {
+    const fallback = { myTeamName: "MY TEAM", aiTeamName: "AI TEAM" };
+    try {
+        const raw = localStorage.getItem(TEAM_PROFILE_KEY);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return {
+            myTeamName: (parsed.myTeamName || "").trim() || fallback.myTeamName,
+            aiTeamName: (parsed.aiTeamName || "").trim() || fallback.aiTeamName
+        };
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function saveTeamProfile() {
+    try {
+        localStorage.setItem(TEAM_PROFILE_KEY, JSON.stringify(teamProfile));
+    } catch (_) {
+        // Ignore storage failures.
+    }
+}
+
+function loadMatchHistory() {
+    try {
+        const raw = localStorage.getItem(MATCH_HISTORY_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((item) => item && typeof item === "object");
+    } catch (_) {
+        return [];
+    }
+}
+
+function saveMatchHistory() {
+    try {
+        localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matchHistory.slice(0, MAX_MATCH_HISTORY)));
+    } catch (_) {
+        // Ignore storage failures.
+    }
+}
+
+function formatTimeLabel(ts) {
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${y}.${m}.${day} ${h}:${min}`;
+}
+
+function saveTeamNameInputs() {
+    const myInput = document.getElementById("my-team-name");
+    const aiInput = document.getElementById("ai-team-name");
+    if (!myInput || !aiInput) return;
+    teamProfile.myTeamName = myInput.value.trim() || "MY TEAM";
+    teamProfile.aiTeamName = aiInput.value.trim() || "AI TEAM";
+    myInput.value = teamProfile.myTeamName;
+    aiInput.value = teamProfile.aiTeamName;
+    saveTeamProfile();
+    renderHomeHistory();
+}
+
+function applyTeamNameInputs() {
+    const myInput = document.getElementById("my-team-name");
+    const aiInput = document.getElementById("ai-team-name");
+    if (!myInput || !aiInput) return;
+    myInput.value = teamProfile.myTeamName;
+    aiInput.value = teamProfile.aiTeamName;
+}
+
+function recordMatchHistory(entry) {
+    matchHistory.unshift(entry);
+    matchHistory = matchHistory.slice(0, MAX_MATCH_HISTORY);
+    saveMatchHistory();
+}
+
+function getRankingRows() {
+    const map = {};
+    matchHistory.forEach((entry) => {
+        const winner = entry.winnerTeam || "UNKNOWN";
+        if (!map[winner]) map[winner] = { team: winner, wins: 0, games: 0 };
+        map[winner].wins += 1;
+        map[winner].games += 1;
+        const loser = entry.loserTeam || "";
+        if (loser) {
+            if (!map[loser]) map[loser] = { team: loser, wins: 0, games: 0 };
+            map[loser].games += 1;
+        }
+    });
+    return Object.values(map)
+        .sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return b.games - a.games;
+        })
+        .slice(0, 10);
+}
+
+function renderHomeHistory() {
+    const logList = document.getElementById("home-log-list");
+    const rankingList = document.getElementById("home-ranking-list");
+    if (logList) {
+        if (matchHistory.length === 0) {
+            logList.innerHTML = '<div class="home-empty">아직 기록이 없습니다.</div>';
+        } else {
+            logList.innerHTML = matchHistory.slice(0, 12).map((entry) => {
+                return `<div class="home-log-item"><b>${entry.modeLabel}</b> <span>${entry.winnerTeam} 승 (${entry.scoreText})</span><em>${formatTimeLabel(entry.playedAt)}</em></div>`;
+            }).join("");
+        }
+    }
+    if (rankingList) {
+        const ranks = getRankingRows();
+        if (ranks.length === 0) {
+            rankingList.innerHTML = '<div class="home-empty">랭킹 데이터가 없습니다.</div>';
+        } else {
+            rankingList.innerHTML = ranks.map((row, idx) => {
+                const wr = row.games > 0 ? ((row.wins / row.games) * 100).toFixed(1) : "0.0";
+                return `<div class="home-rank-item"><span>#${idx + 1} ${row.team}</span><b>${row.wins}승 / ${row.games}전 (${wr}%)</b></div>`;
+            }).join("");
+        }
+    }
+}
+
 function applyModeConfig(modeKey) {
     const mode = MODE_CONFIGS[modeKey] || MODE_CONFIGS.bo5;
     selectedModeKey = modeKey;
@@ -234,14 +434,21 @@ function renderHomeStats() {
 
 function openHome() {
     renderHomeStats();
-    document.getElementById("home-modal").style.display = "flex";
+    renderHomeHistory();
+    applyTeamNameInputs();
+    document.getElementById("home-page").style.display = "flex";
+    document.getElementById("game-shell").style.display = "none";
     document.getElementById("side-select-modal").style.display = "none";
+    document.getElementById("strategy-modal").style.display = "none";
     document.getElementById("tutorial-modal").style.display = "none";
+    document.getElementById("result-modal").style.display = "none";
 }
 
 function selectMode(modeKey) {
     applyModeConfig(modeKey);
-    document.getElementById("home-modal").style.display = "none";
+    saveTeamNameInputs();
+    document.getElementById("home-page").style.display = "none";
+    document.getElementById("game-shell").style.display = "none";
     document.getElementById("side-title").innerText = MODE_CONFIGS[modeKey].label;
     document.getElementById("side-desc").innerText = "진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 밴픽합니다.";
     document.getElementById("side-select-modal").style.display = "flex";
@@ -322,6 +529,30 @@ function renderCcPips(cc) {
     `;
 }
 
+function renderChampionTraitInfo(champName) {
+    const traits = CHAMP_TRAIT_UI[champName] || [];
+    if (traits.length === 0) {
+        return `
+        <div class="tip-trait-box">
+            <div class="tip-trait-title">고유 특성</div>
+            <div class="tip-trait-empty">이 챔피언은 현재 등록된 특성이 없습니다.</div>
+        </div>
+        `;
+    }
+    return `
+    <div class="tip-trait-box">
+        <div class="tip-trait-title">고유 특성</div>
+        ${traits.map((t) => `
+            <div class="tip-trait-item">
+                <b>${t.name}</b>
+                <span>조건: ${t.condition}</span>
+                <span>효과: ${t.effect}</span>
+            </div>
+        `).join("")}
+    </div>
+    `;
+}
+
 function isMobileView() {
     return window.matchMedia('(max-width: 900px)').matches;
 }
@@ -336,6 +567,7 @@ function buildChampionInfoHtml(c, isFearlessLocked) {
         ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
         ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
         ${renderPhaseLineChart(c.phase)}
+        ${renderChampionTraitInfo(c.name)}
         ${isFearlessLocked ? "<div style=\"margin-top:5px;color:#ef9a9a;\">피어리스 잠금됨 (이전 세트 픽)</div>" : ""}
     `;
 }
@@ -484,12 +716,13 @@ function canPickForTeam(team, key) {
 
 function updateSeriesInfo() {
     const mode = MODE_CONFIGS[selectedModeKey];
-    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R`;
+    const strategyLabel = STRATEGY_CONFIGS[selectedStrategyKey]?.label || "전략 미선택";
+    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R | 전략 ${strategyLabel}`;
 }
 
 function getTeamRoleLabel(team) {
     if (!userTeam) return team.toUpperCase();
-    return team === userTeam ? "MY TEAM" : "AI TEAM";
+    return team === userTeam ? teamProfile.myTeamName : teamProfile.aiTeamName;
 }
 
 function renderLockedChamps() {
@@ -564,11 +797,34 @@ function resetSeries() {
     startGameDraft();
 }
 
+function renderStrategyModal() {
+    const wrap = document.getElementById("strategy-list");
+    if (!wrap) return;
+    wrap.innerHTML = Object.keys(STRATEGY_CONFIGS).map((key) => {
+        const item = STRATEGY_CONFIGS[key];
+        const active = key === selectedStrategyKey ? "active" : "";
+        return `<button type="button" class="strategy-option ${active}" onclick="selectStrategy('${key}')"><b>${item.label}</b><span>${item.desc}</span></button>`;
+    }).join("");
+}
+
+function selectStrategy(key) {
+    if (!STRATEGY_CONFIGS[key]) return;
+    selectedStrategyKey = key;
+    renderStrategyModal();
+}
+
+function confirmStrategyAndStart() {
+    document.getElementById("strategy-modal").style.display = "none";
+    document.getElementById("game-shell").style.display = "block";
+    resetSeries();
+}
+
 function chooseSide(side) {
     userTeam = side;
     aiTeam = side === "blue" ? "red" : "blue";
     document.getElementById('side-select-modal').style.display = 'none';
-    resetSeries();
+    renderStrategyModal();
+    document.getElementById("strategy-modal").style.display = "flex";
 }
 
 function init() {
@@ -628,6 +884,16 @@ function init() {
             if (e.target === actionModal) cancelPendingPick();
         });
     }
+    const strategyModal = document.getElementById('strategy-modal');
+    if (strategyModal) {
+        strategyModal.addEventListener('click', (e) => {
+            if (e.target === strategyModal) {
+                e.stopPropagation();
+            }
+        });
+    }
+    renderStrategyModal();
+    applyTeamNameInputs();
     startYoutubeBgm();
     openHome();
 }
@@ -832,7 +1098,19 @@ function hasProfileTie(stats) {
     return values.filter((v) => v === maxValue).length >= 2;
 }
 
-function updateTeamPanels(b, r, traitCtx = null) {
+function renderStrategySummary(strategyCtx, team) {
+    if (!strategyCtx || !strategyCtx.effect || strategyCtx.effect.team !== team) {
+        return '<span style="color:#7f95a3;">적용 없음</span>';
+    }
+    const strategyLabel = STRATEGY_CONFIGS[strategyCtx.effect.strategy]?.label || "전략";
+    const fit = strategyCtx.effect.fit;
+    const mismatch = strategyCtx.effect.mismatch;
+    const winBonus = strategyCtx.effect.winBonus;
+    const sign = winBonus >= 0 ? "+" : "";
+    return `<span style="color:#ffe082;">${strategyLabel}</span> | 적합 ${fit} / 부조화 ${mismatch} | 승률보정 ${sign}${winBonus.toFixed(1)}`;
+}
+
+function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null) {
     const maxProfileSum = 15;
     const makeBars = (teamStats, colorMap) => `
         <div class="mini-bars">
@@ -852,6 +1130,7 @@ function updateTeamPanels(b, r, traitCtx = null) {
         <div class="row"><span>AD/AP</span><span><span class="dmg-ad">AD ${Math.round(b.adRatio * 100)}%</span> / <span class="dmg-ap">AP ${Math.round((1 - b.adRatio) * 100)}%</span> / <span class="dmg-hybrid">HYB ${Math.round((b.hybridCount / 5) * 100)}%</span></span></div>
         <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${b.dive}</span> / <span class="type-poke">포킹 ${b.poke}</span> / <span class="type-anti">받아치기 ${b.anti}</span></span></div>
         <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(b).type)}">${getCompLabel(b)}</span></div>
+        <div class="row"><span>전략</span><span>${renderStrategySummary(strategyCtx, "blue")}</span></div>
         ${renderSynergyMeter(b, "blue")}
         ${renderRadarChart(b, "blue")}
         ${makeBars(b, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
@@ -864,6 +1143,7 @@ function updateTeamPanels(b, r, traitCtx = null) {
         <div class="row"><span>AD/AP</span><span><span class="dmg-ad">AD ${Math.round(r.adRatio * 100)}%</span> / <span class="dmg-ap">AP ${Math.round((1 - r.adRatio) * 100)}%</span> / <span class="dmg-hybrid">HYB ${Math.round((r.hybridCount / 5) * 100)}%</span></span></div>
         <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${r.dive}</span> / <span class="type-poke">포킹 ${r.poke}</span> / <span class="type-anti">받아치기 ${r.anti}</span></span></div>
         <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(r).type)}">${getCompLabel(r)}</span></div>
+        <div class="row"><span>전략</span><span>${renderStrategySummary(strategyCtx, "red")}</span></div>
         ${renderSynergyMeter(r, "red")}
         ${renderRadarChart(r, "red")}
         ${makeBars(r, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
@@ -1214,6 +1494,85 @@ function evaluateTraitContext(picksState) {
     return { stats, traits, bonus };
 }
 
+function getStrategyFitState(champ, strategyKey) {
+    if (!champ) return 0;
+    if (strategyKey === "Dive") return champ.profile.type === "Dive" ? 1 : -1;
+    if (strategyKey === "Poke") return champ.profile.type === "Poke" ? 1 : -1;
+    if (strategyKey === "Anti") return champ.profile.type === "Anti" ? 1 : -1;
+    if (strategyKey === "Early") {
+        const isFit = champ.phase.early >= champ.phase.mid && champ.phase.early >= champ.phase.late;
+        const isMismatch = champ.phase.late >= champ.phase.early + 2;
+        return isFit ? 1 : (isMismatch ? -1 : 0);
+    }
+    if (strategyKey === "Late") {
+        const isFit = champ.phase.late >= champ.phase.mid && champ.phase.late >= champ.phase.early;
+        const isMismatch = champ.phase.early >= champ.phase.late + 2;
+        return isFit ? 1 : (isMismatch ? -1 : 0);
+    }
+    return 0;
+}
+
+function evaluateStrategyContext(picksState, sourceStats) {
+    const stats = {
+        blue: { ...sourceStats.blue },
+        red: { ...sourceStats.red }
+    };
+    const focusTeam = userTeam || "blue";
+    const effect = {
+        team: focusTeam,
+        strategy: selectedStrategyKey,
+        fit: 0,
+        mismatch: 0,
+        neutral: 0,
+        winBonus: 0
+    };
+    const teamKeys = getTeamKeys(focusTeam, picksState);
+    teamKeys.forEach((key) => {
+        const state = getStrategyFitState(CHAMP_DB[key], selectedStrategyKey);
+        if (state > 0) effect.fit += 1;
+        else if (state < 0) effect.mismatch += 1;
+        else effect.neutral += 1;
+    });
+
+    const t = stats[focusTeam];
+    if (!t) return { stats, effect };
+
+    const fit = effect.fit;
+    const mismatch = effect.mismatch;
+    const applyTypedStrategy = (typeKey) => {
+        if (typeKey === "Dive") t.dive += fit * 1.4;
+        if (typeKey === "Poke") t.poke += fit * 1.4;
+        if (typeKey === "Anti") t.anti += fit * 1.4;
+        t.dmg += fit * 0.9 - mismatch * 1.2;
+        t.tank += fit * 0.5 - mismatch * 1.0;
+        t.early += fit * 0.8 - mismatch * 1.0;
+        t.mid += fit * 0.4 - mismatch * 0.7;
+        t.late += fit * 0.4 - mismatch * 0.7;
+        effect.winBonus += fit * 2.8 - mismatch * 3.4;
+    };
+
+    if (selectedStrategyKey === "Dive" || selectedStrategyKey === "Poke" || selectedStrategyKey === "Anti") {
+        applyTypedStrategy(selectedStrategyKey);
+    } else if (selectedStrategyKey === "Early") {
+        t.early += fit * 2.5 - mismatch * 2.7;
+        t.mid += fit * 0.8 - mismatch * 1.1;
+        t.dmg += fit * 1.0 - mismatch * 0.9;
+        t.tank += fit * 0.4 - mismatch * 0.8;
+        effect.winBonus += fit * 3.2 - mismatch * 3.8;
+    } else if (selectedStrategyKey === "Late") {
+        t.late += fit * 2.5 - mismatch * 2.7;
+        t.mid += fit * 0.9 - mismatch * 1.0;
+        t.tank += fit * 1.1 - mismatch * 0.9;
+        t.dmg += fit * 0.8 - mismatch * 0.7;
+        effect.winBonus += fit * 3.2 - mismatch * 3.8;
+    }
+
+    ["cc", "dmg", "tank", "dive", "poke", "anti", "early", "mid", "late"].forEach((k) => {
+        t[k] = Math.max(0, Number(t[k] || 0));
+    });
+    return { stats, effect };
+}
+
 function getCorePenalty(stats) {
     let penalty = 0;
     if (stats.dmg < 20) penalty -= 16 + (20 - stats.dmg) * 1.3;
@@ -1321,7 +1680,7 @@ function getWinRateByStats(b, r) {
     return getWinRateDetails(b, r).blueWin;
 }
 
-function renderMobileTeamMini(b, r, phases, traitCtx = null) {
+function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null) {
     const wrap = document.getElementById('mobile-team-mini');
     if (!wrap) return;
     const makeType = (stats) => {
@@ -1344,6 +1703,9 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null) {
         const pv = phaseValues(team);
         const traitList = ((traitCtx && traitCtx.traits && traitCtx.traits[team]) || []);
         const traitPreview = traitList.slice(0, 2).map((t) => t.champName + '·' + t.traitName).join(', ');
+        const stratApplied = strategyCtx && strategyCtx.effect && strategyCtx.effect.team === team;
+        const stratLabel = stratApplied ? (STRATEGY_CONFIGS[strategyCtx.effect.strategy]?.label || "전략") : "전략 없음";
+        const stratMeta = stratApplied ? `${stratLabel} | 적합 ${strategyCtx.effect.fit} / 부조화 ${strategyCtx.effect.mismatch}` : stratLabel;
         return `<div class="mini-team-card ${team}">
             <div class="mini-team-head"><span class="mini-team-name">${role}</span><span class="mini-team-type">${makeType(stats)}</span></div>
             <div class="mini-team-phase-bars">
@@ -1353,6 +1715,7 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null) {
             </div>
             <div class="mini-team-line"><span>AD/AP</span><span><span class="dmg-ad">${adRatio.toFixed(0)}</span> / <span class="dmg-ap">${apRatio.toFixed(0)}</span> / <span class="dmg-hybrid">${((stats.hybridCount / 5) * 100).toFixed(0)}</span></span></div>
             <div class="mini-team-line"><span>특성</span><span>${traitList.length}개</span></div>
+            <div class="mini-team-traits">${stratMeta}</div>
             ${traitPreview ? `<div class="mini-team-traits">${traitPreview}${traitList.length > 2 ? ' ...' : ''}</div>` : ''}
             <div class="mini-team-adap-track">
                 <span class="mini-team-ad" style="width:${adRatio.toFixed(1)}%; background:#ff9800;"></span><span class="mini-team-ap" style="width:${apRatio.toFixed(1)}%; background:#9c27b0;"></span>
@@ -1364,27 +1727,31 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null) {
 
 function calculateStats() {
     const traitCtx = evaluateTraitContext(picks);
-    const b = traitCtx.stats.blue;
-    const r = traitCtx.stats.red;
+    const strategyCtx = evaluateStrategyContext(picks, traitCtx.stats);
+    const b = strategyCtx.stats.blue;
+    const r = strategyCtx.stats.red;
     const blueRole = getTeamRoleLabel('blue');
     const redRole = getTeamRoleLabel('red');
     document.getElementById('blue-info').innerText = `${blueRole} (BLUE)`;
     document.getElementById('red-info').innerText = `${redRole} (RED)`;
-    updateTeamPanels(b, r, traitCtx);
+    updateTeamPanels(b, r, traitCtx, strategyCtx);
     const details = getWinRateDetails(b, r);
-    const bWin = clampPercent(details.blueWin + (traitCtx.bonus.blue.win - traitCtx.bonus.red.win));
+    let strategyBlueEdge = 0;
+    if (strategyCtx.effect.team === "blue") strategyBlueEdge += strategyCtx.effect.winBonus;
+    if (strategyCtx.effect.team === "red") strategyBlueEdge -= strategyCtx.effect.winBonus;
+    const bWin = clampPercent(details.blueWin + (traitCtx.bonus.blue.win - traitCtx.bonus.red.win) + strategyBlueEdge);
     const phases = getPhaseProjection(b, r, bWin);
     phases.earlyWin = clampPercent(phases.earlyWin + (traitCtx.bonus.blue.early - traitCtx.bonus.red.early));
     phases.midWin = clampPercent(phases.midWin + (traitCtx.bonus.blue.mid - traitCtx.bonus.red.mid));
     phases.lateWin = clampPercent(phases.lateWin + (traitCtx.bonus.blue.late - traitCtx.bonus.red.late) + (traitCtx.bonus.blue.lateBias - traitCtx.bonus.red.lateBias) * 2);
-    renderMobileTeamMini(b, r, phases, traitCtx);
+    renderMobileTeamMini(b, r, phases, traitCtx, strategyCtx);
     if (currentStep >= DRAFT_ORDER.length) {
         document.getElementById('blue-win-bar').style.width = bWin + "%";
         document.getElementById('b-wr-txt').innerText = bWin.toFixed(1) + "%";
         document.getElementById('r-wr-txt').innerText = (100-bWin).toFixed(1) + "%";
     }
 
-    return { bWin, b, r, phases, details, traitCtx };
+    return { bWin, b, r, phases, details, traitCtx, strategyCtx };
 }
 
 function aiTakeTurn() {
@@ -1490,7 +1857,8 @@ function refreshUI(team) {
 }
 
 function teamDisplayName(team) {
-    return team === userTeam ? "우리 팀" : "AI 팀";
+    if (!userTeam) return team.toUpperCase();
+    return team === userTeam ? teamProfile.myTeamName : teamProfile.aiTeamName;
 }
 
 function randomPick(arr) {
@@ -1512,6 +1880,7 @@ function buildPhaseCommentary(res) {
     const redType = TYPE_LABEL[rMain.type];
     const bluePenalty = -getDamageBalanceBonus(res.b);
     const redPenalty = -getDamageBalanceBonus(res.r);
+    const goldKill = buildGoldKillProjection(res);
     const lines = [
         "해설: 밴픽 결과를 바탕으로 경기 시뮬레이션을 시작합니다.",
         (earlyFav === "blue" ? blueName : redName) + "이 초반 동선을 선점하며 퍼스트 블러드를 만들어냅니다!",
@@ -1520,10 +1889,11 @@ function buildPhaseCommentary(res) {
         (lateFav === "blue" ? blueName : redName) + "이 후반 핵심 한타에서 결정타를 꽂습니다!",
         (res.bWin >= 50 ? blueName : redName) + " 쪽으로 경기의 무게추가 완전히 기웁니다."
     ];
+    goldKill.points.forEach((p) => lines.splice(Math.min(lines.length, 2 + goldKill.points.indexOf(p)), 0, p.line));
     if (bluePenalty > 0) {
-        lines[3] = blueName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.";
+        lines.push(blueName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.");
     } else if (redPenalty > 0) {
-        lines[3] = redName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.";
+        lines.push(redName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.");
     }
     return lines;
 }
@@ -1552,11 +1922,114 @@ function renderPhaseRowsForPerspective(res) {
     `;
 }
 
+function formatGoldDiff(gold) {
+    const sign = gold > 0 ? "+" : "";
+    return `${sign}${Math.round(gold).toLocaleString()}G`;
+}
+
+function getGoldSwingByWinEdge(edge) {
+    const sign = edge >= 0 ? 1 : -1;
+    const abs = Math.abs(edge);
+    let swing = abs * 150;
+    if (abs > 30) swing += (abs - 30) * 100;
+    return sign * swing;
+}
+
+function buildGoldKillProjection(res) {
+    const isBlueMyTeam = userTeam !== "red";
+    const myTeam = isBlueMyTeam ? "blue" : "red";
+    const enemyTeam = myTeam === "blue" ? "red" : "blue";
+    const myStats = myTeam === "blue" ? res.b : res.r;
+    const enemyStats = enemyTeam === "blue" ? res.b : res.r;
+    const phaseWins = [
+        { key: "early", label: "초반", minute: 15, win: isBlueMyTeam ? res.phases.earlyWin : (100 - res.phases.earlyWin) },
+        { key: "mid", label: "중반", minute: 25, win: isBlueMyTeam ? res.phases.midWin : (100 - res.phases.midWin) },
+        { key: "late", label: "후반", minute: 35, win: isBlueMyTeam ? res.phases.lateWin : (100 - res.phases.lateWin) }
+    ];
+    let cumulativeGold = 0;
+    let myKills = 0;
+    let enemyKills = 0;
+    const points = phaseWins.map((p) => {
+        const edge = p.win - 50;
+        const swing = getGoldSwingByWinEdge(edge);
+        const snowball = cumulativeGold * (edge >= 0 ? 0.12 : -0.12);
+        cumulativeGold = Math.round(cumulativeGold + swing + snowball);
+
+        const myPhasePower = (myStats[p.key] || 0) * 2 + myStats.cc * 2 + myStats.dmg * 0.8 + myStats.tank * 0.5;
+        const enemyPhasePower = (enemyStats[p.key] || 0) * 2 + enemyStats.cc * 2 + enemyStats.dmg * 0.8 + enemyStats.tank * 0.5;
+        const freq = Math.max(2, Math.round(2 + Math.abs(myPhasePower - enemyPhasePower) / 10 + Math.abs(edge) / 12));
+        const killEdge = Math.max(1, Math.round(Math.abs(edge) / 14));
+        const myGain = edge >= 0 ? (freq + killEdge) : Math.max(0, freq - killEdge);
+        const enemyGain = edge >= 0 ? Math.max(0, freq - killEdge) : (freq + killEdge);
+        myKills += myGain;
+        enemyKills += enemyGain;
+
+        const dominantTeam = edge >= 0 ? myTeam : enemyTeam;
+        const dominantName = teamDisplayName(dominantTeam);
+        return {
+            ...p,
+            edge,
+            goldDiff: cumulativeGold,
+            myKills,
+            enemyKills,
+            line: `${p.minute}분 킬 스코어 ${myKills}:${enemyKills}, ${dominantName}이(가) 전투 우위를 잡습니다.`
+        };
+    });
+
+    return {
+        myTeam,
+        enemyTeam,
+        myTeamName: teamDisplayName(myTeam),
+        enemyTeamName: teamDisplayName(enemyTeam),
+        points,
+        finalGoldDiff: cumulativeGold,
+        finalMyKills: myKills,
+        finalEnemyKills: enemyKills
+    };
+}
+
+function renderGoldGraphSvg(points) {
+    const maxAbs = Math.max(3500, ...points.map((p) => Math.abs(p.goldDiff)));
+    const xPos = [20, 110, 200];
+    const yMap = (gold) => 68 - ((gold + maxAbs) / (2 * maxAbs)) * 56;
+    const polyline = points.map((p, idx) => `${xPos[idx]},${yMap(p.goldDiff).toFixed(1)}`).join(" ");
+    const dots = points.map((p, idx) => `<circle cx="${xPos[idx]}" cy="${yMap(p.goldDiff).toFixed(1)}" r="3.5" class="econ-dot"></circle>`).join("");
+    const labels = points.map((p, idx) => `<text x="${xPos[idx]}" y="80" text-anchor="middle" class="econ-label">${p.minute}m</text>`).join("");
+    return `<svg viewBox="0 0 220 86" class="econ-svg" role="img" aria-label="골드 그래프">
+        <line x1="18" y1="68" x2="202" y2="68" class="econ-axis"></line>
+        <line x1="18" y1="40" x2="202" y2="40" class="econ-mid"></line>
+        <polyline points="${polyline}" class="econ-line"></polyline>
+        ${dots}
+        ${labels}
+    </svg>`;
+}
+
+function renderGoldKillSection(res) {
+    const sim = buildGoldKillProjection(res);
+    return `<div class="econ-wrap">
+        <div class="econ-title">자금력 / 전투 결과</div>
+        <div class="econ-grid">
+            <div class="econ-card">
+                <div class="econ-sub">골드 그래프 (스노우볼 반영)</div>
+                ${renderGoldGraphSvg(sim.points)}
+                <div class="econ-meta">최종 골드 격차: <b>${formatGoldDiff(sim.finalGoldDiff)}</b></div>
+            </div>
+            <div class="econ-card">
+                <div class="econ-sub">킬 스코어 추이</div>
+                <div class="econ-kill-list">
+                    ${sim.points.map((p) => `<div class="econ-kill-item"><span>${p.minute}분</span><b>${sim.myTeamName} ${p.myKills} : ${p.enemyKills} ${sim.enemyTeamName}</b></div>`).join("")}
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
 function buildNarrationOnlyBody(res) {
     return `
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
             ${renderPhaseRowsForPerspective(res)}
+            ${renderGoldKillSection(res)}
             <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
         </div>
     `;
@@ -1567,6 +2040,7 @@ function buildSimulationLobbyBody(res) {
             '<div class="sim-title">시뮬레이션 준비 완료</div>' +
             '<p style="margin:0 0 10px; color:#c8d7e2; font-size:13px;">밴픽 결과를 바탕으로 10초 해설 시뮬레이션을 시작합니다.</p>' +
             renderPhaseRowsForPerspective(res) +
+            renderGoldKillSection(res) +
         '</div>';
 }
 
@@ -1707,6 +2181,7 @@ function buildTeamMvp(team, res) {
     const champ = CHAMP_DB[key];
     const meta = getMvpTitleAndReason(champ, breakdown.factor, team);
     return {
+        key,
         name: champ.name,
         title: meta.title,
         reason: meta.reason
@@ -1735,25 +2210,28 @@ function getFinishPhaseSummary(res, winner) {
 function buildResultBody(res, winner, loser, seriesEnded) {
     const bComp = getCompLabel(res.b);
     const rComp = getCompLabel(res.r);
-    const blueMvp = buildTeamMvp("blue", res);
-    const redMvp = buildTeamMvp("red", res);
+    const winnerMvp = buildTeamMvp(winner, res);
+    const winnerTeamLabel = winner === "blue" ? "블루팀" : "레드팀";
     const finish = getFinishPhaseSummary(res, winner);
+    const strategyEffect = res.strategyCtx && res.strategyCtx.effect ? res.strategyCtx.effect : null;
+    const strategyTeamLabel = strategyEffect ? teamDisplayName(strategyEffect.team) : "-";
+    const strategyName = strategyEffect ? (STRATEGY_CONFIGS[strategyEffect.strategy]?.label || "전략") : "-";
+    const strategyText = strategyEffect ? `${strategyTeamLabel} 전략(${strategyName}) 적합 ${strategyEffect.fit} / 부조화 ${strategyEffect.mismatch} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${strategyEffect.winBonus.toFixed(1)}` : "전략 보정 없음";
     return `
         <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
+        <p style="font-size:12px;color:#9ec4d9;">전략 적용: ${strategyText}</p>
         <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
         <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
         <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
         <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti} | 시간대: 초 ${res.r.early} / 중 ${res.r.mid} / 후 ${res.r.late}</p>
-        <div class="mvp-wrap">
-            <div class="mvp-card blue">
-                <div class="mvp-title">블루팀 MVP</div>
-                <div class="mvp-name">${blueMvp ? `${blueMvp.name} (${blueMvp.title})` : "-"}</div>
-                <div class="mvp-reason">${blueMvp ? blueMvp.reason : "선수 데이터가 없습니다."}</div>
-            </div>
-            <div class="mvp-card red">
-                <div class="mvp-title">레드팀 MVP</div>
-                <div class="mvp-name">${redMvp ? `${redMvp.name} (${redMvp.title})` : "-"}</div>
-                <div class="mvp-reason">${redMvp ? redMvp.reason : "선수 데이터가 없습니다."}</div>
+        <div class="mvp-wrap single">
+            <div class="mvp-card ${winner}">
+                <div class="mvp-title">${winnerTeamLabel} MVP</div>
+                ${
+                    winnerMvp
+                        ? `<div class="mvp-head"><img class="mvp-portrait" src="${getChampionImageUrl(winnerMvp.key)}" alt="${winnerMvp.name}" onerror="this.onerror=null;this.src='https://placehold.co/72x72/121c23/c8aa6e?text=${encodeURIComponent(winnerMvp.name)}';"><div class="mvp-name">${winnerMvp.name} (${winnerMvp.title})</div></div><div class="mvp-reason">${winnerMvp.reason}</div>`
+                        : `<div class="mvp-name">-</div><div class="mvp-reason">선수 데이터가 없습니다.</div>`
+                }
             </div>
         </div>
         <div class="mvp-wrap">
@@ -1763,6 +2241,7 @@ function buildResultBody(res, winner, loser, seriesEnded) {
         <div class="sim-wrap">
             <div class="sim-title">10초 경기 시뮬레이션</div>
             ${renderPhaseRowsForPerspective(res)}
+            ${renderGoldKillSection(res)}
             <div class="narrator-feed"><div class="narrator-line">해설 종료. 결과가 확정되었습니다.</div></div>
         </div>
         <hr style="border-color:#333">
@@ -1787,8 +2266,9 @@ function startResultNarration(res, onComplete) {
     matchNarrationTimer = setInterval(() => {
         idx += 1;
         const remain = Math.max(10 - idx, 0);
-        if (idx <= 5) {
-            const line = lines[(idx - 1) % lines.length];
+        const maxNarrationLines = Math.min(lines.length, 9);
+        if (idx <= maxNarrationLines) {
+            const line = lines[idx - 1];
             feed.innerHTML += `<div class="narrator-line">🎙 ${line}</div>`;
             feed.scrollTop = feed.scrollHeight;
         }
@@ -1846,6 +2326,15 @@ function startSimulationMatch() {
         if (seriesEnded) {
             const userWonSeries = (userTeam === winner);
             updateModeRecord(userWonSeries);
+            recordMatchHistory({
+                playedAt: Date.now(),
+                modeKey: selectedModeKey,
+                modeLabel: MODE_CONFIGS[selectedModeKey].label,
+                winnerTeam: teamDisplayName(winner),
+                loserTeam: teamDisplayName(loser),
+                scoreText: `BLUE ${seriesWins.blue} : ${seriesWins.red} RED`,
+                strategyLabel: STRATEGY_CONFIGS[selectedStrategyKey]?.label || "-"
+            });
         }
 
         document.getElementById('winner-text').innerText = winner.toUpperCase() + " SET WIN";
@@ -1883,7 +2372,8 @@ function handleNextAction() {
     }
     aiTeam = userTeam === "blue" ? "red" : "blue";
     currentGame += 1;
-    startGameDraft();
+    renderStrategyModal();
+    document.getElementById("strategy-modal").style.display = "flex";
 }
 
 function showTooltip(e, txt) {

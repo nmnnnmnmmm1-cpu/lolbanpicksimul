@@ -19,6 +19,21 @@ body {
     overflow: hidden;
 }
 
+#game-shell {
+    display: none;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.home-page {
+    min-height: 100vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: radial-gradient(circle at 15% 20%, #1d2b38, #0b1218 58%, #060c11);
+}
+
 .header {
     background: #111;
     padding: 10px 28px;
@@ -493,9 +508,9 @@ body {
 .locked-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border: 1px solid #4a2d34; background: #271a1d; color: #ffb5b5; border-radius: 999px; font-size: 10px; }
 .locked-chip img { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #5d3b41; }
 
-#home-modal,
 #tutorial-modal,
-#side-select-modal {
+#side-select-modal,
+#strategy-modal {
     position: fixed;
     inset: 0;
     display: none;
@@ -505,8 +520,8 @@ body {
     background: rgba(0, 0, 0, 0.82);
 }
 
-#home-modal { display: flex; z-index: 3300; }
 #side-select-modal { z-index: 3250; }
+#strategy-modal { z-index: 3270; }
 #tutorial-modal { z-index: 3400; }
 
 .home-card {
@@ -522,6 +537,112 @@ body {
 
 .home-title { margin: 0; color: var(--gold); font-size: 28px; text-align: center; }
 .home-desc { margin: 8px 0 16px; color: #d6e0e8; font-size: 14px; text-align: center; }
+.home-note { margin: 12px 0 0; color: #9bb1be; font-size: 11px; text-align: center; }
+
+.home-team-setup {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.home-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.home-input-wrap label {
+    font-size: 11px;
+    color: #a7bdcb;
+}
+
+.home-input-wrap input {
+    width: 100%;
+    padding: 8px 9px;
+    border-radius: 6px;
+    border: 1px solid #3d5361;
+    background: #101920;
+    color: #e5edf3;
+    font-size: 13px;
+}
+
+.home-save-btn {
+    height: 34px;
+    border: 1px solid #4e6371;
+    border-radius: 6px;
+    background: #203442;
+    color: #deebf3;
+    padding: 0 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.home-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.home-log-panel {
+    border: 1px solid #334652;
+    border-radius: 8px;
+    background: #101a22;
+    padding: 9px;
+    min-height: 184px;
+}
+
+.home-log-panel h3 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #ffe9b3;
+}
+
+.home-log-list,
+.home-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 212px;
+    overflow: auto;
+}
+
+.home-log-item,
+.home-rank-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 7px;
+    border-radius: 6px;
+    border: 1px solid #2f404c;
+    background: #141f28;
+}
+
+.home-log-item b,
+.home-rank-item span {
+    font-size: 12px;
+    color: #e4edf3;
+}
+
+.home-log-item span,
+.home-rank-item b {
+    font-size: 11px;
+    color: #b8cad6;
+}
+
+.home-log-item em {
+    font-style: normal;
+    font-size: 10px;
+    color: #8ea4b3;
+}
+
+.home-empty {
+    font-size: 11px;
+    color: #8aa1b0;
+    padding: 8px;
+}
 
 .mode-grid {
     display: grid;
@@ -582,6 +703,55 @@ body {
     text-align: center;
 }
 
+.strategy-card {
+    width: min(620px, 92vw);
+    background: linear-gradient(180deg, #18222b, #0d141a);
+    border: 1px solid #3a4a57;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.strategy-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.strategy-option {
+    text-align: left;
+    border: 1px solid #40515e;
+    border-radius: 8px;
+    background: #111b23;
+    color: #d5e1e9;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.strategy-option b {
+    font-size: 14px;
+    color: #f1f7fb;
+}
+
+.strategy-option span {
+    font-size: 12px;
+    color: #a9bfcd;
+}
+
+.strategy-option.active {
+    border-color: var(--gold);
+    background: #263541;
+}
+
+.strategy-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
 .side-title { margin: 0 0 8px; color: var(--gold); }
 .side-desc { margin: 0 0 12px; color: #c9d5de; font-size: 13px; }
 .side-btn-wrap { display: flex; gap: 10px; justify-content: center; }
@@ -622,12 +792,34 @@ body {
 .narrator-line { margin-bottom: 4px; }
 .narrator-line:last-child { margin-bottom: 0; }
 
+.econ-wrap { margin: 10px 0 4px; border: 1px solid #2f4452; border-radius: 8px; padding: 8px; background: #0e171f; }
+.econ-title { font-size: 12px; font-weight: 700; color: #ffe082; margin-bottom: 6px; }
+.econ-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.econ-card { border: 1px solid #2f4250; border-radius: 6px; background: #101b23; padding: 7px; }
+.econ-sub { font-size: 11px; color: #b8cddd; margin-bottom: 5px; }
+.econ-meta { font-size: 11px; color: #d6e1e8; }
+.econ-svg { width: 100%; height: 90px; display: block; }
+.econ-axis { stroke: #3c5667; stroke-width: 1; }
+.econ-mid { stroke: #2f4452; stroke-width: 1; stroke-dasharray: 2 3; }
+.econ-line { fill: none; stroke: #57c7ff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.econ-dot { fill: #ffd166; }
+.econ-label { fill: #a8bfce; font-size: 10px; }
+.econ-kill-list { display: flex; flex-direction: column; gap: 6px; }
+.econ-kill-item { display: flex; justify-content: space-between; gap: 8px; padding: 5px 6px; border-radius: 5px; background: #15232d; border: 1px solid #2c4250; font-size: 11px; }
+.econ-kill-item span { color: #9fb4c2; }
+.econ-kill-item b { color: #e6f0f6; font-size: 11px; text-align: right; }
+
 .mvp-wrap {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin: 12px 0;
 }
+
+.mvp-wrap.single {
+    grid-template-columns: 1fr;
+}
+
 .mvp-card {
     text-align: left;
     border: 1px solid #334757;
@@ -640,6 +832,16 @@ body {
 .mvp-title { font-size: 11px; color: #9fc1d8; margin-bottom: 4px; }
 .mvp-name { font-size: 14px; font-weight: 700; color: #f0f6fb; margin-bottom: 3px; }
 .mvp-reason { font-size: 12px; color: #c4d3de; line-height: 1.45; }
+.mvp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.mvp-portrait {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    border: 1px solid #3e5564;
+    object-fit: cover;
+    background: #0c1319;
+    flex: 0 0 64px;
+}
 
 .yt-player-wrap {
     position: fixed;
@@ -800,6 +1002,12 @@ body {
         padding: 14px;
     }
 
+    .home-page { padding: 10px; align-items: flex-start; }
+    .home-team-setup { grid-template-columns: 1fr; }
+    .home-save-btn { width: 100%; }
+    .home-stats-grid { grid-template-columns: 1fr; }
+    .home-log-panel { min-height: 140px; }
+
     .mode-name {
         font-size: 14px;
     }
@@ -811,6 +1019,7 @@ body {
     .phase-row { grid-template-columns: 58px 1fr 58px; font-size: 11px; }
     .result-card { padding: 16px; width: 94vw; }
     .mvp-wrap { grid-template-columns: 1fr; }
+    .econ-grid { grid-template-columns: 1fr; }
     .trait-item b { font-size: 10px; }
     .trait-item span { font-size: 9px; }
 
@@ -825,6 +1034,30 @@ body {
 .tip-title-name { font-size: 14px; color:#f4f8fb; }
 .tip-title-meta { font-size: 10px; color:#9bb0be; }
 .tip-stat-cc .tip-stat-track { display:none; }
+.tip-trait-box {
+    margin-top: 7px;
+    border: 1px solid #2f4250;
+    border-radius: 6px;
+    background: #0f171e;
+    padding: 6px;
+}
+.tip-trait-title {
+    font-size: 11px;
+    color: #ffd180;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.tip-trait-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 0;
+    border-bottom: 1px dashed #2a3b46;
+}
+.tip-trait-item:last-child { border-bottom: 0; }
+.tip-trait-item b { font-size: 11px; color: #e2edf5; }
+.tip-trait-item span { font-size: 10px; color: #a7bcc9; }
+.tip-trait-empty { font-size: 10px; color: #7f95a3; }
 .cc-pips { display:inline-flex; gap:4px; align-items:center; }
 .cc-pip { width:12px; height:8px; border-radius:2px; border:1px solid #3f5564; background:#22313b; }
 .cc-pip.on { background: linear-gradient(90deg, #ffd166, #ffb703); border-color:#8f6b21; }
