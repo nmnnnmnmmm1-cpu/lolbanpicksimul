@@ -575,6 +575,12 @@ function init() {
             if (e.target === mobileModal) closeMobileChampionInfo();
         });
     }
+    const actionModal = document.getElementById('action-confirm-modal');
+    if (actionModal) {
+        actionModal.addEventListener('click', (e) => {
+            if (e.target === actionModal) cancelPendingPick();
+        });
+    }
     startYoutubeBgm();
     openHome();
 }
@@ -641,21 +647,43 @@ function updatePickConfirmUI() {
     const nameEl = document.getElementById("pick-confirm-name");
     const typeEl = document.getElementById("pick-confirm-type");
     const confirmBtn = panel ? panel.querySelector('.pick-confirm-btn.primary') : null;
+    const actionModal = document.getElementById('action-confirm-modal');
+    const actionTitle = document.getElementById('action-confirm-title');
+    const actionName = document.getElementById('action-confirm-name');
+    const actionYes = document.getElementById('action-confirm-yes');
+
     if (!panel || !nameEl) return;
     if (currentStep >= DRAFT_ORDER.length) {
         panel.classList.add("hidden");
+        if (actionModal) actionModal.classList.remove('show');
         return;
     }
     const step = DRAFT_ORDER[currentStep];
     const canShow = !!pendingAction && step.t === userTeam;
     if (!canShow) {
         panel.classList.add("hidden");
+        if (actionModal) actionModal.classList.remove('show');
         return;
     }
-    nameEl.innerText = CHAMP_DB[pendingAction.key]?.name || pendingAction.key;
-    if (typeEl) typeEl.innerText = pendingAction.type === 'ban' ? '(밴)' : '(픽)';
-    if (confirmBtn) confirmBtn.innerText = pendingAction.type === 'ban' ? '밴 확정' : '픽 확정';
-    panel.classList.remove("hidden");
+
+    const champName = CHAMP_DB[pendingAction.key]?.name || pendingAction.key;
+    const isBan = pendingAction.type === 'ban';
+    const actionLabel = isBan ? '밴 확정' : '픽 확정';
+
+    nameEl.innerText = champName;
+    if (typeEl) typeEl.innerText = isBan ? '(밴)' : '(픽)';
+    if (confirmBtn) confirmBtn.innerText = actionLabel;
+
+    if (isMobileView()) {
+        panel.classList.add("hidden");
+        if (actionModal) actionModal.classList.add('show');
+        if (actionTitle) actionTitle.innerText = isBan ? '밴 선택 확인' : '픽 선택 확인';
+        if (actionName) actionName.innerText = champName;
+        if (actionYes) actionYes.innerText = actionLabel;
+    } else {
+        panel.classList.remove("hidden");
+        if (actionModal) actionModal.classList.remove('show');
+    }
 }
 
 function confirmPendingPick() {
@@ -668,6 +696,8 @@ function confirmPendingPick() {
 
 function cancelPendingPick() {
     pendingAction = null;
+    const actionModal = document.getElementById('action-confirm-modal');
+    if (actionModal) actionModal.classList.remove('show');
     updatePickConfirmUI();
     renderPool();
 }
@@ -687,6 +717,8 @@ function selectChamp(key, byAI = false) {
     }
 
     pendingAction = null;
+    const actionModal = document.getElementById('action-confirm-modal');
+    if (actionModal) actionModal.classList.remove('show');
     currentStep++;
     document.getElementById('search').value = '';
     renderPool();
@@ -918,6 +950,21 @@ function getWinRateByStats(b, r) {
     return clampPercent(bWin);
 }
 
+function renderMobileTeamMini(b, r) {
+    const wrap = document.getElementById('mobile-team-mini');
+    if (!wrap) return;
+    const maxCore = 50;
+    const row = (label, color, dmg, tank, cc) => {
+        const core = Math.min(((dmg + tank + cc * 2) / (maxCore + maxCore + 30)) * 100, 100);
+        return `<div class="mini-team-row ${label}">
+            <span class="mini-team-name">${label === 'blue' ? 'BLUE' : 'RED'}</span>
+            <div class="mini-team-track"><span class="mini-team-fill" style="width:${core}%; background:${color};"></span></div>
+            <span class="mini-team-txt">딜${dmg}/탱${tank}/CC${cc}</span>
+        </div>`;
+    };
+    wrap.innerHTML = row('blue', '#3db9ff', b.dmg, b.tank, b.cc) + row('red', '#ff7b6a', r.dmg, r.tank, r.cc);
+}
+
 function calculateStats() {
     const b = getTeamStats('blue', picks);
     const r = getTeamStats('red', picks);
@@ -926,6 +973,7 @@ function calculateStats() {
     document.getElementById('blue-info').innerText = `${blueRole} (BLUE) CC: ${b.cc} | 딜: ${b.dmg} | 탱: ${b.tank}`;
     document.getElementById('red-info').innerText = `${redRole} (RED) CC: ${r.cc} | 딜: ${r.dmg} | 탱: ${r.tank}`;
     updateTeamPanels(b, r);
+    renderMobileTeamMini(b, r);
 
     const bWin = getWinRateByStats(b, r);
     const phases = getPhaseProjection(b, r, bWin);
@@ -1178,7 +1226,7 @@ function handleNextAction() {
 
 function showTooltip(e, txt) {
     const tip = document.getElementById('tooltip');
-    tip.innerHTML = txt;
+    tip.innerHTML = `<button type="button" class="tip-close" onclick="hideTooltip()">닫기</button>${txt}`;
     tip.style.display = 'block';
     moveTooltip(e);
 }

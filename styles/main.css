@@ -85,6 +85,44 @@ body {
     text-decoration: none;
 }
 
+.mobile-team-mini {
+    display: none;
+}
+
+.mini-team-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 110px;
+    gap: 6px;
+    align-items: center;
+    font-size: 10px;
+    margin-top: 4px;
+}
+.mini-team-name { font-weight: 700; color: #d8e5ee; }
+.mini-team-track { height: 8px; background: #22323e; border-radius: 999px; overflow: hidden; }
+.mini-team-fill { display: block; height: 100%; border-radius: 999px; }
+.mini-team-txt { text-align: right; color: #a8bcc9; }
+
+.action-confirm-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3650;
+    background: rgba(0,0,0,0.55);
+}
+.action-confirm-modal.show { display: flex; }
+.action-confirm-card {
+    width: min(360px, 92vw);
+    background: linear-gradient(180deg, #152530, #0e171e);
+    border: 1px solid #385062;
+    border-radius: 12px;
+    padding: 14px;
+}
+.action-confirm-title { color: #d6e6f1; font-size: 13px; margin-bottom: 6px; }
+.action-confirm-name { color: #f3f8fb; font-weight: 700; margin-bottom: 10px; }
+.action-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
 .main {
     display: flex;
     flex: 1;
@@ -356,12 +394,24 @@ body {
     padding: 8px;
     font-size: 12px;
     z-index: 1000;
-    pointer-events: none;
+    pointer-events: auto;
     display: none;
     border-radius: 5px;
     line-height: 1.5;
     min-width: 220px;
     max-width: 320px;
+}
+
+.tip-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    border: 1px solid #3e5665;
+    background: #182631;
+    color: #dce8ef;
+    border-radius: 6px;
+    font-size: 10px;
+    padding: 2px 6px;
 }
 
 .tip-stat { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
@@ -648,6 +698,12 @@ body {
 
     .team-summary { display: none; }
 
+    .mobile-team-mini {
+        display: block;
+        padding: 6px 8px 2px;
+        border-bottom: 1px solid #1f2c36;
+    }
+
     .center {
         grid-area: center;
         padding: 8px;
@@ -667,7 +723,8 @@ body {
     .grid {
         grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
         gap: 8px;
-        max-height: 32vh;
+        min-height: 190px;
+        max-height: 44vh;
         padding-top: 8px;
     }
 
@@ -691,6 +748,8 @@ body {
         align-items: flex-start;
         gap: 6px;
     }
+
+    #pick-confirm { display: none !important; }
 
     .pos-nav { gap: 4px; }
     .pos-filter-btn { padding: 4px 7px; font-size: 10px; }
