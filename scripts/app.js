@@ -172,6 +172,7 @@ let maxGames = 5;
 let winTarget = 3;
 let hardFearless = true;
 let selectedModeKey = "bo5";
+let shouldResetOnStrategyConfirm = true;
 let pendingAction = null;
 let matchNarrationTimer = null;
 let pendingSimulationResult = null;
@@ -452,6 +453,7 @@ function openHome() {
     renderHomeStats();
     renderHomeHistory();
     applyTeamNameInputs();
+    shouldResetOnStrategyConfirm = true;
     setDisplayById("home-page", "flex");
     setDisplayById("game-shell", "none");
     setDisplayById("side-select-modal", "none");
@@ -463,6 +465,7 @@ function openHome() {
 function selectMode(modeKey) {
     applyModeConfig(modeKey);
     saveTeamNameInputs();
+    shouldResetOnStrategyConfirm = true;
     setDisplayById("home-page", "none");
     // side-select/strategy 모달이 game-shell 내부에 있으므로 shell을 먼저 노출해야 함
     setDisplayById("game-shell", "flex");
@@ -882,12 +885,18 @@ function selectStrategy(key) {
 function confirmStrategyAndStart() {
     setDisplayById("strategy-modal", "none");
     setDisplayById("game-shell", "flex");
-    resetSeries();
+    if (shouldResetOnStrategyConfirm) {
+        resetSeries();
+    } else {
+        startGameDraft();
+    }
+    shouldResetOnStrategyConfirm = false;
 }
 
 function chooseSide(side) {
     userTeam = side;
     aiTeam = side === "blue" ? "red" : "blue";
+    shouldResetOnStrategyConfirm = true;
     setDisplayById("side-select-modal", "none");
     renderStrategyModal();
     const strategyModal = document.getElementById("strategy-modal");
@@ -2624,6 +2633,7 @@ function handleNextAction() {
     }
     aiTeam = userTeam === "blue" ? "red" : "blue";
     currentGame += 1;
+    shouldResetOnStrategyConfirm = false;
     renderStrategyModal();
     setDisplayById("strategy-modal", "flex");
 }
