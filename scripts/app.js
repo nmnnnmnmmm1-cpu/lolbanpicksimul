@@ -9,7 +9,7 @@ const TYPE_LABEL = {
     Anti: "받아치기"
 };
 const CHAMP_TRAIT_UI = {
-    "리 신": [{ name: "솔랭 박살", condition: "아군 MID가 르블랑/아리", effect: "팀 초반 +5" }],
+    "리신": [{ name: "솔랭 박살", condition: "아군 MID가 르블랑/아리", effect: "팀 초반 +5" }],
     "니달리": [{ name: "핵창", condition: "아군 CC 합 10 이상", effect: "팀 딜링 +3" }],
     "세주아니": [{ name: "빙결 저항", condition: "상대에 애쉬/신지드 존재", effect: "팀 탱킹 +3" }],
     "엘리스": [{ name: "렛츠 다이브", condition: "아군 TOP이 레넥톤/다리우스", effect: "팀 초반/중반 +3" }],
@@ -65,6 +65,14 @@ function getDmgTypeColorClass(dmgType) {
 
 function normalizeNameToken(v) {
     return String(v || "").toLowerCase().replace(/\s+/g, "");
+}
+
+function getTraitsByChampionName(champName) {
+    const direct = CHAMP_TRAIT_UI[champName];
+    if (direct) return direct;
+    const target = normalizeNameToken(champName);
+    const normalizedKey = Object.keys(CHAMP_TRAIT_UI).find((k) => normalizeNameToken(k) === target);
+    return normalizedKey ? CHAMP_TRAIT_UI[normalizedKey] : [];
 }
 
 const clampStat = (value) => Math.min(Math.max(value, 1), 10);
@@ -572,7 +580,7 @@ function renderCcPips(cc) {
 }
 
 function renderChampionTraitInfo(champName) {
-    const traits = CHAMP_TRAIT_UI[champName] || [];
+    const traits = getTraitsByChampionName(champName);
     if (traits.length === 0) {
         return `
         <div class="tip-trait-box">
@@ -596,7 +604,7 @@ function renderChampionTraitInfo(champName) {
 }
 
 function getTraitCatalogEntry(champName, traitName) {
-    const list = CHAMP_TRAIT_UI[champName] || [];
+    const list = getTraitsByChampionName(champName);
     return list.find((t) => t.name === traitName) || null;
 }
 
@@ -1381,9 +1389,9 @@ function evaluateTraitContext(picksState) {
         const getAdc = (t) => getTeamChampByPos(t, picksState, 'ADC');
         const getSpt = (t) => getTeamChampByPos(t, picksState, 'SPT');
 
-        addTrait(team, '리 신', '솔랭 박살', '초반 +5', () => {
+        addTrait(team, '리신', '솔랭 박살', '초반 +5', () => {
             const mid = getMid(team); if (!mid) return false;
-            if (!['르블랑', '아리'].includes(CHAMP_DB[mid].name)) return false;
+            if (!['Leblanc', 'Ahri'].includes(mid)) return false;
             addStats(team, { early: 5 }); return true;
         });
 
