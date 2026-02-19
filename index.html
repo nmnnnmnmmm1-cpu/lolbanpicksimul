@@ -64,6 +64,23 @@
                         <button type="button" class="pos-filter-btn" data-type="Anti">받아치기</button>
                     </div>
                 </div>
+                <div class="filter-group">
+                    <div class="filter-label">데미지 필터</div>
+                    <div class="pos-nav" id="dmgtype-nav">
+                        <button type="button" class="pos-filter-btn active" data-dmgtype="ALL">ALL</button>
+                        <button type="button" class="pos-filter-btn" data-dmgtype="AD">AD</button>
+                        <button type="button" class="pos-filter-btn" data-dmgtype="AP">AP</button>
+                        <button type="button" class="pos-filter-btn" data-dmgtype="Hybrid">하이브리드</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-label">역할 필터</div>
+                    <div class="pos-nav" id="combat-nav">
+                        <button type="button" class="pos-filter-btn active" data-combat="ALL">ALL</button>
+                        <button type="button" class="pos-filter-btn" data-combat="Dealer">딜러</button>
+                        <button type="button" class="pos-filter-btn" data-combat="Tanker">탱커</button>
+                    </div>
+                </div>
             </div>
             <div id="pick-confirm" class="pick-confirm hidden">
                 <div class="pick-confirm-text">선택됨: <b id="pick-confirm-name">-</b> <span id="pick-confirm-type" style="color:#9fb3c2;"></span></div>

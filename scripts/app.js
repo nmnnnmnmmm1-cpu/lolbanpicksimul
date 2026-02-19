@@ -96,6 +96,8 @@ let bans = { blue: [null,null,null,null,null], red: [null,null,null,null,null] }
 let swapSource = null;
 let activePosFilter = "ALL";
 let activeTypeFilter = "ALL";
+let activeDmgTypeFilter = "ALL";
+let activeCombatFilter = "ALL";
 let userTeam = null;
 let aiTeam = null;
 let currentGame = 1;
@@ -576,6 +578,20 @@ function init() {
                 renderPool();
             });
         }
+        if (btn.dataset.dmgtype) {
+            btn.addEventListener('click', () => {
+                activeDmgTypeFilter = btn.dataset.dmgtype;
+                document.querySelectorAll('#dmgtype-nav .pos-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
+                renderPool();
+            });
+        }
+        if (btn.dataset.combat) {
+            btn.addEventListener('click', () => {
+                activeCombatFilter = btn.dataset.combat;
+                document.querySelectorAll('#combat-nav .pos-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
+                renderPool();
+            });
+        }
     });
     renderPool();
     updateUI();
@@ -596,6 +612,10 @@ function init() {
     openHome();
 }
 
+function getCombatRoleFilter(champ) {
+    return champ.dmg >= champ.tank ? "Dealer" : "Tanker";
+}
+
 function renderPool() {
     const grid = document.getElementById('champ-grid');
     const term = document.getElementById('search').value.toLowerCase();
@@ -610,9 +630,11 @@ function renderPool() {
         const matchesSearch = c.name.includes(term) || key.toLowerCase().includes(term) || TYPE_LABEL[c.profile.type].includes(term) || c.profile.type.toLowerCase().includes(term);
         const matchesPosFilter = activePosFilter === "ALL" || c.pos.includes(activePosFilter);
         const matchesTypeFilter = activeTypeFilter === "ALL" || c.profile.type === activeTypeFilter;
+        const matchesDmgTypeFilter = activeDmgTypeFilter === "ALL" || c.dmgType === activeDmgTypeFilter;
+        const matchesCombatFilter = activeCombatFilter === "ALL" || getCombatRoleFilter(c) === activeCombatFilter;
         const isPickValid = !pickingTeam || canPickForTeam(pickingTeam, key);
 
-        if (matchesSearch && matchesPosFilter && matchesTypeFilter) {
+        if (matchesSearch && matchesPosFilter && matchesTypeFilter && matchesDmgTypeFilter && matchesCombatFilter) {
             const div = document.createElement('div');
             const isPending = pendingAction && pendingAction.key === key;
             div.className = `card ${isPending ? 'selected' : ''} ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
@@ -904,16 +926,23 @@ function getArchetypeCounterBonus(blueType, blueValue, redType, redValue) {
 
 function calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge) {
     let blueWin = 50;
-    blueWin += powerEdge * 0.4;
+    blueWin += powerEdge * 0.56;
     blueWin += dmgBalanceEdge;
-    blueWin += archetypeEdge;
+    blueWin += archetypeEdge * 1.22;
     return clampPercent(blueWin);
 }
 
 function getScalingEdge(b, r) {
     const blueCurve = b.early * 0.8 + b.mid * 1.0 + b.late * 1.2;
     const redCurve = r.early * 0.8 + r.mid * 1.0 + r.late * 1.2;
-    return (blueCurve - redCurve) * 0.22;
+    return (blueCurve - redCurve) * 0.34;
+}
+
+function getVolatilityEdge(powerEdge, archetypeEdge, scalingEdge) {
+    const magnitude = Math.abs(powerEdge) * 0.075 + Math.abs(archetypeEdge) * 0.32 + Math.abs(scalingEdge) * 0.85;
+    const swing = Math.min(magnitude, 12);
+    const direction = (powerEdge + archetypeEdge + scalingEdge) >= 0 ? 1 : -1;
+    return swing * direction;
 }
 
 function getWinRateDetails(b, r) {
@@ -925,8 +954,9 @@ function getWinRateDetails(b, r) {
     const rMain = getDominantProfile(r);
     const archetypeEdge = getArchetypeCounterBonus(bMain.type, bMain.value, rMain.type, rMain.value);
     const scalingEdge = getScalingEdge(b, r);
-    const blueWin = clampPercent(calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge) + scalingEdge);
-    return { blueWin, powerEdge, dmgBalanceEdge, archetypeEdge, scalingEdge };
+    const volatilityEdge = getVolatilityEdge(powerEdge, archetypeEdge, scalingEdge);
+    const blueWin = clampPercent(calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge) + scalingEdge + volatilityEdge);
+    return { blueWin, powerEdge, dmgBalanceEdge, archetypeEdge, scalingEdge, volatilityEdge };
 }
 
 function getPhaseProjection(b, r, overallWin) {
