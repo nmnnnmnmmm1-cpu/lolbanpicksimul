@@ -164,6 +164,7 @@ let userTeam = null;
 let aiTeam = null;
 let currentGame = 1;
 let seriesWins = { blue: 0, red: 0 };
+let seriesRoleWins = { user: 0, ai: 0 };
 let fearlessLocked = new Set();
 let aiThinking = false;
 let lastSeriesEnded = false;
@@ -717,7 +718,7 @@ function canPickForTeam(team, key) {
 function updateSeriesInfo() {
     const mode = MODE_CONFIGS[selectedModeKey];
     const strategyLabel = STRATEGY_CONFIGS[selectedStrategyKey]?.label || "전략 미선택";
-    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE B ${seriesWins.blue} : ${seriesWins.red} R | 전략 ${strategyLabel}`;
+    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName} | 전략 ${strategyLabel}`;
 }
 
 function getTeamRoleLabel(team) {
@@ -792,6 +793,7 @@ function startGameDraft() {
 function resetSeries() {
     currentGame = 1;
     seriesWins = { blue: 0, red: 0 };
+    seriesRoleWins = { user: 0, ai: 0 };
     fearlessLocked = new Set();
     lastSeriesEnded = false;
     startGameDraft();
@@ -2217,8 +2219,10 @@ function buildResultBody(res, winner, loser, seriesEnded) {
     const strategyTeamLabel = strategyEffect ? teamDisplayName(strategyEffect.team) : "-";
     const strategyName = strategyEffect ? (STRATEGY_CONFIGS[strategyEffect.strategy]?.label || "전략") : "-";
     const strategyText = strategyEffect ? `${strategyTeamLabel} 전략(${strategyName}) 적합 ${strategyEffect.fit} / 부조화 ${strategyEffect.mismatch} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${strategyEffect.winBonus.toFixed(1)}` : "전략 보정 없음";
+    const winnerRole = winner === userTeam ? "user" : "ai";
+    const loserRole = winnerRole === "user" ? "ai" : "user";
     return `
-        <p style="color:var(--gold);font-weight:bold;">세트 스코어: BLUE ${seriesWins.blue} : ${seriesWins.red} RED</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
+        <p style="color:var(--gold);font-weight:bold;">세트 스코어: ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
         <p style="font-size:12px;color:#9ec4d9;">전략 적용: ${strategyText}</p>
         <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
         <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
@@ -2246,7 +2250,7 @@ function buildResultBody(res, winner, loser, seriesEnded) {
         </div>
         <hr style="border-color:#333">
         <h2 style="color:var(--gold)">최종 승리 확률: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
-        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winner.toUpperCase()} 승리 (${seriesWins[winner]}-${seriesWins[loser]})` : (hardFearless ? `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.` : `다음 SET ${currentGame + 1}은 잠금 없이 진행됩니다.`)}</p>
+        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winnerRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName} 승리 (${seriesRoleWins[winnerRole]}-${seriesRoleWins[loserRole]})` : (hardFearless ? `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.` : `다음 SET ${currentGame + 1}은 잠금 없이 진행됩니다.`)}</p>
     `;
 }
 
@@ -2313,26 +2317,29 @@ function startSimulationMatch() {
     startResultNarration(res, () => {
         const winner = rollWinnerFromWinRate(res.bWin);
         const loser = winner === "blue" ? "red" : "blue";
+        const winnerRole = winner === userTeam ? "user" : "ai";
+        const loserRole = winnerRole === "user" ? "ai" : "user";
 
         seriesWins[winner] += 1;
+        seriesRoleWins[winnerRole] += 1;
         if (hardFearless) {
             [...picks.blue, ...picks.red].forEach((key) => { if (key) fearlessLocked.add(key); });
         }
         updateSeriesInfo();
         renderLockedChamps();
 
-        const seriesEnded = seriesWins[winner] >= winTarget || currentGame >= maxGames;
+        const seriesEnded = seriesRoleWins[winnerRole] >= winTarget || currentGame >= maxGames;
         lastSeriesEnded = seriesEnded;
         if (seriesEnded) {
-            const userWonSeries = (userTeam === winner);
+            const userWonSeries = winnerRole === "user";
             updateModeRecord(userWonSeries);
             recordMatchHistory({
                 playedAt: Date.now(),
                 modeKey: selectedModeKey,
                 modeLabel: MODE_CONFIGS[selectedModeKey].label,
-                winnerTeam: teamDisplayName(winner),
-                loserTeam: teamDisplayName(loser),
-                scoreText: `BLUE ${seriesWins.blue} : ${seriesWins.red} RED`,
+                winnerTeam: winnerRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName,
+                loserTeam: loserRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName,
+                scoreText: `${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}`,
                 strategyLabel: STRATEGY_CONFIGS[selectedStrategyKey]?.label || "-"
             });
         }
