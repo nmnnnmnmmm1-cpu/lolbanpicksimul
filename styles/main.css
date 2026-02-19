@@ -326,6 +326,27 @@ body {
     font-weight: 700;
 }
 
+.card-meta {
+    margin-top: 4px;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.card-meta-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 10px;
+    line-height: 1.35;
+    font-weight: 700;
+}
+
 .mobile-info-btn {
     display: none;
     position: absolute;
@@ -504,9 +525,9 @@ body {
 
 .locked-wrap { margin-top: 8px; padding: 8px; border: 1px solid #2d3b45; border-radius: 6px; background: #101a21; }
 .locked-title { font-size: 10px; color: #9fb3c2; margin-bottom: 5px; }
-.locked-list { display: flex; flex-wrap: wrap; gap: 5px; max-height: 64px; overflow: auto; }
-.locked-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border: 1px solid #4a2d34; background: #271a1d; color: #ffb5b5; border-radius: 999px; font-size: 10px; }
-.locked-chip img { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #5d3b41; }
+.locked-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 92px; overflow: auto; }
+.locked-avatar { display: inline-flex; width: 36px; height: 36px; border-radius: 8px; border: 1px solid #5d3b41; background: #271a1d; overflow: hidden; }
+.locked-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 #tutorial-modal,
 #side-select-modal,
@@ -978,6 +999,7 @@ body {
         font-size: 11px;
         font-weight: 700;
     }
+    .card-meta-badge { font-size: 9px; min-width: 30px; padding: 1px 5px; }
 
     .pick-confirm {
         flex-direction: column;

@@ -592,6 +592,18 @@ function renderChampionTraitInfo(champName) {
     `;
 }
 
+function getTraitCatalogEntry(champName, traitName) {
+    const list = CHAMP_TRAIT_UI[champName] || [];
+    return list.find((t) => t.name === traitName) || null;
+}
+
+function renderTraitUnifiedItem(trait) {
+    const meta = getTraitCatalogEntry(trait.champName, trait.traitName) || {};
+    const condition = trait.conditionText || meta.condition || "발동 조건 충족";
+    const effect = trait.effectText || meta.effect || "효과 데이터 없음";
+    return `<div class="trait-item"><b>${trait.champName} · ${trait.traitName}</b><span>조건: ${condition}</span><span>효과: ${effect}</span></div>`;
+}
+
 function isMobileView() {
     return window.matchMedia('(max-width: 900px)').matches;
 }
@@ -776,7 +788,7 @@ function renderLockedChamps() {
         list.innerHTML = `<span style="font-size:10px;color:#7f95a3;">아직 잠금 없음</span>`;
         return;
     }
-    list.innerHTML = locked.map((key) => `<span class="locked-chip"><img src="${getChampionImageUrl(key)}" alt="${CHAMP_DB[key]?.name || key}"><span>${CHAMP_DB[key]?.name || key}</span></span>`).join("");
+    list.innerHTML = locked.map((key) => `<span class="locked-avatar" title="${CHAMP_DB[key]?.name || key}"><img src="${getChampionImageUrl(key)}" alt="${CHAMP_DB[key]?.name || key}"></span>`).join("");
 }
 
 function clearBoardUI() {
@@ -984,11 +996,17 @@ function renderPool() {
         if (matchesSearch && matchesPosFilter && matchesTypeFilter && matchesDmgTypeFilter && matchesCombatFilter) {
             const div = document.createElement('div');
             const isPending = pendingAction && pendingAction.key === key;
+            const typeClass = getTypeColorClass(c.profile.type);
+            const dmgClass = getDmgTypeColorClass(c.dmgType);
             div.className = `card ${isPending ? 'selected' : ''} ${isSelected || isFearlessLocked ? 'disabled' : ''} ${!isPickValid ? 'pos-mismatch' : ''}`;
             div.innerHTML = `
                 <img src="${getChampionImageUrl(key)}" onerror="this.onerror=null;this.src='https://placehold.co/120x120/121c23/c8aa6e?text=${encodeURIComponent(c.name)}';">
                 <button type="button" class="mobile-info-btn">정보</button>
                 <p>${c.name}</p>
+                <div class="card-meta">
+                    <span class="card-meta-badge ${dmgClass}">${c.dmgType}</span>
+                    <span class="card-meta-badge ${typeClass}">${TYPE_LABEL[c.profile.type]}</span>
+                </div>
             `;
 
             const infoHtml = buildChampionInfoHtml(c, isFearlessLocked);
@@ -1284,7 +1302,7 @@ function getCombatRoleByKey(key) {
 
 function renderTraitListHtml(list) {
     if (!list || list.length === 0) return '<div class="trait-empty">발동 없음</div>';
-    return list.map((t) => '<div class="trait-item"><b>' + t.champName + ' · ' + t.traitName + '</b><span>' + t.effectText + '</span></div>').join('');
+    return list.map((t) => renderTraitUnifiedItem(t)).join('');
 }
 
 function evaluateTraitContext(picksState) {
@@ -2263,7 +2281,7 @@ function buildTeamMvp(team, res) {
 
 function renderTraitResultSection(list) {
     if (!list || list.length === 0) return "<div class=\"trait-empty\">발동된 특성이 없습니다.</div>";
-    return list.map((t) => "<div class=\"trait-item\"><b>" + t.champName + " · " + t.traitName + "</b><span>" + t.effectText + "</span></div>").join("");
+    return list.map((t) => renderTraitUnifiedItem(t)).join("");
 }
 
 function getFinishPhaseSummary(res, winner) {
