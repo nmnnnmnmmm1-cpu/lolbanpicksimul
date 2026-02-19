@@ -257,6 +257,11 @@ function getChampionImageUrl(key) {
     return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
 }
 
+function setDisplayById(id, display) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = display;
+}
+
 function loadModeRecords() {
     const empty = {
         single: { wins: 0, losses: 0, streak: 0, bestStreak: 0 },
@@ -428,31 +433,45 @@ function getModeRecordLine(modeKey) {
 }
 
 function renderHomeStats() {
-    document.getElementById("record-single").innerText = getModeRecordLine("single");
-    document.getElementById("record-bo3").innerText = getModeRecordLine("bo3");
-    document.getElementById("record-bo5").innerText = getModeRecordLine("bo5");
+    const single = document.getElementById("record-single");
+    const bo3 = document.getElementById("record-bo3");
+    const bo5 = document.getElementById("record-bo5");
+    if (single) single.innerText = getModeRecordLine("single");
+    if (bo3) bo3.innerText = getModeRecordLine("bo3");
+    if (bo5) bo5.innerText = getModeRecordLine("bo5");
 }
 
 function openHome() {
     renderHomeStats();
     renderHomeHistory();
     applyTeamNameInputs();
-    document.getElementById("home-page").style.display = "flex";
-    document.getElementById("game-shell").style.display = "none";
-    document.getElementById("side-select-modal").style.display = "none";
-    document.getElementById("strategy-modal").style.display = "none";
-    document.getElementById("tutorial-modal").style.display = "none";
-    document.getElementById("result-modal").style.display = "none";
+    setDisplayById("home-page", "flex");
+    setDisplayById("game-shell", "none");
+    setDisplayById("side-select-modal", "none");
+    setDisplayById("strategy-modal", "none");
+    setDisplayById("tutorial-modal", "none");
+    setDisplayById("result-modal", "none");
 }
 
 function selectMode(modeKey) {
     applyModeConfig(modeKey);
     saveTeamNameInputs();
-    document.getElementById("home-page").style.display = "none";
-    document.getElementById("game-shell").style.display = "none";
-    document.getElementById("side-title").innerText = MODE_CONFIGS[modeKey].label;
-    document.getElementById("side-desc").innerText = "진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 밴픽합니다.";
-    document.getElementById("side-select-modal").style.display = "flex";
+    setDisplayById("home-page", "none");
+    setDisplayById("game-shell", "none");
+    const sideTitle = document.getElementById("side-title");
+    const sideDesc = document.getElementById("side-desc");
+    const sideModal = document.getElementById("side-select-modal");
+    if (sideTitle) sideTitle.innerText = MODE_CONFIGS[modeKey].label;
+    if (sideDesc) sideDesc.innerText = "진영을 선택하세요. 선택하지 않은 팀은 컴퓨터가 자동 밴픽합니다.";
+    if (sideModal) {
+        sideModal.style.display = "flex";
+    } else {
+        // 안전 폴백: 모달이 없으면 기본 블루 진영으로 즉시 시작
+        userTeam = "blue";
+        aiTeam = "red";
+        setDisplayById("game-shell", "block");
+        resetSeries();
+    }
     startYoutubeBgm();
 }
 
@@ -816,17 +835,23 @@ function selectStrategy(key) {
 }
 
 function confirmStrategyAndStart() {
-    document.getElementById("strategy-modal").style.display = "none";
-    document.getElementById("game-shell").style.display = "block";
+    setDisplayById("strategy-modal", "none");
+    setDisplayById("game-shell", "block");
     resetSeries();
 }
 
 function chooseSide(side) {
     userTeam = side;
     aiTeam = side === "blue" ? "red" : "blue";
-    document.getElementById('side-select-modal').style.display = 'none';
+    setDisplayById("side-select-modal", "none");
     renderStrategyModal();
-    document.getElementById("strategy-modal").style.display = "flex";
+    const strategyModal = document.getElementById("strategy-modal");
+    if (strategyModal) {
+        strategyModal.style.display = "flex";
+    } else {
+        // 안전 폴백: 전략 모달이 없으면 기본 전략으로 즉시 시작
+        confirmStrategyAndStart();
+    }
 }
 
 function init() {
@@ -834,6 +859,12 @@ function init() {
     const rBans = document.getElementById('r-bans');
     const bPicks = document.getElementById('b-picks');
     const rPicks = document.getElementById('r-picks');
+    if (!bBans || !rBans || !bPicks || !rPicks) {
+        console.error("[INIT] 필수 보드 DOM을 찾지 못했습니다. 홈 화면으로 폴백합니다.");
+        setDisplayById("home-page", "flex");
+        setDisplayById("game-shell", "none");
+        return;
+    }
 
     POSITIONS.forEach((pos, i) => {
         bBans.innerHTML += `<div class="ban-slot" id="b-ban-${i}"></div>`;
@@ -2393,7 +2424,7 @@ function handleNextAction() {
     aiTeam = userTeam === "blue" ? "red" : "blue";
     currentGame += 1;
     renderStrategyModal();
-    document.getElementById("strategy-modal").style.display = "flex";
+    setDisplayById("strategy-modal", "flex");
 }
 
 function showTooltip(e, txt) {
