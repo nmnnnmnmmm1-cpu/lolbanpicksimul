@@ -1,0 +1,26 @@
+[
+  {
+    "id": "t1",
+    "name": "T1",
+    "region": "LCK",
+    "logo": "https://placehold.co/64x64/121212/ffffff?text=T1"
+  },
+  {
+    "id": "geng",
+    "name": "Gen.G",
+    "region": "LCK",
+    "logo": "https://placehold.co/64x64/1f2937/facc15?text=GEN"
+  },
+  {
+    "id": "g2",
+    "name": "G2 Esports",
+    "region": "LEC",
+    "logo": "https://placehold.co/64x64/0f172a/60a5fa?text=G2"
+  },
+  {
+    "id": "blg",
+    "name": "Bilibili Gaming",
+    "region": "LPL",
+    "logo": "https://placehold.co/64x64/1b1b1b/f87171?text=BLG"
+  }
+]

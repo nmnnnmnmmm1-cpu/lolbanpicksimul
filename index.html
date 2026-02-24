@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>LoL Pro Draft Simulator v3.0</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles/main.css?v=20260219-7">
+    <link rel="stylesheet" href="styles/main.css?v=20260224-4">
 </head>
 <body>
 
@@ -49,6 +49,8 @@
             </div>
         </div>
         <div class="home-actions">
+            <button type="button" class="tutorial-btn" onclick="openWorldsModal()">월즈 모드 설정</button>
+            <button type="button" class="tutorial-btn" onclick="disableWorldsMode()">월즈 모드 해제</button>
             <button type="button" class="tutorial-btn" onclick="openTutorial()">게임 설명 보기</button>
         </div>
         <p class="home-note">기록/랭킹은 현재 브라우저(이 기기) 기준으로 저장됩니다.</p>
@@ -63,6 +65,7 @@
         <span id="red-info" style="color:var(--red)">MY TEAM (RED)</span>
     </div>
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
+    <div id="objective-brief" class="objective-brief">오브젝트 | MY TEAM 용 0 / 바론 0 · AI TEAM 용 0 / 바론 0</div>
     <div class="header-tools">
         <span class="bgm-label">BGM: YouTube</span>
         <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
@@ -184,14 +187,37 @@
         <h2 class="side-title">팀 전략 설정</h2>
         <p class="side-desc">이번 세트 컨셉을 선택하면 적합 챔피언 보너스와 부조화 페널티가 적용됩니다.</p>
         <div id="strategy-list" class="strategy-list"></div>
+        <div id="strategy-guide" class="strategy-guide"></div>
         <div class="strategy-actions">
             <button type="button" class="tutorial-btn" onclick="confirmStrategyAndStart()">이 전략으로 시작</button>
         </div>
     </div>
 </div>
+<div id="worlds-modal">
+    <div class="worlds-card">
+        <h2 class="side-title">월즈 모드 설정 (베타)</h2>
+        <p class="side-desc">팀/선수를 선택하면 선수 카드 기반 밴픽 보정이 적용됩니다.</p>
+        <div class="worlds-setup-row">
+            <label>내 팀</label>
+            <select id="worlds-my-team" onchange="onWorldsTeamChange()"></select>
+            <label>상대 팀</label>
+            <select id="worlds-enemy-team" onchange="onWorldsTeamChange()"></select>
+        </div>
+        <div id="worlds-status" class="worlds-status">비활성화</div>
+        <div class="worlds-roster-grid">
+            <div id="worlds-my-roster" class="worlds-roster"></div>
+            <div id="worlds-enemy-roster" class="worlds-roster"></div>
+        </div>
+        <div class="strategy-actions">
+            <button type="button" class="tutorial-btn" onclick="confirmWorldsMode()">적용</button>
+            <button type="button" class="tutorial-btn" onclick="closeWorldsModal()">닫기</button>
+        </div>
+    </div>
+</div>
 <div id="tutorial-modal">
     <div class="tutorial-card">
-        <h2 id="tutorial-title" class="tutorial-title">게임 설명</h2>
+        <h2 class="tutorial-title">게임 설명</h2>
+        <div id="tutorial-step-title" class="tutorial-step-title">게임 소개</div>
         <div id="tutorial-step-body" class="tutorial-step-body"></div>
         <div id="tutorial-step-index" class="tutorial-step-index">1 / 1</div>
         <div class="tutorial-nav">
@@ -221,7 +247,7 @@
 </div>
 </div>
 
-<script src="data/champions.js?v=20260219-7"></script>
-<script src="scripts/app.js?v=20260219-7"></script>
+<script src="data/champions.js?v=20260224-4"></script>
+<script src="scripts/app.js?v=20260224-4"></script>
 </body>
 </html>

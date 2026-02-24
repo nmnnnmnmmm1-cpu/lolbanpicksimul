@@ -70,3 +70,30 @@ node tools/import_champions_csv.js /path/to/your.csv
 2. `key` 중복이 없는지 확인
 3. `pos/profileType/dmgType` enum 값 오타 확인
 4. 숫자 필드가 정수 범위(`cc 0~3`, 나머지 규칙 범위)인지 확인
+
+## 월즈 모드 데이터
+
+월즈 모드는 아래 JSON 파일을 사용합니다.
+
+- `data/teams.json`
+- `data/players.json`
+- `data/worlds_roster.json`
+
+이미지 필드:
+
+- 팀 로고: `teams.json`의 `logo`
+- 선수 사진: `players.json`의 `photo`
+
+현재 샘플은 플레이스홀더 URL입니다. 공식 로고/사진을 쓰려면 직접 소유한 파일이나 사용 허용된 URL로 교체하세요.
+
+## 특성 밸런스 샘플 로그
+
+브라우저 콘솔에서 아래 함수로 확인할 수 있습니다.
+
+```js
+printTraitBalanceReport(20)         // 발동률/승률기여 리포트
+printTraitRebalanceSuggestions(20)  // 자동 재조정 권장안
+```
+
+- 초기 진입 시 자동 샘플 80판이 수집됩니다.
+- 실제 플레이 결과도 로그에 누적됩니다.

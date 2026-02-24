@@ -1,0 +1,42 @@
+[
+  {
+    "teamId": "t1",
+    "players": {
+      "TOP": "t1_zeus",
+      "JNG": "t1_oner",
+      "MID": "t1_faker",
+      "ADC": "t1_gumayusi",
+      "SPT": "t1_keria"
+    }
+  },
+  {
+    "teamId": "geng",
+    "players": {
+      "TOP": "geng_kiin",
+      "JNG": "geng_canyon",
+      "MID": "geng_chovy",
+      "ADC": "geng_peyz",
+      "SPT": "geng_lehends"
+    }
+  },
+  {
+    "teamId": "g2",
+    "players": {
+      "TOP": "g2_brokenblade",
+      "JNG": "g2_yike",
+      "MID": "g2_caps",
+      "ADC": "g2_hanssama",
+      "SPT": "g2_mikyx"
+    }
+  },
+  {
+    "teamId": "blg",
+    "players": {
+      "TOP": "blg_bin",
+      "JNG": "blg_xun",
+      "MID": "blg_knight",
+      "ADC": "blg_elk",
+      "SPT": "blg_on"
+    }
+  }
+]
