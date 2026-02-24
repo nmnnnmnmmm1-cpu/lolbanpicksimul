@@ -8,48 +8,9 @@ const TYPE_LABEL = {
     Poke: "포킹",
     Anti: "받아치기"
 };
-const CHAMP_TRAIT_UI = {
-    "리신": [{ name: "솔랭 박살", condition: "아군 MID가 르블랑/아리", effect: "팀 초반 +5" }],
-    "니달리": [{ name: "핵창", condition: "아군 CC 합 10 이상", effect: "팀 딜링 +3" }],
-    "세주아니": [{ name: "빙결 저항", condition: "상대에 애쉬/신지드 존재", effect: "팀 탱킹 +3" }],
-    "엘리스": [{ name: "렛츠 다이브", condition: "아군 TOP이 레넥톤/다리우스", effect: "팀 초반/중반 +3" }],
-    "바이": [{ name: "기동타격 연계", condition: "아군에 아리/리산드라 존재", effect: "상대 ADC 딜링 -12%" }],
-    "마오카이": [{ name: "대자연의 마력", condition: "아군 JNG/SPT 모두 탱커", effect: "팀 탱킹 +7" }],
-    "아이번": [{ name: "숲의 친구", condition: "아군에 렝가 존재", effect: "팀 초/중/후 +2" }],
-    "녹턴": [{ name: "일단 불꺼", condition: "아군에 트위스티드 페이트/쉔", effect: "팀 승률 +8%" }],
-    "헤카림": [{ name: "돌격하라", condition: "아군에 유미/룰루", effect: "팀 돌진 +1" }],
-    "킨드레드": [{ name: "그건 제 정글이에요", condition: "상대 JNG 탱킹 7 이상", effect: "팀 중반 +4" }],
-    "트런들": [{ name: "안티 탱커", condition: "상대 팀 탱킹 27 이상", effect: "상대 탱킹 -4 / 우리 탱킹 +4" }],
-    "카직스": [{ name: "메뚜기 월드", condition: "상대 JNG 초반 3 이하", effect: "팀 초반 +4" }],
-    "람머스": [{ name: "가시 갑옷", condition: "상대 AD 비율 70% 이상", effect: "본인 탱킹 +5" }],
-    "말파이트": [{ name: "가시 갑옷", condition: "상대 AD 비율 70% 이상", effect: "본인 탱킹 +5" }],
-    "라칸": [{ name: "커플", condition: "아군 ADC가 자야", effect: "팀 초반 +2 / 딜+1 / 탱+1 / 초반 승률 +5" }],
-    "나미": [{ name: "근본 조합", condition: "아군 ADC가 루시안", effect: "팀 초반 +2 / 딜링 +5" }],
-    "룰루": [{ name: "요정의 친구", condition: "아군 ADC가 코그모/징크스/베인", effect: "팀 후반 +7" }],
-    "유미": [{ name: "완벽한 밀착", condition: "아군 ADC가 제리/이즈리얼", effect: "팀 딜링 +4" }],
-    "밀리오": [{ name: "아늑한 캠프파이어", condition: "아군 ADC가 루시안/케이틀린", effect: "팀 초반 +4" }],
-    "브라움": [{ name: "프렐요드의 방패", condition: "아군 ADC가 애쉬/루시안", effect: "팀 CC +1 / 팀 탱킹 +2" }],
-    "노틸러스": [{ name: "심해의 압박", condition: "아군 ADC가 카이사/사미라", effect: "팀 딜링 +2" }],
-    "카르마": [{ name: "렛츠 두 포킹", condition: "아군 ADC가 이즈리얼/시비르", effect: "팀 포킹 +4" }],
-    "타릭": [{ name: "우주의 광휘", condition: "아군 JNG가 마스터 이", effect: "팀 중반 +6" }],
-    "카사딘": [{ name: "못 버티겠어", condition: "상대 MID AP면", effect: "팀 후반 +5 (상대 MID AD면 초반 -5)" }],
-    "피오라": [{ name: "치명적인 검무", condition: "상대 TOP 탱킹 8 이상", effect: "팀 후반 +3" }],
-    "벡스": [{ name: "우울", condition: "상대 돌진 챔피언 4명 이상", effect: "팀 CC +3" }],
-    "모르가나": [{ name: "블쉴좀 써라", condition: "상대 CC 합 12 이상", effect: "상대 CC -5" }],
-    "베인": [{ name: "탱커 사냥", condition: "상대 팀 탱킹 27 이상", effect: "팀 딜링 +5" }],
-    "시비르": [{ name: "사냥 개시", condition: "아군 돌진형 3명 이상", effect: "팀 딜링 +5" }],
-    "직스": [{ name: "포탑부터 지켜", condition: "기본 발동", effect: "팀 후반 가중치 증가" }],
-    "아지르": [{ name: "넘겨잇", condition: "상대 주 조합이 돌진", effect: "팀 받아치기 +3" }],
-    "블리츠크랭크": [{ name: "이게 끌리네", condition: "상대 ADC/SPT가 모두 포킹", effect: "팀 딜링 +6" }],
-    "오른": [{ name: "간이 대장간", condition: "기본 발동", effect: "팀 기본 스탯 +3 / 후반 +4" }],
-    "갱플랭크": [{ name: "화약통", condition: "아군 AD/AP 밸런스 완벽", effect: "팀 딜링 +7" }],
-    "야스오": [{ name: "탑님 말파 가능?", condition: "아군 CC 합 10 이상", effect: "팀 딜링 +7" }],
-    "리산드라": [{ name: "얼음 무덤", condition: "상대 MID가 돌진형", effect: "팀 CC +2" }],
-    "질리언": [{ name: "시간 역행", condition: "기본 발동", effect: "팀 초반/후반 스탯 교환" }],
-    "오리아나": [{ name: "내 공을 부탁해", condition: "아군 JNG가 돌진형", effect: "팀 딜링 +3 + 정글 돌진 스케일" }],
-    "스몰더": [{ name: "쌍포", condition: "아군 ADC가 직스", effect: "팀 중반 +4" }],
-    "갈리오": [{ name: "안티 AP", condition: "상대 MID가 AP", effect: "팀 초반 +3" }]
-};
+const TRAIT_DB = (typeof globalThis !== "undefined" && globalThis.CHAMP_TRAIT_UI && typeof globalThis.CHAMP_TRAIT_UI === "object")
+    ? globalThis.CHAMP_TRAIT_UI
+    : {};
 
 // 조건 난이도 기반 보정 테이블
 const TRAIT_RULE_TABLE = {
@@ -126,12 +87,30 @@ function escapeHtml(v) {
         .replace(/'/g, "&#39;");
 }
 
+function roundToOne(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Number(n.toFixed(1));
+}
+
+function formatNum(value) {
+    const v = roundToOne(value);
+    return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+function getChampionFallbackImageUrl(label = "CHAMP") {
+    const raw = String(label || "CHAMP").slice(0, 12);
+    const safe = raw.replace(/[&<>"']/g, "");
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#1b2a34'/><stop offset='100%' stop-color='#0f171e'/></linearGradient></defs><rect width='120' height='120' fill='url(#g)'/><rect x='4' y='4' width='112' height='112' fill='none' stroke='#c8aa6e' stroke-opacity='0.6'/><text x='60' y='66' text-anchor='middle' fill='#e6d3a3' font-size='16' font-family='Arial,sans-serif'>${safe}</text></svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function getTraitsByChampionName(champName) {
-    const direct = CHAMP_TRAIT_UI[champName];
+    const direct = TRAIT_DB[champName];
     if (direct) return direct;
     const target = normalizeNameToken(champName);
-    const normalizedKey = Object.keys(CHAMP_TRAIT_UI).find((k) => normalizeNameToken(k) === target);
-    return normalizedKey ? CHAMP_TRAIT_UI[normalizedKey] : [];
+    const normalizedKey = Object.keys(TRAIT_DB).find((k) => normalizeNameToken(k) === target);
+    return normalizedKey ? TRAIT_DB[normalizedKey] : [];
 }
 
 function getTraitRule(champName, traitName) {
@@ -178,9 +157,15 @@ function normalizeChampion(key, raw) {
     const name = typeof champ.name === "string" && champ.name.trim() ? champ.name.trim() : key;
     if (name === key && champ.name !== key) warnInvalidField(key, "name", champ.name, key);
 
-    const pos0 = Array.isArray(champ.pos) ? champ.pos[0] : null;
-    const pos = VALID_POSITIONS.has(pos0) ? pos0 : "MID";
-    if (!VALID_POSITIONS.has(pos0)) warnInvalidField(key, "pos[0]", pos0, "MID");
+    let pos = Array.isArray(champ.pos) ? champ.pos.filter((p) => VALID_POSITIONS.has(p)) : [];
+    if (pos.length === 0) {
+        const pos0 = Array.isArray(champ.pos) ? champ.pos[0] : null;
+        warnInvalidField(key, "pos", champ.pos, ["MID"]);
+        if (VALID_POSITIONS.has(pos0)) pos = [pos0];
+        else pos = ["MID"];
+    } else {
+        pos = [...new Set(pos)];
+    }
 
     const cc = Number.isFinite(champ.cc) ? Math.min(Math.max(Math.round(champ.cc), 0), 3) : 1;
     if (cc !== champ.cc) warnInvalidField(key, "cc", champ.cc, cc);
@@ -212,7 +197,7 @@ function normalizeChampion(key, raw) {
 
     return {
         name,
-        pos: [pos],
+        pos,
         cc,
         dmg,
         tank,
@@ -240,6 +225,14 @@ const CHAMP_KEY_BY_KO_NAME = Object.fromEntries(
 );
 const CHAMPION_NAMES_KO_DESC = [...new Set(CHAMP_KEYS.map((k) => CHAMP_DB[k]?.name).filter(Boolean))]
     .sort((a, b) => b.length - a.length);
+const WORLDS_NAME_ALIAS = {
+    "리신": "리신",
+    "신짜오": "신짜오",
+    "자르반": "자르반 4세",
+    "자르반4세": "자르반 4세",
+    "트페": "트위스티드페이트",
+    "아솔": "아우렐리온 솔"
+};
 
 const POSITIONS = ["TOP", "JNG", "MID", "ADC", "SPT"];
 // 공식 밴픽 순서: 3밴-3픽-2밴-2픽 (전술적 스왑 고려하지 않은 정석 포지션 매핑 버전)
@@ -377,7 +370,7 @@ let worldsConfig = { myTeamId: "", enemyTeamId: "" };
 
 function getChampionImageUrl(key) {
     if (key === "Yunara") {
-        return "https://placehold.co/120x120/121c23/c8aa6e?text=%EC%9C%A0%EB%82%98%EB%9D%BC";
+        return getChampionFallbackImageUrl("YUNARA");
     }
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
     return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
@@ -726,12 +719,15 @@ async function loadWorldsData() {
     };
     try {
         const [teams, players, rosters] = await Promise.all([
-            loadJson("data/teams.json?v=20260224-6"),
-            loadJson("data/players.json?v=20260224-6"),
-            loadJson("data/worlds_roster.json?v=20260224-6")
+            loadJson("data/teams.json?v=20260224-9"),
+            loadJson("data/players.json?v=20260224-9"),
+            loadJson("data/worlds_roster.json?v=20260224-9")
         ]);
         worldsTeams = Array.isArray(teams) ? teams : [];
-        worldsPlayers = Array.isArray(players) ? players : [];
+        worldsPlayers = Array.isArray(players) ? players.map((p) => ({
+            ...p,
+            signatureChamps: (p.signatureChamps || []).map((nm) => normalizeWorldsChampionName(nm))
+        })) : [];
         worldsRosters = Array.isArray(rosters) ? rosters : [];
     } catch (err) {
         worldsTeams = [];
@@ -771,6 +767,37 @@ function applyWorldsTeamColors() {
     const redTeam = getWorldsTeamById(redTeamId);
     root.style.setProperty("--blue", getWorldsTeamColor(blueTeam, DEFAULT_BLUE_COLOR));
     root.style.setProperty("--red", getWorldsTeamColor(redTeam, DEFAULT_RED_COLOR));
+}
+
+function getWorldsTeamIdBySideForUi(side) {
+    if (!worldsModeEnabled || !userTeam) return "";
+    if (side === userTeam) return worldsConfig.myTeamId || "";
+    return worldsConfig.enemyTeamId || "";
+}
+
+function renderWorldsSlotHints() {
+    ["blue", "red"].forEach((side) => {
+        const teamId = getWorldsTeamIdBySideForUi(side);
+        const roster = getWorldsRosterByTeamId(teamId);
+        POSITIONS.forEach((pos, idx) => {
+            const slot = document.getElementById(`${side[0]}-slot-${idx}`);
+            if (!slot) return;
+            const noteEl = slot.querySelector(".player-note");
+            if (!noteEl) return;
+            if (!worldsModeEnabled || !roster || !roster.players) {
+                noteEl.innerText = "";
+                return;
+            }
+            const playerId = roster.players[pos];
+            const player = getWorldsPlayerById(playerId);
+            if (!player) {
+                noteEl.innerText = "";
+                return;
+            }
+            const champs = (player.signatureChamps || []).slice(0, 3).join(", ");
+            noteEl.innerText = `${player.nick} | ${champs}`;
+        });
+    });
 }
 
 function formatTimeLabel(ts) {
@@ -874,6 +901,65 @@ function getDraftStatsRows(limit = 8, rows = null) {
     };
 }
 
+function getChampionUsageRows(rows = null) {
+    const sourceRows = Array.isArray(rows) ? rows : getAllHistoryRows();
+    const statsMap = {};
+    CHAMP_KEYS.forEach((key) => {
+        statsMap[key] = { key, name: getChampionDisplayNameByKey(key), pick: 0, ban: 0, total: 0 };
+    });
+    sourceRows.forEach((entry) => {
+        const pickKeys = Array.isArray(entry.pickKeys) ? entry.pickKeys : [];
+        const banKeys = Array.isArray(entry.banKeys) ? entry.banKeys : [];
+        pickKeys.forEach((k) => {
+            if (!k) return;
+            if (!statsMap[k]) statsMap[k] = { key: k, name: getChampionDisplayNameByKey(k), pick: 0, ban: 0, total: 0 };
+            statsMap[k].pick += 1;
+            statsMap[k].total += 1;
+        });
+        banKeys.forEach((k) => {
+            if (!k) return;
+            if (!statsMap[k]) statsMap[k] = { key: k, name: getChampionDisplayNameByKey(k), pick: 0, ban: 0, total: 0 };
+            statsMap[k].ban += 1;
+            statsMap[k].total += 1;
+        });
+    });
+    return Object.values(statsMap).sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        if (b.pick !== a.pick) return b.pick - a.pick;
+        return a.name.localeCompare(b.name, "ko-KR");
+    });
+}
+
+function renderChampionStatsModal(rows) {
+    const body = document.getElementById("champ-stats-body");
+    if (!body) return;
+    const visible = (rows || []).filter((r) => r.total > 0);
+    if (visible.length === 0) {
+        body.innerHTML = '<div class="home-empty">누적 챔피언 통계가 없습니다.</div>';
+        return;
+    }
+    body.innerHTML = visible.map((row, idx) => `
+        <div class="champ-stat-row">
+            <span class="champ-stat-rank">#${idx + 1}</span>
+            <img class="champ-stat-avatar" src="${getChampionImageUrl(row.key)}" alt="${row.name}" onerror="this.onerror=null;this.src='${getChampionFallbackImageUrl(row.name)}';">
+            <div class="champ-stat-meta">
+                <b>${row.name}</b>
+                <span>픽 ${formatNum(row.pick)} / 밴 ${formatNum(row.ban)} / 총 ${formatNum(row.total)}</span>
+            </div>
+        </div>
+    `).join("");
+}
+
+function openChampionStatsModal() {
+    const allRows = getChampionUsageRows(getAllHistoryRows());
+    renderChampionStatsModal(allRows);
+    setDisplayById("champ-stats-modal", "flex");
+}
+
+function closeChampionStatsModal() {
+    setDisplayById("champ-stats-modal", "none");
+}
+
 function renderHomeHistory() {
     const logList = document.getElementById("home-log-list");
     const rankingList = document.getElementById("home-ranking-list");
@@ -902,18 +988,28 @@ function renderHomeHistory() {
     }
     if (champStats) {
         const draftStats = getDraftStatsRows(7, allRows);
+        const usageRows = getChampionUsageRows(allRows);
         const makeRows = (rows, tone) => {
             if (!rows || rows.length === 0) return '<div class="home-empty">아직 누적 데이터가 없습니다.</div>';
-            return rows.map((row, idx) => `<div class="home-rank-item"><span>${idx + 1}. ${row.name}</span><b class="${tone}">${row.count}회</b></div>`).join("");
+            return rows.map((row, idx) => {
+                const key = row.key || getChampionKeyByName(row.name);
+                const imgUrl = key ? getChampionImageUrl(key) : getChampionFallbackImageUrl(row.name);
+                return `<div class="home-rank-item champ-mini-item">
+                    <span class="champ-mini-head"><span class="champ-mini-rank">${idx + 1}</span><img class="champ-mini-avatar" src="${imgUrl}" alt="${row.name}" onerror="this.onerror=null;this.src='${getChampionFallbackImageUrl(row.name)}';"><span>${row.name}</span></span>
+                    <b class="${tone}">${formatNum(row.count)}회</b>
+                </div>`;
+            }).join("");
         };
         champStats.innerHTML = `
-            <div class="home-log-item"><b>누적 시리즈</b><span>${draftStats.totalSeries}회</span></div>
-            <div class="home-log-item"><b>누적 픽 / 밴</b><span>${draftStats.totalPickCount} / ${draftStats.totalBanCount}</span></div>
+            <div class="home-log-item"><b>누적 시리즈</b><span>${formatNum(draftStats.totalSeries)}회</span></div>
+            <div class="home-log-item"><b>누적 픽 / 밴</b><span>${formatNum(draftStats.totalPickCount)} / ${formatNum(draftStats.totalBanCount)}</span></div>
             <div class="home-log-item"><b>TOP 픽</b><span></span></div>
             ${makeRows(draftStats.topPicks, "type-dive")}
             <div class="home-log-item"><b>TOP 밴</b><span></span></div>
             ${makeRows(draftStats.topBans, "type-poke")}
+            <button type="button" class="home-champ-detail-btn" onclick="openChampionStatsModal()">챔피언 통계 상세 보기</button>
         `;
+        renderChampionStatsModal(usageRows);
     }
 }
 
@@ -967,7 +1063,6 @@ function renderHomeStats() {
 function renderWorldsPlayerCard(player, team) {
     if (!player) return "";
     const champs = (player.signatureChamps || []).join(", ");
-    const types = (player.prefTypes || []).map((t) => TYPE_LABEL[t] || t).join(" / ");
     const edge = getWorldsTeamColor(team, "#456");
     return `<div class="worlds-player-card" style="border-color:${edge}; box-shadow: inset 3px 0 0 ${edge};">
         <img class="worlds-player-photo" src="${player.photo || ""}" alt="${player.nick}" onerror="this.onerror=null;this.src='https://placehold.co/72x72/101820/c8aa6e?text=${encodeURIComponent(player.nick)}';">
@@ -975,7 +1070,6 @@ function renderWorldsPlayerCard(player, team) {
             <b>${player.nick}</b>
             <span>${player.role} · ${team?.name || "-"}</span>
             <span>주챔: ${champs || "-"}</span>
-            <span>성향: ${types || "-"}</span>
         </div>
     </div>`;
 }
@@ -995,7 +1089,8 @@ function renderWorldsRosterPreview(containerId, teamId) {
         return renderWorldsPlayerCard(player, team);
     }).join("");
     const teamColor = getWorldsTeamColor(team, "#3f5563");
-    box.innerHTML = `<div class="worlds-team-head" style="border-color:${teamColor};"><img src="${team.logo || ""}" alt="${team.name}" onerror="this.style.display='none'"><b style="color:${teamColor};">${team.name}</b></div>${cards}`;
+    const prefLabel = team.prefLabel || (STRATEGY_CONFIGS[team.prefStrategy || "General"]?.label || "일반적");
+    box.innerHTML = `<div class="worlds-team-head" style="border-color:${teamColor};"><img src="${team.logo || ""}" alt="${team.name}" onerror="this.style.display='none'"><b style="color:${teamColor};">${team.name}</b><span style="font-size:11px;color:#9fb3c2;">팀 선호: ${prefLabel}</span></div>${cards}`;
 }
 
 function onWorldsTeamChange() {
@@ -1063,6 +1158,7 @@ function confirmWorldsMode() {
     const status = document.getElementById("worlds-status");
     if (status) status.innerText = `활성화됨: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`;
     applyWorldsTeamColors();
+    renderWorldsSlotHints();
     updateSeriesInfo();
     closeWorldsModal();
 }
@@ -1074,10 +1170,11 @@ function disableWorldsMode() {
     const status = document.getElementById("worlds-status");
     if (status) status.innerText = "비활성화";
     applyWorldsTeamColors();
+    renderWorldsSlotHints();
     updateSeriesInfo();
 }
 
-function openHome() {
+function openHome(showTutorialOnHome = true) {
     renderHomeStats();
     renderHomeHistory();
     applyTeamNameInputs();
@@ -1090,14 +1187,19 @@ function openHome() {
     setDisplayById("tutorial-modal", "none");
     setDisplayById("result-modal", "none");
     setDisplayById("worlds-modal", "none");
+    setDisplayById("champ-stats-modal", "none");
     applyWorldsTeamColors();
     refreshRemoteHistory();
+    if (showTutorialOnHome) {
+        openTutorial();
+    }
 }
 
 function selectMode(modeKey) {
     applyModeConfig(modeKey);
     saveTeamNameInputs();
     shouldResetOnStrategyConfirm = true;
+    setDisplayById("tutorial-modal", "none");
     setDisplayById("home-page", "none");
     // side-select/strategy 모달이 game-shell 내부에 있으므로 shell을 먼저 노출해야 함
     setDisplayById("game-shell", "flex");
@@ -1362,10 +1464,11 @@ function isMobileView() {
 }
 
 function buildChampionInfoHtml(c, isFearlessLocked) {
+    const posLabel = Array.isArray(c.pos) ? c.pos.join("/") : "-";
     return `
         <div class="tip-title-row">
             <b class="tip-title-name">${c.name}</b>
-            <span class="tip-title-meta">${c.pos[0]} | ${TYPE_LABEL[c.profile.type]} ${c.profile.scale} | ${c.dmgType}</span>
+            <span class="tip-title-meta">${posLabel} | ${TYPE_LABEL[c.profile.type]} ${c.profile.scale} | ${c.dmgType}</span>
         </div>
         ${renderCcPips(c.cc)}
         ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
@@ -1513,6 +1616,49 @@ function canAssignDistinctPositions(championKeys) {
     return true;
 }
 
+function assignPositionsForKeys(championKeys) {
+    const keys = (championKeys || []).filter(Boolean);
+    const usedByPos = {};
+    const assignedPosByKey = {};
+    const assignByIdx = {};
+
+    const dfs = (idx) => {
+        if (idx >= keys.length) return true;
+        const key = keys[idx];
+        const poss = (CHAMP_DB[key]?.pos || []).filter((p) => VALID_POSITIONS.has(p));
+        for (const p of poss) {
+            if (usedByPos[p]) continue;
+            usedByPos[p] = key;
+            assignedPosByKey[key] = p;
+            assignByIdx[idx] = p;
+            if (dfs(idx + 1)) return true;
+            delete usedByPos[p];
+            delete assignedPosByKey[key];
+            delete assignByIdx[idx];
+        }
+        return false;
+    };
+
+    const ok = dfs(0);
+    if (!ok) {
+        keys.forEach((key, idx) => {
+            const fallback = CHAMP_DB[key]?.pos?.[0] || POSITIONS[idx] || "MID";
+            assignedPosByKey[key] = fallback;
+            assignByIdx[idx] = fallback;
+        });
+    }
+    const posToKey = {};
+    Object.entries(assignedPosByKey).forEach(([key, pos]) => {
+        if (!posToKey[pos]) posToKey[pos] = key;
+    });
+    return { byKey: assignedPosByKey, byPos: posToKey, byIdx: assignByIdx };
+}
+
+function getTeamAssignedMap(team, picksState = picks) {
+    const teamPicks = (picksState[team] || []).filter(Boolean);
+    return assignPositionsForKeys(teamPicks);
+}
+
 function canPickForTeamState(team, key, picksState) {
     const selected = (picksState[team] || []).filter(Boolean);
     return canAssignDistinctPositions([...selected, key]);
@@ -1577,7 +1723,7 @@ function recordTraitAnalyticsSample(picksState, traitCtx, winnerTeam, blueWinRat
 }
 
 function randomChampionByPos(pos, usedSet) {
-    const pool = CHAMP_KEYS.filter((k) => CHAMP_DB[k]?.pos?.[0] === pos && !usedSet.has(k));
+    const pool = CHAMP_KEYS.filter((k) => (CHAMP_DB[k]?.pos || []).includes(pos) && !usedSet.has(k));
     if (pool.length === 0) return null;
     const pick = pool[Math.floor(Math.random() * pool.length)];
     usedSet.add(pick);
@@ -1780,6 +1926,7 @@ function chooseSide(side) {
     userTeam = side;
     aiTeam = side === "blue" ? "red" : "blue";
     applyWorldsTeamColors();
+    renderWorldsSlotHints();
     shouldResetOnStrategyConfirm = true;
     setDisplayById("side-select-modal", "none");
     renderStrategyModal();
@@ -1817,8 +1964,8 @@ async function init() {
     POSITIONS.forEach((pos, i) => {
         bBans.innerHTML += `<div class="ban-slot" id="b-ban-${i}"></div>`;
         rBans.innerHTML += `<div class="ban-slot" id="r-ban-${i}"></div>`;
-        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div style="margin-left:10px;"><div class="name">-</div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
-        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div style="margin-right:10px;"><div class="name">-</div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
+        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
+        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
 
         const bBan = document.getElementById(`b-ban-${i}`);
         const rBan = document.getElementById(`r-ban-${i}`);
@@ -1901,10 +2048,17 @@ async function init() {
             if (e.target === worldsModal) closeWorldsModal();
         });
     }
+    const champStatsModal = document.getElementById('champ-stats-modal');
+    if (champStatsModal) {
+        champStatsModal.addEventListener('click', (e) => {
+            if (e.target === champStatsModal) closeChampionStatsModal();
+        });
+    }
     renderStrategyModal();
     applyTeamNameInputs();
     await loadWorldsData();
     renderWorldsModalOptions();
+    renderWorldsSlotHints();
     ensureTraitAutoSamples(80);
     window.getTraitBalanceReport = getTraitBalanceReport;
     window.printTraitBalanceReport = (minOpportunity = 20) => {
@@ -1918,8 +2072,7 @@ async function init() {
         return rows;
     };
     startYoutubeBgm();
-    openHome();
-    openTutorial();
+    openHome(true);
 }
 
 function bindChampionInfoInteractions() {
@@ -2101,6 +2254,7 @@ function selectChamp(key, byAI = false) {
 function updateUI() {
     document.querySelectorAll('.slot, .ban-slot').forEach(s => s.classList.remove('active'));
     updateSeriesInfo();
+    renderWorldsSlotHints();
     const wrTrack = document.querySelector('.winrate-track');
     if (currentStep < DRAFT_ORDER.length) {
         wrTrack.style.display = "none";
@@ -2109,12 +2263,8 @@ function updateUI() {
             const banEl = document.getElementById(`${step.t[0]}-ban-${step.id}`);
             if (banEl) banEl.classList.add('active');
         } else {
-            const pickedPosSet = new Set(
-                (picks[step.t] || [])
-                    .filter(Boolean)
-                    .map((key) => CHAMP_DB[key]?.pos?.[0])
-                    .filter(Boolean)
-            );
+            const assigned = getTeamAssignedMap(step.t, picks);
+            const pickedPosSet = new Set(Object.keys(assigned.byPos));
             POSITIONS.forEach((pos, idx) => {
                 if (pickedPosSet.has(pos)) return;
                 const slotEl = document.getElementById(`${step.t[0]}-slot-${idx}`);
@@ -2197,16 +2347,16 @@ function renderStrategySummary(strategyCtx, team) {
     const mismatch = strategyCtx.effect.mismatch;
     const winBonus = strategyCtx.effect.winBonus;
     const sign = winBonus >= 0 ? "+" : "";
-    return `<span style="color:#ffe082;">${strategyLabel}</span> | 적합 ${fit} / 부조화 ${mismatch} | 승률보정 ${sign}${winBonus.toFixed(1)}`;
+    return `<span style="color:#ffe082;">${strategyLabel}</span> | 적합 ${formatNum(fit)} / 부조화 ${formatNum(mismatch)} | 승률보정 ${sign}${formatNum(winBonus)}`;
 }
 
 function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx = null) {
     const maxProfileSum = 15;
     const makeBars = (teamStats, colorMap) => `
         <div class="mini-bars">
-            <div class="mini-bar"><span class="mini-bar-label">돌진</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.dive / maxProfileSum) * 100}%;background:${colorMap.dive};"></span></span><span class="mini-bar-value">${teamStats.dive}</span></div>
-            <div class="mini-bar"><span class="mini-bar-label">포킹</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.poke / maxProfileSum) * 100}%;background:${colorMap.poke};"></span></span><span class="mini-bar-value">${teamStats.poke}</span></div>
-            <div class="mini-bar"><span class="mini-bar-label">받아</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.anti / maxProfileSum) * 100}%;background:${colorMap.anti};"></span></span><span class="mini-bar-value">${teamStats.anti}</span></div>
+            <div class="mini-bar"><span class="mini-bar-label">돌진</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.dive / maxProfileSum) * 100}%;background:${colorMap.dive};"></span></span><span class="mini-bar-value">${formatNum(teamStats.dive)}</span></div>
+            <div class="mini-bar"><span class="mini-bar-label">포킹</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.poke / maxProfileSum) * 100}%;background:${colorMap.poke};"></span></span><span class="mini-bar-value">${formatNum(teamStats.poke)}</span></div>
+            <div class="mini-bar"><span class="mini-bar-label">받아</span><span class="mini-bar-track"><span class="mini-bar-fill" style="width:${(teamStats.anti / maxProfileSum) * 100}%;background:${colorMap.anti};"></span></span><span class="mini-bar-value">${formatNum(teamStats.anti)}</span></div>
         </div>
     `;
     const blueSummary = document.getElementById('b-team-summary');
@@ -2217,13 +2367,13 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
     const worldsRed = worldsCtx ? (worldsCtx.bonus.red || 0) : 0;
     blueSummary.innerHTML = `
         <div class="title">블루팀 요약 (${blueRole})</div>
-        <div class="row"><span>기본</span><span>CC ${b.cc} | 딜 ${b.dmg} | 탱 ${b.tank}</span></div>
-        <div class="row"><span>시간대</span><span>초 ${b.early} / 중 ${b.mid} / 후 ${b.late}</span></div>
+        <div class="row"><span>기본</span><span>CC ${formatNum(b.cc)} | 딜 ${formatNum(b.dmg)} | 탱 ${formatNum(b.tank)}</span></div>
+        <div class="row"><span>시간대</span><span>초 ${formatNum(b.early)} / 중 ${formatNum(b.mid)} / 후 ${formatNum(b.late)}</span></div>
         <div class="row"><span>AD/AP</span><span><span class="dmg-ad">AD ${Math.round(b.adRatio * 100)}%</span> / <span class="dmg-ap">AP ${Math.round((1 - b.adRatio) * 100)}%</span> / <span class="dmg-hybrid">HYB ${Math.round((b.hybridCount / 5) * 100)}%</span></span></div>
-        <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${b.dive}</span> / <span class="type-poke">포킹 ${b.poke}</span> / <span class="type-anti">받아치기 ${b.anti}</span></span></div>
+        <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${formatNum(b.dive)}</span> / <span class="type-poke">포킹 ${formatNum(b.poke)}</span> / <span class="type-anti">받아치기 ${formatNum(b.anti)}</span></span></div>
         <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(b).type)}">${getCompLabel(b)}</span></div>
         <div class="row"><span>전략</span><span>${renderStrategySummary(strategyCtx, "blue")}</span></div>
-        <div class="row"><span>월즈 보정</span><span>${worldsModeEnabled ? `+${worldsBlue.toFixed(1)}` : '<span style="color:#7f95a3;">비활성</span>'}</span></div>
+        <div class="row"><span>월즈 보정</span><span>${worldsModeEnabled ? `+${formatNum(worldsBlue)}` : '<span style="color:#7f95a3;">비활성</span>'}</span></div>
         ${renderSynergyMeter(b, "blue")}
         ${renderRadarChart(b, "blue")}
         ${makeBars(b, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
@@ -2231,18 +2381,37 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
     `;
     redSummary.innerHTML = `
         <div class="title">레드팀 요약 (${redRole})</div>
-        <div class="row"><span>기본</span><span>CC ${r.cc} | 딜 ${r.dmg} | 탱 ${r.tank}</span></div>
-        <div class="row"><span>시간대</span><span>초 ${r.early} / 중 ${r.mid} / 후 ${r.late}</span></div>
+        <div class="row"><span>기본</span><span>CC ${formatNum(r.cc)} | 딜 ${formatNum(r.dmg)} | 탱 ${formatNum(r.tank)}</span></div>
+        <div class="row"><span>시간대</span><span>초 ${formatNum(r.early)} / 중 ${formatNum(r.mid)} / 후 ${formatNum(r.late)}</span></div>
         <div class="row"><span>AD/AP</span><span><span class="dmg-ad">AD ${Math.round(r.adRatio * 100)}%</span> / <span class="dmg-ap">AP ${Math.round((1 - r.adRatio) * 100)}%</span> / <span class="dmg-hybrid">HYB ${Math.round((r.hybridCount / 5) * 100)}%</span></span></div>
-        <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${r.dive}</span> / <span class="type-poke">포킹 ${r.poke}</span> / <span class="type-anti">받아치기 ${r.anti}</span></span></div>
+        <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${formatNum(r.dive)}</span> / <span class="type-poke">포킹 ${formatNum(r.poke)}</span> / <span class="type-anti">받아치기 ${formatNum(r.anti)}</span></span></div>
         <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(r).type)}">${getCompLabel(r)}</span></div>
         <div class="row"><span>전략</span><span>${renderStrategySummary(strategyCtx, "red")}</span></div>
-        <div class="row"><span>월즈 보정</span><span>${worldsModeEnabled ? `+${worldsRed.toFixed(1)}` : '<span style="color:#7f95a3;">비활성</span>'}</span></div>
+        <div class="row"><span>월즈 보정</span><span>${worldsModeEnabled ? `+${formatNum(worldsRed)}` : '<span style="color:#7f95a3;">비활성</span>'}</span></div>
         ${renderSynergyMeter(r, "red")}
         ${renderRadarChart(r, "red")}
         ${makeBars(r, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
         <div class="trait-panel"><div class="trait-title">발동 특성</div>${renderTraitListHtml((traitCtx && traitCtx.traits && traitCtx.traits.red) || [])}</div>
     `;
+}
+
+function roundTeamStatsObject(stats) {
+    if (!stats || typeof stats !== "object") return stats;
+    const keys = [
+        "cc", "dmg", "tank", "dive", "poke", "anti",
+        "early", "mid", "late",
+        "adCount", "apCount", "hybridCount",
+        "adDmg", "apDmg", "adPressure", "apPressure",
+        "adPower", "apPower", "adRatio"
+    ];
+    keys.forEach((k) => {
+        if (!Number.isFinite(stats[k])) return;
+        stats[k] = roundToOne(stats[k]);
+    });
+    if (Number.isFinite(stats.adRatio)) {
+        stats.adRatio = Math.max(0, Math.min(1, roundToOne(stats.adRatio)));
+    }
+    return stats;
 }
 
 function getTeamStats(team, picksState) {
@@ -2284,11 +2453,31 @@ function getTeamStats(team, picksState) {
     res.apPower = res.apDmg;
     const totalPower = res.adPower + res.apPower;
     res.adRatio = totalPower > 0 ? (res.adPower / totalPower) : 0.5;
-    return res;
+    return roundTeamStatsObject(res);
 }
 
 function getChampionKeyByName(name) {
     return CHAMP_KEY_BY_KO_NAME[normalizeNameToken(name)] || null;
+}
+
+function normalizeWorldsChampionName(name) {
+    const raw = String(name || "").trim();
+    if (!raw) return "";
+    const token = normalizeNameToken(raw);
+    const aliased = WORLDS_NAME_ALIAS[token];
+    if (aliased && CHAMP_KEY_BY_KO_NAME[normalizeNameToken(aliased)]) return aliased;
+    const exactKey = CHAMP_KEY_BY_KO_NAME[token];
+    if (exactKey) return CHAMP_DB[exactKey]?.name || raw;
+    const fuzzy = CHAMPION_NAMES_KO_DESC.find((nm) => {
+        const n = normalizeNameToken(nm);
+        return n.startsWith(token) || token.startsWith(n);
+    });
+    return fuzzy || raw;
+}
+
+function hasSignatureChampion(player, champName) {
+    const target = normalizeNameToken(champName);
+    return (player?.signatureChamps || []).some((nm) => normalizeNameToken(normalizeWorldsChampionName(nm)) === target);
 }
 
 function getTeamKeys(team, picksState) {
@@ -2296,7 +2485,8 @@ function getTeamKeys(team, picksState) {
 }
 
 function getTeamChampByPos(team, picksState, pos) {
-    return getTeamKeys(team, picksState).find((k) => CHAMP_DB[k]?.pos?.[0] === pos) || null;
+    const assigned = getTeamAssignedMap(team, picksState);
+    return assigned.byPos[pos] || null;
 }
 
 function teamHasChampionName(team, picksState, name) {
@@ -2606,8 +2796,9 @@ function evaluateTraitContext(picksState) {
     ['blue', 'red'].forEach((team) => {
         const t = stats[team];
         ['cc','dmg','tank','early','mid','late','dive','poke','anti'].forEach((k) => {
-            t[k] = Math.max(0, t[k]);
+            t[k] = roundToOne(Math.max(0, t[k]));
         });
+        roundTeamStatsObject(t);
     });
 
     return { stats, traits, bonus };
@@ -2630,6 +2821,18 @@ function getStrategyFitState(champ, strategyKey) {
         return isFit ? 1 : (isMismatch ? -1 : 0);
     }
     return 0;
+}
+
+function getWorldsTeamStyleFitState(champ, prefStrategy) {
+    if (!champ) return 0;
+    if (!prefStrategy || prefStrategy === "General") return 0;
+    if (prefStrategy === "Mid") {
+        const peak = Math.max(champ.phase.early, champ.phase.mid, champ.phase.late);
+        if (champ.phase.mid === peak) return 1;
+        if (champ.phase.mid + 2 <= peak) return -1;
+        return 0;
+    }
+    return getStrategyFitState(champ, prefStrategy);
 }
 
 function evaluateStrategyContext(picksState, sourceStats) {
@@ -2693,8 +2896,10 @@ function evaluateStrategyContext(picksState, sourceStats) {
     }
 
     ["cc", "dmg", "tank", "dive", "poke", "anti", "early", "mid", "late"].forEach((k) => {
-        t[k] = Math.max(0, Number(t[k] || 0));
+        t[k] = roundToOne(Math.max(0, Number(t[k] || 0)));
     });
+    effect.winBonus = roundToOne(effect.winBonus);
+    roundTeamStatsObject(t);
     return { stats, effect };
 }
 
@@ -2715,11 +2920,17 @@ function evaluateWorldsContext(picksState, sourceStats) {
     const details = { blue: [], red: [] };
     if (!worldsModeEnabled) return { stats, bonus, details };
 
-    const typeToStatKey = { Dive: "dive", Poke: "poke", Anti: "anti" };
     ["blue", "red"].forEach((team) => {
         const teamId = getWorldsTeamIdBySide(team);
         const roster = getWorldsRosterByTeamId(teamId);
-        if (!roster || !roster.players) return;
+        const worldsTeam = getWorldsTeamById(teamId);
+        if (!roster || !roster.players || !worldsTeam) return;
+
+        const style = worldsTeam.prefStrategy || "General";
+        const styleLabel = worldsTeam.prefLabel || (STRATEGY_CONFIGS[style]?.label || style);
+        let fitCount = 0;
+        let mismatchCount = 0;
+
         POSITIONS.forEach((pos) => {
             const champKey = getTeamChampByPos(team, picksState, pos);
             const playerId = roster.players[pos];
@@ -2729,31 +2940,55 @@ function evaluateWorldsContext(picksState, sourceStats) {
             if (!champ) return;
 
             let gained = 0;
-            if ((player.signatureChamps || []).includes(champ.name)) {
+            if (hasSignatureChampion(player, champ.name)) {
                 const peakPhase = champ.phase.early >= champ.phase.mid && champ.phase.early >= champ.phase.late
                     ? "early"
                     : (champ.phase.mid >= champ.phase.late ? "mid" : "late");
-                stats[team][peakPhase] += 1.2;
-                stats[team].dmg += 0.9;
-                gained += 1.8;
+                stats[team][peakPhase] += 1.6;
+                stats[team].dmg += 1.1;
+                gained += 2.2;
                 details[team].push(`${player.nick} 시그니처(${champ.name})`);
             }
-            if ((player.prefTypes || []).includes(champ.profile.type)) {
-                const statKey = typeToStatKey[champ.profile.type];
-                if (statKey) stats[team][statKey] += 0.9;
-                stats[team].mid += 0.4;
-                gained += 1.0;
-            }
-            if ((player.prefDmgTypes || []).includes(champ.dmgType)) {
-                stats[team].dmg += 0.4;
-                gained += 0.5;
-            }
+
+            const styleState = getWorldsTeamStyleFitState(champ, style);
+            if (styleState > 0) fitCount += 1;
+            else if (styleState < 0) mismatchCount += 1;
             bonus[team] += gained;
         });
 
+        if (style !== "General") {
+            if (style === "Dive" || style === "Poke" || style === "Anti") {
+                const typeKey = style === "Dive" ? "dive" : (style === "Poke" ? "poke" : "anti");
+                stats[team][typeKey] += fitCount * 1.2;
+                stats[team].dmg += fitCount * 0.5;
+                stats[team].tank += fitCount * 0.3;
+                stats[team].mid += fitCount * 0.6;
+                stats[team].dmg -= mismatchCount * 0.5;
+                bonus[team] += fitCount * 1.4 - mismatchCount * 1.4;
+            } else if (style === "Early") {
+                stats[team].early += fitCount * 2.0 - mismatchCount * 1.6;
+                stats[team].mid += fitCount * 0.6 - mismatchCount * 0.6;
+                stats[team].dmg += fitCount * 0.6 - mismatchCount * 0.4;
+                bonus[team] += fitCount * 1.7 - mismatchCount * 1.5;
+            } else if (style === "Late") {
+                stats[team].late += fitCount * 2.0 - mismatchCount * 1.6;
+                stats[team].tank += fitCount * 0.8 - mismatchCount * 0.4;
+                stats[team].dmg += fitCount * 0.4 - mismatchCount * 0.4;
+                bonus[team] += fitCount * 1.7 - mismatchCount * 1.5;
+            } else if (style === "Mid") {
+                stats[team].mid += fitCount * 2.0 - mismatchCount * 1.6;
+                stats[team].cc += fitCount * 0.4;
+                stats[team].dmg += fitCount * 0.4 - mismatchCount * 0.4;
+                bonus[team] += fitCount * 1.7 - mismatchCount * 1.5;
+            }
+            details[team].push(`팀 선호(${styleLabel}) 적합 ${fitCount} / 부조화 ${mismatchCount}`);
+        }
+
         ["cc", "dmg", "tank", "dive", "poke", "anti", "early", "mid", "late"].forEach((k) => {
-            stats[team][k] = Math.max(0, Number(stats[team][k] || 0));
+            stats[team][k] = roundToOne(Math.max(0, Number(stats[team][k] || 0)));
         });
+        bonus[team] = roundToOne(bonus[team]);
+        roundTeamStatsObject(stats[team]);
     });
     return { stats, bonus, details };
 }
@@ -2902,7 +3137,7 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null,
     };
     const makeTypeDetail = (stats) => {
         const d = getDominantProfile(stats);
-        return `${makeType(stats)} <span style="color:#8fa3b2;">(돌 ${stats.dive} / 포 ${stats.poke} / 받 ${stats.anti})</span>`;
+        return `${makeType(stats)} <span style="color:#8fa3b2;">(돌 ${formatNum(stats.dive)} / 포 ${formatNum(stats.poke)} / 받 ${formatNum(stats.anti)})</span>`;
     };
     const phaseMax = {
         early: Math.max(1, b.early, r.early),
@@ -2926,18 +3161,18 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null,
         const stratApplied = strategyCtx && strategyCtx.effect && strategyCtx.effect.team === team;
         const stratLabel = stratApplied ? (STRATEGY_CONFIGS[strategyCtx.effect.strategy]?.label || "전략") : "전략 없음";
         const worldBonus = worldsCtx ? (worldsCtx.bonus[team] || 0) : 0;
-        const worldTag = worldsModeEnabled ? `월즈 +${worldBonus.toFixed(1)}` : "월즈 OFF";
+        const worldTag = worldsModeEnabled ? `월즈 +${formatNum(worldBonus)}` : "월즈 OFF";
         const stratMeta = stratApplied
             ? `${stratLabel} | 적합 ${strategyCtx.effect.fit} / 부조화 ${strategyCtx.effect.mismatch} | ${worldTag}`
             : `${stratLabel} | ${worldTag}`;
         return `<div class="mini-team-card ${team}">
             <div class="mini-team-head"><span class="mini-team-name">${role}</span><span class="mini-team-type">${team.toUpperCase()}</span></div>
-            <div class="mini-team-line"><span>코어 스탯</span><span>CC ${stats.cc} | 딜 ${stats.dmg} | 탱 ${stats.tank}</span></div>
+            <div class="mini-team-line"><span>코어 스탯</span><span>CC ${formatNum(stats.cc)} | 딜 ${formatNum(stats.dmg)} | 탱 ${formatNum(stats.tank)}</span></div>
             <div class="mini-team-line"><span>팀 유형</span><span>${makeTypeDetail(stats)}</span></div>
             <div class="mini-team-phase-bars">
-                <div class="mini-phase-row"><span>초</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.early, phaseMax.early).toFixed(1)}%; background:${color};"></span></div><em>${pv.early.toFixed(1)}</em></div>
-                <div class="mini-phase-row"><span>중</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.mid, phaseMax.mid).toFixed(1)}%; background:${color};"></span></div><em>${pv.mid.toFixed(1)}</em></div>
-                <div class="mini-phase-row"><span>후</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.late, phaseMax.late).toFixed(1)}%; background:${color};"></span></div><em>${pv.late.toFixed(1)}</em></div>
+                <div class="mini-phase-row"><span>초</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.early, phaseMax.early).toFixed(1)}%; background:${color};"></span></div><em>${formatNum(pv.early)}</em></div>
+                <div class="mini-phase-row"><span>중</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.mid, phaseMax.mid).toFixed(1)}%; background:${color};"></span></div><em>${formatNum(pv.mid)}</em></div>
+                <div class="mini-phase-row"><span>후</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.late, phaseMax.late).toFixed(1)}%; background:${color};"></span></div><em>${formatNum(pv.late)}</em></div>
             </div>
             <div class="mini-team-line"><span>AD/AP</span><span><span class="dmg-ad">${adRatio.toFixed(0)}</span> / <span class="dmg-ap">${apRatio.toFixed(0)}</span> / <span class="dmg-hybrid">${((stats.hybridCount / 5) * 100).toFixed(0)}</span></span></div>
             <div class="mini-team-line"><span>특성</span><span>${traitList.length}개</span></div>
@@ -3158,12 +3393,13 @@ function refreshUI(team) {
         img.classList.remove("has-info");
         slot.dataset.champKey = "";
         slot.classList.remove("has-info");
-        slot.querySelector('.name').innerText = "-";
+            slot.querySelector('.name').innerText = "-";
     });
 
+    const assigned = getTeamAssignedMap(team, picks);
     picks[team].forEach((key) => {
         if (!key) return;
-        const pos = CHAMP_DB[key].pos[0];
+        const pos = assigned.byKey[key] || CHAMP_DB[key]?.pos?.[0];
         const slotIdx = POSITIONS.indexOf(pos);
         if (slotIdx < 0) return;
         const slot = document.getElementById(`${team[0]}-slot-${slotIdx}`);
@@ -3351,7 +3587,10 @@ function updateObjectiveBrief(myDragons, myBarons, enemyDragons, enemyBarons, my
     if (!el) return;
     const my = myName || teamProfile.myTeamName || "MY TEAM";
     const enemy = enemyName || teamProfile.aiTeamName || "AI TEAM";
-    el.innerText = `오브젝트 | ${my} 용 ${myDragons} / 바론 ${myBarons} · ${enemy} 용 ${enemyDragons} / 바론 ${enemyBarons}`;
+    el.innerHTML = `
+        <span class="obj-team-badges"><b class="obj-team-name">${escapeHtml(my)}</b><span class="obj-badge dragon">용 ${formatNum(myDragons)}</span><span class="obj-badge baron">바론 ${formatNum(myBarons)}</span></span>
+        <span class="obj-team-badges"><b class="obj-team-name">${escapeHtml(enemy)}</b><span class="obj-badge dragon">용 ${formatNum(enemyDragons)}</span><span class="obj-badge baron">바론 ${formatNum(enemyBarons)}</span></span>
+    `;
 }
 
 function getGoldSwingByWinEdge(edge) {
@@ -3493,27 +3732,22 @@ function renderLiveBattleHeader(projection) {
     return `<div class="live-battle-wrap">
         <div class="live-battle-title">실시간 전황 (시뮬레이션 중 변동)</div>
         <div id="live-battle-stage" class="live-battle-stage">초반 준비중</div>
-        <div class="live-battle-grid">
-            <div class="live-metric-card">
+        <div id="live-kill-value" class="live-kill-hero">${myName} 0 : 0 ${enemyName}</div>
+        <div class="live-battle-grid compact">
+            <div class="live-metric-card compact">
                 <span class="live-metric-label">자금 격차</span>
                 <b id="live-gold-value" class="live-metric-value">0G</b>
                 <div class="live-metric-track"><span id="live-gold-fill" class="live-metric-fill"></span></div>
             </div>
-            <div class="live-metric-card">
+            <div class="live-metric-card compact">
                 <span class="live-metric-label">전투력 격차</span>
                 <b id="live-combat-value" class="live-metric-value">0</b>
                 <div class="live-metric-track"><span id="live-combat-fill" class="live-metric-fill"></span></div>
             </div>
-            <div class="live-metric-card">
-                <span class="live-metric-label">킬스코어</span>
-                <b id="live-kill-value" class="live-metric-value">${myName} 0 : 0 ${enemyName}</b>
-                <div class="live-metric-track"><span id="live-kill-fill" class="live-metric-fill"></span></div>
-            </div>
-            <div class="live-metric-card">
-                <span class="live-metric-label">오브젝트</span>
-                <b id="live-objective-value" class="live-metric-value">${myName} 용 0 / 바론 0</b>
-                <div class="live-metric-track"><span id="live-objective-fill" class="live-metric-fill objective"></span></div>
-            </div>
+        </div>
+        <div class="live-objective-badges">
+            <div class="live-team-badges"><span class="live-team-name">${myName}</span><span id="live-my-dragon" class="obj-badge dragon">용 0</span><span id="live-my-baron" class="obj-badge baron">바론 0</span></div>
+            <div class="live-team-badges"><span class="live-team-name">${enemyName}</span><span id="live-enemy-dragon" class="obj-badge dragon">용 0</span><span id="live-enemy-baron" class="obj-badge baron">바론 0</span></div>
         </div>
     </div>`;
 }
@@ -3524,32 +3758,30 @@ function updateLiveBattlePanel(projection, progress) {
     const killEl = document.getElementById("live-kill-value");
     const goldFill = document.getElementById("live-gold-fill");
     const combatFill = document.getElementById("live-combat-fill");
-    const killFill = document.getElementById("live-kill-fill");
-    const objEl = document.getElementById("live-objective-value");
-    const objFill = document.getElementById("live-objective-fill");
+    const myDragonEl = document.getElementById("live-my-dragon");
+    const myBaronEl = document.getElementById("live-my-baron");
+    const enemyDragonEl = document.getElementById("live-enemy-dragon");
+    const enemyBaronEl = document.getElementById("live-enemy-baron");
     const stageEl = document.getElementById("live-battle-stage");
-    if (!goldEl || !combatEl || !killEl || !goldFill || !combatFill || !killFill || !objEl || !objFill || !stageEl) return;
+    if (!goldEl || !combatEl || !killEl || !goldFill || !combatFill || !myDragonEl || !myBaronEl || !enemyDragonEl || !enemyBaronEl || !stageEl) return;
 
     const state = getLiveProjectionState(projection, progress);
     const stage = progress < 0.34 ? "초반 교전" : (progress < 0.74 ? "중반 한타" : "후반 결정타");
     const myName = projection?.myTeamName || "MY TEAM";
     const enemyName = projection?.enemyTeamName || "AI TEAM";
     const combatSign = state.combatDiff > 0 ? "+" : "";
-    const killDiff = state.myKills - state.enemyKills;
-    const myObj = (state.myDragons || 0) * 1.2 + (state.myBarons || 0) * 2.8;
-    const enemyObj = (state.enemyDragons || 0) * 1.2 + (state.enemyBarons || 0) * 2.8;
-    const objDiff = myObj - enemyObj;
 
     goldEl.innerText = formatGoldDiff(state.goldDiff);
-    combatEl.innerText = `${combatSign}${state.combatDiff}`;
-    killEl.innerText = `${myName} ${state.myKills} : ${state.enemyKills} ${enemyName}`;
-    objEl.innerText = `${myName} 용 ${state.myDragons || 0} / 바론 ${state.myBarons || 0}`;
+    combatEl.innerText = `${combatSign}${formatNum(state.combatDiff)}`;
+    killEl.innerText = `${myName} ${formatNum(state.myKills)} : ${formatNum(state.enemyKills)} ${enemyName}`;
+    myDragonEl.innerText = `용 ${formatNum(state.myDragons || 0)}`;
+    myBaronEl.innerText = `바론 ${formatNum(state.myBarons || 0)}`;
+    enemyDragonEl.innerText = `용 ${formatNum(state.enemyDragons || 0)}`;
+    enemyBaronEl.innerText = `바론 ${formatNum(state.enemyBarons || 0)}`;
     stageEl.innerText = stage;
 
     goldFill.style.width = `${toCenteredPercent(state.goldDiff, 12000).toFixed(1)}%`;
     combatFill.style.width = `${toCenteredPercent(state.combatDiff, 40).toFixed(1)}%`;
-    killFill.style.width = `${toCenteredPercent(killDiff, 14).toFixed(1)}%`;
-    objFill.style.width = `${toCenteredPercent(objDiff, 10).toFixed(1)}%`;
     updateObjectiveBrief(
         state.myDragons || 0,
         state.myBarons || 0,
@@ -3789,9 +4021,9 @@ function buildResultBody(res, winner, loser, seriesEnded) {
     const strategyEffect = res.strategyCtx && res.strategyCtx.effect ? res.strategyCtx.effect : null;
     const strategyTeamLabel = strategyEffect ? teamDisplayName(strategyEffect.team) : "-";
     const strategyName = strategyEffect ? (STRATEGY_CONFIGS[strategyEffect.strategy]?.label || "전략") : "-";
-    const strategyText = strategyEffect ? `${strategyTeamLabel} 전략(${strategyName}) 적합 ${strategyEffect.fit} / 부조화 ${strategyEffect.mismatch} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${strategyEffect.winBonus.toFixed(1)}` : "전략 보정 없음";
+    const strategyText = strategyEffect ? `${strategyTeamLabel} 전략(${strategyName}) 적합 ${formatNum(strategyEffect.fit)} / 부조화 ${formatNum(strategyEffect.mismatch)} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${formatNum(strategyEffect.winBonus)}` : "전략 보정 없음";
     const worldsText = worldsModeEnabled && res.worldsCtx
-        ? `${teamDisplayName("blue")} +${(res.worldsCtx.bonus.blue || 0).toFixed(1)} / ${teamDisplayName("red")} +${(res.worldsCtx.bonus.red || 0).toFixed(1)}`
+        ? `${teamDisplayName("blue")} +${formatNum(res.worldsCtx.bonus.blue || 0)} / ${teamDisplayName("red")} +${formatNum(res.worldsCtx.bonus.red || 0)}`
         : "비활성";
     const winnerRole = winner === userTeam ? "user" : "ai";
     const loserRole = winnerRole === "user" ? "ai" : "user";
@@ -3799,10 +4031,10 @@ function buildResultBody(res, winner, loser, seriesEnded) {
         <p style="color:var(--gold);font-weight:bold;">세트 스코어: ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
         <p style="font-size:12px;color:#9ec4d9;">전략 적용: ${strategyText}</p>
         <p style="font-size:12px;color:#9ec4d9;">월즈 보정: ${worldsText}</p>
-        <p>🔵 블루팀: ${bComp} (CC ${res.b.cc} / 딜 ${res.b.dmg} / 탱 ${res.b.tank})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.b.dive} / 포킹 ${res.b.poke} / 받아치기 ${res.b.anti} | 시간대: 초 ${res.b.early} / 중 ${res.b.mid} / 후 ${res.b.late}</p>
-        <p>🔴 레드팀: ${rComp} (CC ${res.r.cc} / 딜 ${res.r.dmg} / 탱 ${res.r.tank})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${res.r.dive} / 포킹 ${res.r.poke} / 받아치기 ${res.r.anti} | 시간대: 초 ${res.r.early} / 중 ${res.r.mid} / 후 ${res.r.late}</p>
+        <p>🔵 블루팀: ${bComp} (CC ${formatNum(res.b.cc)} / 딜 ${formatNum(res.b.dmg)} / 탱 ${formatNum(res.b.tank)})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${formatNum(res.b.dive)} / 포킹 ${formatNum(res.b.poke)} / 받아치기 ${formatNum(res.b.anti)} | 시간대: 초 ${formatNum(res.b.early)} / 중 ${formatNum(res.b.mid)} / 후 ${formatNum(res.b.late)}</p>
+        <p>🔴 레드팀: ${rComp} (CC ${formatNum(res.r.cc)} / 딜 ${formatNum(res.r.dmg)} / 탱 ${formatNum(res.r.tank)})</p>
+        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${formatNum(res.r.dive)} / 포킹 ${formatNum(res.r.poke)} / 받아치기 ${formatNum(res.r.anti)} | 시간대: 초 ${formatNum(res.r.early)} / 중 ${formatNum(res.r.mid)} / 후 ${formatNum(res.r.late)}</p>
         <div class="mvp-wrap single">
             <div class="mvp-card ${winner}">
                 <div class="mvp-title">${winnerTeamLabel} MVP</div>

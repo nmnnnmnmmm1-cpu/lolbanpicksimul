@@ -8,7 +8,7 @@
 ```js
 "Ahri": {
   name: "아리",
-  pos: ["MID"],
+  pos: ["MID", "ADC"],
   cc: 1,
   dmg: 8,
   tank: 3,
@@ -22,7 +22,7 @@
 
 | 필드 | 범위/값 |
 |---|---|
-| `pos[0]` | `TOP`, `JNG`, `MID`, `ADC`, `SPT` (정확히 1개) |
+| `pos` | `TOP`, `JNG`, `MID`, `ADC`, `SPT` 중 1개 이상 |
 | `cc` | `0~3` |
 | `dmg`, `tank` | `1~10` |
 | `profile.type` | `Dive`, `Poke`, `Anti` |
@@ -52,6 +52,9 @@ node tools/export_champions_csv.js
 
 `key,name,pos,cc,dmg,tank,profileType,profileScale,dmgType,phaseEarly,phaseMid,phaseLate`
 
+- 멀티 포지션은 `pos` 컬럼에 `|` 구분자로 입력합니다.
+예: `MID|JNG`, `TOP|SPT`
+
 ### 3. CSV 다시 반영
 
 ```bash
@@ -70,6 +73,34 @@ node tools/import_champions_csv.js /path/to/your.csv
 2. `key` 중복이 없는지 확인
 3. `pos/profileType/dmgType` enum 값 오타 확인
 4. 숫자 필드가 정수 범위(`cc 0~3`, 나머지 규칙 범위)인지 확인
+
+## 고유 특성 CSV 편집
+
+고유 특성은 `data/traits.js`가 런타임 원본입니다.
+
+### 1. CSV 내보내기
+
+```bash
+node tools/export_traits_csv.js
+```
+
+생성 파일: `traits.csv`
+
+컬럼:
+
+`champName,traitName,condition,effect`
+
+### 2. CSV 편집 후 반영
+
+```bash
+node tools/import_traits_csv.js
+```
+
+또는 경로 지정:
+
+```bash
+node tools/import_traits_csv.js /path/to/traits.csv
+```
 
 ## 월즈 모드 데이터
 

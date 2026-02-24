@@ -2,7 +2,7 @@ key,name,pos,cc,dmg,tank,profileType,profileScale,dmgType,phaseEarly,phaseMid,ph
 Garen,가렌,TOP,1,7,8,Dive,1,AD,5,9,5
 Galio,갈리오,MID,3,3,7,Anti,2,AP,4,5,6
 Gangplank,갱플랭크,TOP,1,8,4,Poke,2,AD,5,6,8
-Gragas,그라가스,TOP,3,3,5,Anti,3,AP,2,5,7
+Gragas,그라가스,TOP|JNG,3,3,5,Anti,3,AP,2,5,7
 Graves,그레이브즈,JNG,1,8,4,Anti,2,AD,3,8,8
 Gwen,그웬,TOP,0,8,3,Dive,3,AP,4,7,9
 Gnar,나르,TOP,2,7,8,Dive,2,AD,3,5,5
@@ -61,7 +61,7 @@ Vladimir,블라디미르,MID,1,8,8,Anti,1,AP,2,7,9
 Blitzcrank,블리츠크랭크,SPT,3,1,9,Poke,3,AD,5,2,5
 Viego,비에고,JNG,1,5,6,Dive,2,AD,4,9,7
 Viktor,빅토르,MID,2,10,3,Poke,2,AP,2,4,9
-Poppy,뽀삐,SPT,2,2,8,Anti,3,AD,5,5,5
+Poppy,뽀삐,TOP|SPT,2,2,8,Anti,3,AD,5,5,5
 Samira,사미라,ADC,1,10,2,Dive,2,AD,3,10,6
 Sion,사이온,TOP,2,3,9,Dive,2,AD,4,6,6
 Sylas,사일러스,MID,2,7,6,Dive,2,AP,5,6,5
@@ -75,7 +75,7 @@ Soraka,소라카,SPT,1,3,8,Anti,2,AP,5,10,5
 Shen,쉔,TOP,2,3,10,Anti,2,AD,6,7,2
 Shyvana,쉬바나,JNG,1,5,6,Dive,2,Hybrid,3,9,8
 Smolder,스몰더,MID,1,10,2,Poke,3,AD,1,4,10
-Swain,스웨인,MID,1,6,6,Anti,2,AP,6,9,4
+Swain,스웨인,MID|SPT,1,6,6,Anti,2,AP,6,9,4
 Skarner,스카너,JNG,3,2,9,Anti,1,AD,4,7,6
 Sivir,시비르,ADC,0,10,2,Poke,2,AD,3,9,9
 Syndra,신드라,MID,2,10,3,Poke,2,AP,3,5,7
@@ -108,6 +108,7 @@ Yorick,요릭,TOP,2,5,7,Anti,1,AD,4,10,5
 Udyr,우디르,JNG,1,5,5,Anti,2,Hybrid,7,6,7
 Urgot,우르곳,TOP,1,7,10,Anti,2,AD,4,6,4
 Warwick,워윅,JNG,2,6,6,Dive,2,AD,8,6,2
+Yunara,유나라,ADC,1,8,1,Dive,2,AD,6,8,7
 Yuumi,유미,SPT,1,3,10,Poke,2,AP,6,7,5
 Irelia,이렐리아,TOP,1,7,3,Dive,3,AD,6,9,3
 Evelynn,이블린,JNG,1,9,1,Dive,2,AP,5,8,8
@@ -116,7 +117,7 @@ Illaoi,일라오이,TOP,1,8,9,Anti,2,AD,2,10,2
 JarvanIV,자르반 4세,JNG,2,4,8,Dive,2,AD,8,4,4
 Xayah,자야,ADC,1,8,3,Anti,2,AD,5,5,10
 Zyra,자이라,SPT,3,6,3,Anti,3,AP,6,4,3
-Zac,자크,JNG,3,1,9,Dive,2,AP,5,5,5
+Zac,자크,JNG|TOP,3,1,9,Dive,2,AP,5,5,5
 Janna,잔나,SPT,1,3,10,Anti,3,AP,4,6,6
 Jax,잭스,TOP,2,5,5,Dive,2,Hybrid,4,5,9
 Zed,제드,MID,0,10,3,Dive,2,AD,4,8,9
@@ -132,7 +133,7 @@ Chogath,초가스,TOP,2,3,10,Anti,2,AP,2,4,9
 Karma,카르마,SPT,2,3,10,Poke,1,AP,7,10,1
 Camille,카밀,TOP,1,7,5,Dive,2,AD,4,7,8
 Kassadin,카사딘,MID,0,10,3,Dive,2,AP,3,7,10
-Karthus,카서스,JNG,1,9,1,Anti,2,AP,2,8,10
+Karthus,카서스,JNG|MID,1,9,1,Anti,2,AP,2,8,10
 Cassiopeia,카시오페아,MID,2,7,1,Anti,3,AP,2,5,10
 Kaisa,카이사,ADC,0,10,3,Dive,2,Hybrid,2,6,10
 Khazix,카직스,JNG,0,10,3,Dive,2,AD,7,8,7
@@ -151,7 +152,7 @@ Qiyana,키아나,MID,2,8,4,Dive,2,AD,3,9,4
 Kindred,킨드레드,JNG,0,10,4,Anti,2,AD,2,7,10
 Taric,타릭,SPT,3,3,10,Anti,2,AD,2,5,6
 Talon,탈론,MID,1,10,3,Dive,2,AD,4,8,6
-Taliyah,탈리야,MID,2,8,4,Anti,2,AP,3,5,7
+Taliyah,탈리야,MID|JNG,2,8,4,Anti,2,AP,3,5,7
 TahmKench,탐켄치,SPT,2,2,8,Anti,2,Hybrid,5,7,6
 Trundle,트런들,JNG,2,7,6,Anti,1,AD,6,7,5
 Tristana,트리스타나,ADC,1,10,2,Dive,1,AD,7,7,8
@@ -167,4 +168,3 @@ Fizz,피즈,MID,1,10,3,Dive,3,AP,2,8,5
 Heimerdinger,하이머딩거,SPT,1,10,2,Anti,2,AP,10,6,2
 Hecarim,헤카림,JNG,1,7,8,Dive,2,AD,6,6,4
 Hwei,흐웨이,MID,3,9,1,Poke,2,AP,5,5,5
-Yunara,유나라,ADC,1,8,1,Dive,2,AD,6,8,7

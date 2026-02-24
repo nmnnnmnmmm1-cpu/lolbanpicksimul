@@ -125,8 +125,15 @@ for (let i = 1; i < rows.length; i++) {
     }
     seen.add(key);
 
-    const pos = rec.pos;
-    if (!POSITIONS.has(pos)) errors.push(`${rowNum}행 pos: ${pos} (허용: TOP/JNG/MID/ADC/SPT)`);
+    const posList = rec.pos
+        .split(/[|/]/)
+        .map((v) => v.trim())
+        .filter(Boolean);
+    if (posList.length === 0) {
+        errors.push(`${rowNum}행 pos: 비어있음 (예: MID 또는 MID|JNG)`);
+    }
+    const invalidPos = posList.find((p) => !POSITIONS.has(p));
+    if (invalidPos) errors.push(`${rowNum}행 pos: ${rec.pos} (허용: TOP/JNG/MID/ADC/SPT, 구분자 |)`);
 
     const profileType = rec.profileType;
     if (!PROFILE_TYPES.has(profileType)) errors.push(`${rowNum}행 profileType: ${profileType} (허용: Dive/Poke/Anti)`);
@@ -148,7 +155,7 @@ for (let i = 1; i < rows.length; i++) {
 
     db[key] = {
         name: rec.name || key,
-        pos: [pos],
+        pos: [...new Set(posList)],
         cc,
         dmg,
         tank,
@@ -175,7 +182,7 @@ const lines = [];
 lines.push("// Champion dataset (single source of truth).");
 lines.push("// Editable fields per champion:");
 lines.push("// name: string (display name)");
-lines.push("// pos: [\"TOP\"|\"JNG\"|\"MID\"|\"ADC\"|\"SPT\"] exactly 1 item");
+lines.push("// pos: [\"TOP\"|\"JNG\"|\"MID\"|\"ADC\"|\"SPT\"] 1개 이상");
 lines.push("// cc: 0~3");
 lines.push("// dmg: 1~10, tank: 1~10");
 lines.push("// profile.type: \"Dive\"|\"Poke\"|\"Anti\"");
@@ -187,7 +194,8 @@ keys.forEach((key, idx) => {
     const c = db[key];
     const comma = idx < keys.length - 1 ? "," : "";
     const name = c.name.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-    lines.push(`    \"${key}\": { name: \"${name}\", pos: [\"${c.pos[0]}\"], cc: ${c.cc}, dmg: ${c.dmg}, tank: ${c.tank}, profile: { type: \"${c.profile.type}\", scale: ${c.profile.scale} }, dmgType: \"${c.dmgType}\", phase: { early: ${c.phase.early}, mid: ${c.phase.mid}, late: ${c.phase.late} } }${comma}`);
+    const posArr = (Array.isArray(c.pos) ? c.pos : []).map((p) => `\"${p}\"`).join(", ");
+    lines.push(`    \"${key}\": { name: \"${name}\", pos: [${posArr}], cc: ${c.cc}, dmg: ${c.dmg}, tank: ${c.tank}, profile: { type: \"${c.profile.type}\", scale: ${c.profile.scale} }, dmgType: \"${c.dmgType}\", phase: { early: ${c.phase.early}, mid: ${c.phase.mid}, late: ${c.phase.late} } }${comma}`);
 });
 lines.push("};");
 lines.push("");

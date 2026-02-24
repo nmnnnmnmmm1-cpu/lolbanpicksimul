@@ -62,7 +62,43 @@ body {
     background: #101820;
     color: #b7c8d3;
     font-size: 12px;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.obj-team-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.obj-team-name {
+    color: #dfeaf1;
+    font-size: 12px;
+}
+
+.obj-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #3a4f5f;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.obj-badge.dragon {
+    background: #123243;
+    color: #83d2ff;
+    border-color: #2c5d79;
+}
+
+.obj-badge.baron {
+    background: #2d1f3f;
+    color: #d4a6ff;
+    border-color: #59407a;
 }
 
 .winrate-track {
@@ -230,6 +266,24 @@ body {
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.2px;
+}
+
+.slot-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.slot-meta.left { margin-left: 10px; }
+.slot-meta.right { margin-right: 10px; align-items: flex-end; }
+
+.player-note {
+    font-size: 10px;
+    color: #93a8b6;
+    max-width: 165px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .pos-indicator {
@@ -573,7 +627,8 @@ body {
 #tutorial-modal,
 #side-select-modal,
 #strategy-modal,
-#worlds-modal {
+#worlds-modal,
+#champ-stats-modal {
     position: fixed;
     inset: 0;
     display: none;
@@ -587,6 +642,7 @@ body {
 #strategy-modal { z-index: 3270; }
 #tutorial-modal { z-index: 3400; }
 #worlds-modal { z-index: 3290; }
+#champ-stats-modal { z-index: 3380; }
 
 .home-card {
     width: min(760px, 92vw);
@@ -685,6 +741,99 @@ body {
     background: #141f28;
 }
 
+.champ-mini-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.champ-mini-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.champ-mini-rank {
+    color: #9fb3c2;
+    font-size: 11px;
+    min-width: 10px;
+}
+
+.champ-mini-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid #3b5566;
+    object-fit: cover;
+    background: #0e171f;
+}
+
+.home-champ-detail-btn {
+    margin-top: 8px;
+    width: 100%;
+    border: 1px solid #476070;
+    border-radius: 7px;
+    background: #213744;
+    color: #deebf2;
+    padding: 8px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.champ-stats-card {
+    width: min(720px, 92vw);
+}
+
+.champ-stats-body {
+    margin-top: 8px;
+    max-height: 58vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.champ-stat-row {
+    border: 1px solid #334957;
+    background: #101a22;
+    border-radius: 8px;
+    padding: 7px 8px;
+    display: grid;
+    grid-template-columns: 34px 38px 1fr;
+    gap: 8px;
+    align-items: center;
+}
+
+.champ-stat-rank {
+    color: #9bb1be;
+    font-size: 11px;
+}
+
+.champ-stat-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid #3d5666;
+    object-fit: cover;
+    background: #0f171f;
+}
+
+.champ-stat-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.champ-stat-meta b {
+    font-size: 13px;
+    color: #ebf3f8;
+}
+
+.champ-stat-meta span {
+    font-size: 12px;
+    color: #a8becd;
+}
+
 .home-log-item b,
 .home-rank-item span {
     font-size: 12px;
@@ -731,6 +880,61 @@ body {
 .mode-name { font-size: 16px; font-weight: bold; }
 .mode-record { font-size: 12px; color: #acc1cf; }
 .home-actions { margin-top: 12px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+
+.remote-config {
+    margin-top: 12px;
+    border: 1px solid #324653;
+    border-radius: 8px;
+    background: #0f1a22;
+    padding: 10px;
+}
+.remote-config h3 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #ffe9b3;
+}
+.remote-config-grid {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 6px 8px;
+    align-items: center;
+}
+.remote-config-grid label {
+    font-size: 12px;
+    color: #a8becc;
+}
+.remote-config-grid input {
+    width: 100%;
+    padding: 7px 8px;
+    border-radius: 6px;
+    border: 1px solid #3b5362;
+    background: #0f1820;
+    color: #e6eef4;
+    font-size: 12px;
+}
+.remote-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.remote-status {
+    margin-top: 8px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid #2f4250;
+    background: #101c25;
+    color: #b9cdda;
+    padding: 6px 8px;
+}
+.remote-status.ok {
+    border-color: #2d6a47;
+    color: #9be7be;
+}
+.remote-status.err {
+    border-color: #7c3a3a;
+    color: #ffb4b4;
+}
 
 .tutorial-card {
     width: min(860px, 92vw);
@@ -999,11 +1203,19 @@ body {
     gap: 8px;
 }
 
+.live-battle-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .live-metric-card {
     border: 1px solid #355063;
     border-radius: 8px;
     background: #0f1a23;
     padding: 8px 8px 7px;
+}
+
+.live-metric-card.compact {
+    padding: 7px 8px;
 }
 
 .live-metric-label {
@@ -1017,6 +1229,15 @@ body {
     margin-top: 3px;
     font-size: 18px;
     color: #e6f2fb;
+}
+
+.live-kill-hero {
+    margin-top: 8px;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: #f5f9fc;
+    letter-spacing: 0.4px;
 }
 
 .live-metric-track {
@@ -1035,8 +1256,29 @@ body {
     background: linear-gradient(90deg, #2ab2ff, #7ed7ff);
     transition: width 0.35s ease;
 }
-.live-metric-fill.objective {
-    background: linear-gradient(90deg, #f7b733, #ffe082);
+.live-objective-badges {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.live-team-badges {
+    border: 1px solid #365265;
+    border-radius: 8px;
+    background: #101d27;
+    padding: 7px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.live-team-name {
+    color: #d3e3ee;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .econ-wrap { margin: 10px 0 4px; border: 1px solid #2f4452; border-radius: 8px; padding: 8px; background: #0e171f; }
@@ -1134,6 +1376,8 @@ body {
         margin-top: 4px;
         padding: 4px 6px;
     }
+    .obj-team-name { font-size: 11px; }
+    .obj-badge { font-size: 10px; padding: 1px 6px; }
 
     #step-msg { font-size: 20px !important; }
 
@@ -1176,6 +1420,10 @@ body {
     .slot .name {
         font-size: 12px;
         font-weight: 700;
+    }
+    .player-note {
+        font-size: 8px;
+        max-width: 95px;
     }
 
     .pos-indicator {
@@ -1269,6 +1517,8 @@ body {
     .home-save-btn { width: 100%; }
     .home-stats-grid { grid-template-columns: 1fr; }
     .home-log-panel { min-height: 140px; }
+    .remote-config-grid { grid-template-columns: 1fr; }
+    .remote-config-grid label { margin-top: 4px; }
     .worlds-setup-row { grid-template-columns: 1fr; }
     .worlds-roster-grid { grid-template-columns: 1fr; }
 
@@ -1285,7 +1535,10 @@ body {
     .mvp-wrap { grid-template-columns: 1fr; }
     .econ-grid { grid-template-columns: 1fr; }
     .live-battle-grid { grid-template-columns: 1fr; }
+    .live-battle-grid.compact { grid-template-columns: 1fr; }
     .live-metric-value { font-size: 16px; }
+    .live-kill-hero { font-size: 22px; }
+    .live-objective-badges { grid-template-columns: 1fr; }
     .trait-name-lg { font-size: 12px; }
     .trait-line { font-size: 10px; }
 
@@ -1320,6 +1573,7 @@ body {
     padding: 4px 0;
     border-bottom: 1px dashed #2a3b46;
 }
+.tip-trait-item .trait-owner { display: none !important; }
 .tip-trait-item:last-child { border-bottom: 0; }
 .tip-trait-empty { font-size: 10px; color: #7f95a3; }
 .cc-pips { display:inline-flex; gap:4px; align-items:center; }
@@ -1361,7 +1615,7 @@ body {
 .trait-diff { font-size: 10px; color: #8fa3b1; border: 1px solid #3a4d5b; border-radius: 999px; padding: 1px 6px; }
 .trait-line { display: grid; grid-template-columns: 30px 1fr; gap: 6px; font-size: 11px; line-height: 1.4; }
 .trait-key { color: #86a0b0; font-weight: 700; }
-.trait-val { color: #c6d6df; }
+.trait-val { color: #d7e5ee; word-break: keep-all; }
 .trait-champ-ally { color: #ffffff; font-weight: 800; }
 .trait-champ-enemy { color: #ffd54f; font-weight: 800; }
 .trait-effect-seg { font-weight: 700; }

@@ -1,7 +1,7 @@
 // Champion dataset (single source of truth).
 // Editable fields per champion:
 // name: string (display name)
-// pos: ["TOP"|"JNG"|"MID"|"ADC"|"SPT"] exactly 1 item
+// pos: ["TOP"|"JNG"|"MID"|"ADC"|"SPT"] 1개 이상
 // cc: 0~3
 // dmg: 1~10, tank: 1~10
 // profile.type: "Dive"|"Poke"|"Anti"
@@ -12,7 +12,7 @@ var CHAMP_DB = {
     "Garen": { name: "가렌", pos: ["TOP"], cc: 1, dmg: 7, tank: 8, profile: { type: "Dive", scale: 1 }, dmgType: "AD", phase: { early: 5, mid: 9, late: 5 } },
     "Galio": { name: "갈리오", pos: ["MID"], cc: 3, dmg: 3, tank: 7, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 4, mid: 5, late: 6 } },
     "Gangplank": { name: "갱플랭크", pos: ["TOP"], cc: 1, dmg: 8, tank: 4, profile: { type: "Poke", scale: 2 }, dmgType: "AD", phase: { early: 5, mid: 6, late: 8 } },
-    "Gragas": { name: "그라가스", pos: ["TOP"], cc: 3, dmg: 3, tank: 5, profile: { type: "Anti", scale: 3 }, dmgType: "AP", phase: { early: 2, mid: 5, late: 7 } },
+    "Gragas": { name: "그라가스", pos: ["TOP", "JNG"], cc: 3, dmg: 3, tank: 5, profile: { type: "Anti", scale: 3 }, dmgType: "AP", phase: { early: 2, mid: 5, late: 7 } },
     "Graves": { name: "그레이브즈", pos: ["JNG"], cc: 1, dmg: 8, tank: 4, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 3, mid: 8, late: 8 } },
     "Gwen": { name: "그웬", pos: ["TOP"], cc: 0, dmg: 8, tank: 3, profile: { type: "Dive", scale: 3 }, dmgType: "AP", phase: { early: 4, mid: 7, late: 9 } },
     "Gnar": { name: "나르", pos: ["TOP"], cc: 2, dmg: 7, tank: 8, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 3, mid: 5, late: 5 } },
@@ -71,7 +71,7 @@ var CHAMP_DB = {
     "Blitzcrank": { name: "블리츠크랭크", pos: ["SPT"], cc: 3, dmg: 1, tank: 9, profile: { type: "Poke", scale: 3 }, dmgType: "AD", phase: { early: 5, mid: 2, late: 5 } },
     "Viego": { name: "비에고", pos: ["JNG"], cc: 1, dmg: 5, tank: 6, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 4, mid: 9, late: 7 } },
     "Viktor": { name: "빅토르", pos: ["MID"], cc: 2, dmg: 10, tank: 3, profile: { type: "Poke", scale: 2 }, dmgType: "AP", phase: { early: 2, mid: 4, late: 9 } },
-    "Poppy": { name: "뽀삐", pos: ["SPT"], cc: 2, dmg: 2, tank: 8, profile: { type: "Anti", scale: 3 }, dmgType: "AD", phase: { early: 5, mid: 5, late: 5 } },
+    "Poppy": { name: "뽀삐", pos: ["TOP", "SPT"], cc: 2, dmg: 2, tank: 8, profile: { type: "Anti", scale: 3 }, dmgType: "AD", phase: { early: 5, mid: 5, late: 5 } },
     "Samira": { name: "사미라", pos: ["ADC"], cc: 1, dmg: 10, tank: 2, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 3, mid: 10, late: 6 } },
     "Sion": { name: "사이온", pos: ["TOP"], cc: 2, dmg: 3, tank: 9, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 4, mid: 6, late: 6 } },
     "Sylas": { name: "사일러스", pos: ["MID"], cc: 2, dmg: 7, tank: 6, profile: { type: "Dive", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 6, late: 5 } },
@@ -85,7 +85,7 @@ var CHAMP_DB = {
     "Shen": { name: "쉔", pos: ["TOP"], cc: 2, dmg: 3, tank: 10, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 6, mid: 7, late: 2 } },
     "Shyvana": { name: "쉬바나", pos: ["JNG"], cc: 1, dmg: 5, tank: 6, profile: { type: "Dive", scale: 2 }, dmgType: "Hybrid", phase: { early: 3, mid: 9, late: 8 } },
     "Smolder": { name: "스몰더", pos: ["MID"], cc: 1, dmg: 10, tank: 2, profile: { type: "Poke", scale: 3 }, dmgType: "AD", phase: { early: 1, mid: 4, late: 10 } },
-    "Swain": { name: "스웨인", pos: ["MID"], cc: 1, dmg: 6, tank: 6, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 6, mid: 9, late: 4 } },
+    "Swain": { name: "스웨인", pos: ["MID", "SPT"], cc: 1, dmg: 6, tank: 6, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 6, mid: 9, late: 4 } },
     "Skarner": { name: "스카너", pos: ["JNG"], cc: 3, dmg: 2, tank: 9, profile: { type: "Anti", scale: 1 }, dmgType: "AD", phase: { early: 4, mid: 7, late: 6 } },
     "Sivir": { name: "시비르", pos: ["ADC"], cc: 0, dmg: 10, tank: 2, profile: { type: "Poke", scale: 2 }, dmgType: "AD", phase: { early: 3, mid: 9, late: 9 } },
     "Syndra": { name: "신드라", pos: ["MID"], cc: 2, dmg: 10, tank: 3, profile: { type: "Poke", scale: 2 }, dmgType: "AP", phase: { early: 3, mid: 5, late: 7 } },
@@ -118,6 +118,7 @@ var CHAMP_DB = {
     "Udyr": { name: "우디르", pos: ["JNG"], cc: 1, dmg: 5, tank: 5, profile: { type: "Anti", scale: 2 }, dmgType: "Hybrid", phase: { early: 7, mid: 6, late: 7 } },
     "Urgot": { name: "우르곳", pos: ["TOP"], cc: 1, dmg: 7, tank: 10, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 4, mid: 6, late: 4 } },
     "Warwick": { name: "워윅", pos: ["JNG"], cc: 2, dmg: 6, tank: 6, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 8, mid: 6, late: 2 } },
+    "Yunara": { name: "유나라", pos: ["ADC"], cc: 1, dmg: 8, tank: 1, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 6, mid: 8, late: 7 } },
     "Yuumi": { name: "유미", pos: ["SPT"], cc: 1, dmg: 3, tank: 10, profile: { type: "Poke", scale: 2 }, dmgType: "AP", phase: { early: 6, mid: 7, late: 5 } },
     "Irelia": { name: "이렐리아", pos: ["TOP"], cc: 1, dmg: 7, tank: 3, profile: { type: "Dive", scale: 3 }, dmgType: "AD", phase: { early: 6, mid: 9, late: 3 } },
     "Evelynn": { name: "이블린", pos: ["JNG"], cc: 1, dmg: 9, tank: 1, profile: { type: "Dive", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 8, late: 8 } },
@@ -126,7 +127,7 @@ var CHAMP_DB = {
     "JarvanIV": { name: "자르반 4세", pos: ["JNG"], cc: 2, dmg: 4, tank: 8, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 8, mid: 4, late: 4 } },
     "Xayah": { name: "자야", pos: ["ADC"], cc: 1, dmg: 8, tank: 3, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 5, mid: 5, late: 10 } },
     "Zyra": { name: "자이라", pos: ["SPT"], cc: 3, dmg: 6, tank: 3, profile: { type: "Anti", scale: 3 }, dmgType: "AP", phase: { early: 6, mid: 4, late: 3 } },
-    "Zac": { name: "자크", pos: ["JNG"], cc: 3, dmg: 1, tank: 9, profile: { type: "Dive", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 5, late: 5 } },
+    "Zac": { name: "자크", pos: ["JNG", "TOP"], cc: 3, dmg: 1, tank: 9, profile: { type: "Dive", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 5, late: 5 } },
     "Janna": { name: "잔나", pos: ["SPT"], cc: 1, dmg: 3, tank: 10, profile: { type: "Anti", scale: 3 }, dmgType: "AP", phase: { early: 4, mid: 6, late: 6 } },
     "Jax": { name: "잭스", pos: ["TOP"], cc: 2, dmg: 5, tank: 5, profile: { type: "Dive", scale: 2 }, dmgType: "Hybrid", phase: { early: 4, mid: 5, late: 9 } },
     "Zed": { name: "제드", pos: ["MID"], cc: 0, dmg: 10, tank: 3, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 4, mid: 8, late: 9 } },
@@ -142,7 +143,7 @@ var CHAMP_DB = {
     "Karma": { name: "카르마", pos: ["SPT"], cc: 2, dmg: 3, tank: 10, profile: { type: "Poke", scale: 1 }, dmgType: "AP", phase: { early: 7, mid: 10, late: 1 } },
     "Camille": { name: "카밀", pos: ["TOP"], cc: 1, dmg: 7, tank: 5, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 4, mid: 7, late: 8 } },
     "Kassadin": { name: "카사딘", pos: ["MID"], cc: 0, dmg: 10, tank: 3, profile: { type: "Dive", scale: 2 }, dmgType: "AP", phase: { early: 3, mid: 7, late: 10 } },
-    "Karthus": { name: "카서스", pos: ["JNG"], cc: 1, dmg: 9, tank: 1, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 2, mid: 8, late: 10 } },
+    "Karthus": { name: "카서스", pos: ["JNG", "MID"], cc: 1, dmg: 9, tank: 1, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 2, mid: 8, late: 10 } },
     "Cassiopeia": { name: "카시오페아", pos: ["MID"], cc: 2, dmg: 7, tank: 1, profile: { type: "Anti", scale: 3 }, dmgType: "AP", phase: { early: 2, mid: 5, late: 10 } },
     "Kaisa": { name: "카이사", pos: ["ADC"], cc: 0, dmg: 10, tank: 3, profile: { type: "Dive", scale: 2 }, dmgType: "Hybrid", phase: { early: 2, mid: 6, late: 10 } },
     "Khazix": { name: "카직스", pos: ["JNG"], cc: 0, dmg: 10, tank: 3, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 7, mid: 8, late: 7 } },
@@ -161,7 +162,7 @@ var CHAMP_DB = {
     "Kindred": { name: "킨드레드", pos: ["JNG"], cc: 0, dmg: 10, tank: 4, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 2, mid: 7, late: 10 } },
     "Taric": { name: "타릭", pos: ["SPT"], cc: 3, dmg: 3, tank: 10, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 2, mid: 5, late: 6 } },
     "Talon": { name: "탈론", pos: ["MID"], cc: 1, dmg: 10, tank: 3, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 4, mid: 8, late: 6 } },
-    "Taliyah": { name: "탈리야", pos: ["MID"], cc: 2, dmg: 8, tank: 4, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 3, mid: 5, late: 7 } },
+    "Taliyah": { name: "탈리야", pos: ["MID", "JNG"], cc: 2, dmg: 8, tank: 4, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 3, mid: 5, late: 7 } },
     "TahmKench": { name: "탐켄치", pos: ["SPT"], cc: 2, dmg: 2, tank: 8, profile: { type: "Anti", scale: 2 }, dmgType: "Hybrid", phase: { early: 5, mid: 7, late: 6 } },
     "Trundle": { name: "트런들", pos: ["JNG"], cc: 2, dmg: 7, tank: 6, profile: { type: "Anti", scale: 1 }, dmgType: "AD", phase: { early: 6, mid: 7, late: 5 } },
     "Tristana": { name: "트리스타나", pos: ["ADC"], cc: 1, dmg: 10, tank: 2, profile: { type: "Dive", scale: 1 }, dmgType: "AD", phase: { early: 7, mid: 7, late: 8 } },
@@ -176,6 +177,5 @@ var CHAMP_DB = {
     "Fizz": { name: "피즈", pos: ["MID"], cc: 1, dmg: 10, tank: 3, profile: { type: "Dive", scale: 3 }, dmgType: "AP", phase: { early: 2, mid: 8, late: 5 } },
     "Heimerdinger": { name: "하이머딩거", pos: ["SPT"], cc: 1, dmg: 10, tank: 2, profile: { type: "Anti", scale: 2 }, dmgType: "AP", phase: { early: 10, mid: 6, late: 2 } },
     "Hecarim": { name: "헤카림", pos: ["JNG"], cc: 1, dmg: 7, tank: 8, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 6, mid: 6, late: 4 } },
-    "Hwei": { name: "흐웨이", pos: ["MID"], cc: 3, dmg: 9, tank: 1, profile: { type: "Poke", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 5, late: 5 } },
-    "Yunara": { name: "유나라", pos: ["ADC"], cc: 1, dmg: 8, tank: 1, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 6, mid: 8, late: 7 } }
+    "Hwei": { name: "흐웨이", pos: ["MID"], cc: 3, dmg: 9, tank: 1, profile: { type: "Poke", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 5, late: 5 } }
 };

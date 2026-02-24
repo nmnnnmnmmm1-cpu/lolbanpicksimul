@@ -1,42 +1,25 @@
 [
-  {
-    "teamId": "t1",
-    "players": {
-      "TOP": "t1_zeus",
-      "JNG": "t1_oner",
-      "MID": "t1_faker",
-      "ADC": "t1_gumayusi",
-      "SPT": "t1_keria"
-    }
-  },
-  {
-    "teamId": "geng",
-    "players": {
-      "TOP": "geng_kiin",
-      "JNG": "geng_canyon",
-      "MID": "geng_chovy",
-      "ADC": "geng_peyz",
-      "SPT": "geng_lehends"
-    }
-  },
-  {
-    "teamId": "g2",
-    "players": {
-      "TOP": "g2_brokenblade",
-      "JNG": "g2_yike",
-      "MID": "g2_caps",
-      "ADC": "g2_hanssama",
-      "SPT": "g2_mikyx"
-    }
-  },
-  {
-    "teamId": "blg",
-    "players": {
-      "TOP": "blg_bin",
-      "JNG": "blg_xun",
-      "MID": "blg_knight",
-      "ADC": "blg_elk",
-      "SPT": "blg_on"
-    }
-  }
+  {"teamId":"geng","players":{"TOP":"geng_kiin","JNG":"geng_canyon","MID":"geng_chovy","ADC":"geng_ruler","SPT":"geng_duro"}},
+  {"teamId":"t1","players":{"TOP":"t1_doran","JNG":"t1_oner","MID":"t1_faker","ADC":"t1_peyz","SPT":"t1_keria"}},
+  {"teamId":"hle","players":{"TOP":"hle_zeus","JNG":"hle_kanavi","MID":"hle_zeka","ADC":"hle_gumayusi","SPT":"hle_delight"}},
+  {"teamId":"dk","players":{"TOP":"dk_siwoo","JNG":"dk_lucid","MID":"dk_showmaker","ADC":"dk_smash","SPT":"dk_career"}},
+  {"teamId":"kt","players":{"TOP":"kt_perfect","JNG":"kt_cuzz","MID":"kt_bdd","ADC":"kt_aiming","SPT":"kt_way"}},
+  {"teamId":"ns","players":{"TOP":"ns_kingen","JNG":"ns_sponge","MID":"ns_scout","ADC":"ns_taeyoon","SPT":"ns_lehends"}},
+  {"teamId":"dnf","players":{"TOP":"dnf_dudu","JNG":"dnf_pyosik","MID":"dnf_clozer","ADC":"dnf_deokdam","SPT":"dnf_life"}},
+  {"teamId":"bfx","players":{"TOP":"bfx_clear","JNG":"bfx_raptor","MID":"bfx_vicla","ADC":"bfx_diable","SPT":"bfx_kellin"}},
+  {"teamId":"drx","players":{"TOP":"drx_rich","JNG":"drx_vincenzo","MID":"drx_ucal","ADC":"drx_jiwoo","SPT":"drx_andil"}},
+  {"teamId":"bro","players":{"TOP":"bro_casting","JNG":"bro_gideon","MID":"bro_fisher","ADC":"bro_teddy","SPT":"bro_namgung"}},
+
+  {"teamId":"blg","players":{"TOP":"blg_bin","JNG":"blg_xun","MID":"blg_knight","ADC":"blg_viper","SPT":"blg_on"}},
+  {"teamId":"tes","players":{"TOP":"tes_369","JNG":"tes_naiyou","MID":"tes_creme","ADC":"tes_jackeylove","SPT":"tes_hang"}},
+  {"teamId":"wbg","players":{"TOP":"wbg_zika","JNG":"wbg_jiejie","MID":"wbg_xiaohu","ADC":"wbg_elk","SPT":"wbg_erha"}},
+  {"teamId":"jdg","players":{"TOP":"jdg_xiaoxu","JNG":"jdg_junjia","MID":"jdg_hongq","ADC":"jdg_gala","SPT":"jdg_vampire"}},
+
+  {"teamId":"g2","players":{"TOP":"g2_brokenblade","JNG":"g2_skewmond","MID":"g2_caps","ADC":"g2_hanssama","SPT":"g2_labrov"}},
+  {"teamId":"fnc","players":{"TOP":"fnc_empyros","JNG":"fnc_razork","MID":"fnc_vladi","ADC":"fnc_upset","SPT":"fnc_lospa"}},
+  {"teamId":"kc","players":{"TOP":"kc_canna","JNG":"kc_yike","MID":"kc_kyeahoo","ADC":"kc_caliste","SPT":"kc_busio"}},
+
+  {"teamId":"c9","players":{"TOP":"c9_thanatos","JNG":"c9_blaber","MID":"c9_apa","ADC":"c9_zven","SPT":"c9_vulcan"}},
+  {"teamId":"tl","players":{"TOP":"tl_morgan","JNG":"tl_josedeodo","MID":"tl_quid","ADC":"tl_yeon","SPT":"tl_corejj"}},
+  {"teamId":"fly","players":{"TOP":"fly_gakgos","JNG":"fly_gryffinn","MID":"fly_quad","ADC":"fly_massu","SPT":"fly_cryogen"}}
 ]

@@ -52,7 +52,7 @@ keys.forEach((key) => {
     const row = [
         key,
         c.name || key,
-        Array.isArray(c.pos) ? c.pos[0] || "" : "",
+        Array.isArray(c.pos) ? c.pos.join("|") : "",
         c.cc ?? "",
         c.dmg ?? "",
         c.tank ?? "",

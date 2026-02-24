@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>LoL Pro Draft Simulator v0.2 (beta)</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles/main.css?v=20260224-6">
+    <link rel="stylesheet" href="styles/main.css?v=20260224-9">
 </head>
 <body>
 
@@ -58,6 +58,22 @@
             <button type="button" class="tutorial-btn" id="home-btn-worlds-disable">월즈 모드 해제</button>
             <button type="button" class="tutorial-btn" id="home-btn-tutorial-open">게임 설명 보기</button>
         </div>
+        <div class="remote-config">
+            <h3>온라인 기록 연동 (Supabase)</h3>
+            <div class="remote-config-grid">
+                <label for="remote-url">Project URL</label>
+                <input id="remote-url" type="text" placeholder="https://xxxx.supabase.co">
+                <label for="remote-anon-key">Anon Key</label>
+                <input id="remote-anon-key" type="password" placeholder="eyJ...">
+            </div>
+            <div class="remote-actions">
+                <button type="button" class="tutorial-btn" id="home-btn-remote-save">온라인 기록 연결</button>
+                <button type="button" class="tutorial-btn" id="home-btn-remote-refresh">온라인 기록 새로고침</button>
+                <button type="button" class="tutorial-btn" id="home-btn-remote-disable">온라인 기록 해제</button>
+            </div>
+            <div id="remote-status" class="remote-status">온라인 기록: 비활성</div>
+            <p class="home-note">Supabase Table: <code>match_logs</code> (RLS + anon insert/select 허용 필요)</p>
+        </div>
         <p class="home-note">기록/랭킹은 현재 브라우저(이 기기) 기준으로 저장됩니다.</p>
     </div>
 </div>
@@ -70,7 +86,10 @@
         <span id="red-info" style="color:var(--red)">MY TEAM (RED)</span>
     </div>
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
-    <div id="objective-brief" class="objective-brief">오브젝트 | MY TEAM 용 0 / 바론 0 · AI TEAM 용 0 / 바론 0</div>
+    <div id="objective-brief" class="objective-brief">
+        <span class="obj-team-badges"><b class="obj-team-name">MY TEAM</b><span class="obj-badge dragon">용 0</span><span class="obj-badge baron">바론 0</span></span>
+        <span class="obj-team-badges"><b class="obj-team-name">AI TEAM</b><span class="obj-badge dragon">용 0</span><span class="obj-badge baron">바론 0</span></span>
+    </div>
     <div class="header-tools">
         <span class="bgm-label">BGM: YouTube</span>
         <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
@@ -201,7 +220,7 @@
 <div id="worlds-modal">
     <div class="worlds-card">
         <h2 class="side-title">월즈 모드 설정 (베타)</h2>
-        <p class="side-desc">팀/선수를 선택하면 선수 카드 기반 밴픽 보정이 적용됩니다.</p>
+        <p class="side-desc">팀을 선택하면 팀 선호 전략 + 선수 주챔 기반 밴픽 보정이 적용됩니다.</p>
         <div class="worlds-setup-row">
             <label>내 팀</label>
             <select id="worlds-my-team" onchange="onWorldsTeamChange()"></select>
@@ -232,6 +251,15 @@
         </div>
     </div>
 </div>
+<div id="champ-stats-modal">
+    <div class="tutorial-card champ-stats-card">
+        <h2 class="tutorial-title">전체 챔피언 통계</h2>
+        <div id="champ-stats-body" class="champ-stats-body"></div>
+        <div class="tutorial-nav">
+            <button class="tutorial-btn" type="button" onclick="closeChampionStatsModal()">닫기</button>
+        </div>
+    </div>
+</div>
 
 <div id="result-modal">
     <div class="result-card">
@@ -252,7 +280,8 @@
 </div>
 </div>
 
-<script src="data/champions.js?v=20260224-6"></script>
-<script src="scripts/app.js?v=20260224-6"></script>
+<script src="data/champions.js?v=20260224-9"></script>
+<script src="data/traits.js?v=20260224-9"></script>
+<script src="scripts/app.js?v=20260224-9"></script>
 </body>
 </html>
