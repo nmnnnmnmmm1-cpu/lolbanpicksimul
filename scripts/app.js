@@ -279,6 +279,7 @@ const MODE_RECORDS_KEY = "lol_draft_mode_records_v1";
 const TEAM_PROFILE_KEY = "lol_draft_team_profile_v1";
 const MATCH_HISTORY_KEY = "lol_draft_match_history_v1";
 const TRAIT_ANALYTICS_KEY = "lol_trait_analytics_v1";
+const REMOTE_CONFIG_KEY = "lol_remote_history_config_v1";
 const MAX_MATCH_HISTORY = 80;
 const DEFAULT_BLUE_COLOR = "#00a3ff";
 const DEFAULT_RED_COLOR = "#e74c3c";
@@ -364,6 +365,9 @@ let modeRecords = loadModeRecords();
 let selectedStrategyKey = "General";
 let teamProfile = loadTeamProfile();
 let matchHistory = loadMatchHistory();
+let remoteConfig = loadRemoteConfig();
+let remoteMatchHistory = [];
+let remoteSyncing = false;
 let traitAnalytics = loadTraitAnalytics();
 let worldsModeEnabled = false;
 let worldsTeams = [];
@@ -462,6 +466,232 @@ function saveMatchHistory() {
     } catch (_) {
         // Ignore storage failures.
     }
+}
+
+function loadRemoteConfig() {
+    const fallback = {
+        enabled: false,
+        supabaseUrl: "",
+        anonKey: ""
+    };
+    try {
+        const raw = localStorage.getItem(REMOTE_CONFIG_KEY);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return fallback;
+        const supabaseUrl = String(parsed.supabaseUrl || "").trim();
+        const anonKey = String(parsed.anonKey || "").trim();
+        return {
+            enabled: !!parsed.enabled && !!supabaseUrl && !!anonKey,
+            supabaseUrl,
+            anonKey
+        };
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function saveRemoteConfig() {
+    try {
+        localStorage.setItem(REMOTE_CONFIG_KEY, JSON.stringify(remoteConfig));
+    } catch (_) {
+        // Ignore storage failures.
+    }
+}
+
+function normalizeSupabaseUrl(url) {
+    return String(url || "").trim().replace(/\/+$/, "");
+}
+
+function isRemoteHistoryEnabled() {
+    return !!(remoteConfig.enabled && remoteConfig.supabaseUrl && remoteConfig.anonKey);
+}
+
+function setRemoteStatus(text, tone = "neutral") {
+    const el = document.getElementById("remote-status");
+    if (!el) return;
+    el.innerText = text;
+    el.classList.remove("ok", "err");
+    if (tone === "ok") el.classList.add("ok");
+    if (tone === "err") el.classList.add("err");
+}
+
+function applyRemoteConfigInputs() {
+    const urlInput = document.getElementById("remote-url");
+    const keyInput = document.getElementById("remote-anon-key");
+    if (urlInput) urlInput.value = remoteConfig.supabaseUrl || "";
+    if (keyInput) keyInput.value = remoteConfig.anonKey || "";
+    if (isRemoteHistoryEnabled()) {
+        setRemoteStatus("온라인 기록: 연결됨 (Supabase)", "ok");
+    } else {
+        setRemoteStatus("온라인 기록: 비활성", "neutral");
+    }
+}
+
+function getRemoteHeaders(jsonBody = false) {
+    const headers = {
+        apikey: remoteConfig.anonKey,
+        Authorization: `Bearer ${remoteConfig.anonKey}`
+    };
+    if (jsonBody) headers["Content-Type"] = "application/json";
+    return headers;
+}
+
+function normalizeHistoryEntry(entry, source = "local") {
+    const payload = entry && typeof entry === "object" ? entry : {};
+    return {
+        playedAt: Number(payload.playedAt || payload.createdAt || Date.now()),
+        modeKey: payload.modeKey || "",
+        modeLabel: payload.modeLabel || payload.mode || "-",
+        winnerTeam: payload.winnerTeam || payload.winner || "UNKNOWN",
+        loserTeam: payload.loserTeam || "",
+        scoreText: payload.scoreText || payload.score_text || "-",
+        strategyLabel: payload.strategyLabel || "-",
+        pickKeys: Array.isArray(payload.pickKeys) ? payload.pickKeys : [],
+        banKeys: Array.isArray(payload.banKeys) ? payload.banKeys : [],
+        localMatchId: payload.localMatchId || "",
+        remoteId: payload.remoteId || "",
+        source
+    };
+}
+
+function getAllHistoryRows() {
+    const combined = [
+        ...matchHistory.map((entry) => normalizeHistoryEntry(entry, "local")),
+        ...remoteMatchHistory.map((entry) => normalizeHistoryEntry(entry, "remote"))
+    ];
+    const seen = new Set();
+    const out = [];
+    combined.forEach((row) => {
+        const key = row.localMatchId
+            ? `lid:${row.localMatchId}`
+            : (row.remoteId
+                ? `rid:${row.remoteId}`
+                : `sig:${row.playedAt}|${row.scoreText}|${row.winnerTeam}`);
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(row);
+    });
+    out.sort((a, b) => b.playedAt - a.playedAt);
+    return out;
+}
+
+async function refreshRemoteHistory() {
+    if (!isRemoteHistoryEnabled()) {
+        remoteMatchHistory = [];
+        setRemoteStatus("온라인 기록: 비활성", "neutral");
+        renderHomeHistory();
+        return;
+    }
+    if (remoteSyncing) return;
+    remoteSyncing = true;
+    setRemoteStatus("온라인 기록: 서버에서 불러오는 중...", "neutral");
+    try {
+        const base = normalizeSupabaseUrl(remoteConfig.supabaseUrl);
+        const query = "select=id,created_at,player_name,team_name,mode,winner,score_text,payload&order=created_at.desc&limit=200";
+        const res = await fetch(`${base}/rest/v1/match_logs?${query}`, {
+            method: "GET",
+            headers: getRemoteHeaders(false),
+            cache: "no-store"
+        });
+        if (!res.ok) {
+            const errTxt = await res.text();
+            throw new Error(`load failed ${res.status}: ${errTxt.slice(0, 160)}`);
+        }
+        const rows = await res.json();
+        remoteMatchHistory = (Array.isArray(rows) ? rows : []).map((row) => {
+            const payload = row.payload && typeof row.payload === "object" ? row.payload : {};
+            return normalizeHistoryEntry({
+                playedAt: Date.parse(row.created_at || "") || Date.now(),
+                modeLabel: row.mode || payload.modeLabel || "-",
+                winnerTeam: row.winner || payload.winnerTeam || "UNKNOWN",
+                loserTeam: payload.loserTeam || "",
+                scoreText: row.score_text || payload.scoreText || "-",
+                strategyLabel: payload.strategyLabel || "-",
+                pickKeys: payload.pickKeys || [],
+                banKeys: payload.banKeys || [],
+                localMatchId: payload.localMatchId || "",
+                remoteId: row.id || ""
+            }, "remote");
+        });
+        setRemoteStatus(`온라인 기록: 연결됨 (${remoteMatchHistory.length}건 로드)`, "ok");
+        renderHomeHistory();
+    } catch (err) {
+        console.warn("[REMOTE] history load failed", err);
+        setRemoteStatus(`온라인 기록 오류: ${err.message}`, "err");
+    } finally {
+        remoteSyncing = false;
+    }
+}
+
+async function uploadRemoteMatchHistory(entry) {
+    if (!isRemoteHistoryEnabled() || !entry) return;
+    try {
+        const base = normalizeSupabaseUrl(remoteConfig.supabaseUrl);
+        const payload = {
+            localMatchId: entry.localMatchId || "",
+            modeKey: entry.modeKey || "",
+            modeLabel: entry.modeLabel || "",
+            winnerTeam: entry.winnerTeam || "",
+            loserTeam: entry.loserTeam || "",
+            scoreText: entry.scoreText || "",
+            strategyLabel: entry.strategyLabel || "",
+            pickKeys: Array.isArray(entry.pickKeys) ? entry.pickKeys : [],
+            banKeys: Array.isArray(entry.banKeys) ? entry.banKeys : []
+        };
+        const body = {
+            player_name: teamProfile.myTeamName || "MY TEAM",
+            team_name: teamProfile.myTeamName || "MY TEAM",
+            mode: entry.modeLabel || "-",
+            winner: entry.winnerTeam || "-",
+            score_text: entry.scoreText || "-",
+            payload
+        };
+        const res = await fetch(`${base}/rest/v1/match_logs`, {
+            method: "POST",
+            headers: {
+                ...getRemoteHeaders(true),
+                Prefer: "return=minimal"
+            },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+            const errTxt = await res.text();
+            throw new Error(`upload failed ${res.status}: ${errTxt.slice(0, 160)}`);
+        }
+        setRemoteStatus("온라인 기록: 업로드 성공", "ok");
+        refreshRemoteHistory();
+    } catch (err) {
+        console.warn("[REMOTE] upload failed", err);
+        setRemoteStatus(`온라인 업로드 실패: ${err.message}`, "err");
+    }
+}
+
+function disableRemoteHistory() {
+    remoteConfig = { enabled: false, supabaseUrl: "", anonKey: "" };
+    saveRemoteConfig();
+    remoteMatchHistory = [];
+    applyRemoteConfigInputs();
+    renderHomeHistory();
+}
+
+async function saveRemoteConfigFromInputs() {
+    const urlInput = document.getElementById("remote-url");
+    const keyInput = document.getElementById("remote-anon-key");
+    const url = normalizeSupabaseUrl(urlInput ? urlInput.value : "");
+    const key = String(keyInput ? keyInput.value : "").trim();
+    if (!url || !key) {
+        setRemoteStatus("URL/Anon key를 모두 입력해야 합니다.", "err");
+        return;
+    }
+    remoteConfig = {
+        enabled: true,
+        supabaseUrl: url,
+        anonKey: key
+    };
+    saveRemoteConfig();
+    applyRemoteConfigInputs();
+    await refreshRemoteHistory();
 }
 
 function loadTraitAnalytics() {
@@ -576,14 +806,20 @@ function applyTeamNameInputs() {
 }
 
 function recordMatchHistory(entry) {
-    matchHistory.unshift(entry);
+    const safeEntry = normalizeHistoryEntry({
+        ...entry,
+        localMatchId: entry?.localMatchId || `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    }, "local");
+    matchHistory.unshift(safeEntry);
     matchHistory = matchHistory.slice(0, MAX_MATCH_HISTORY);
     saveMatchHistory();
+    uploadRemoteMatchHistory(safeEntry);
 }
 
-function getRankingRows() {
+function getRankingRows(rows = null) {
+    const sourceRows = Array.isArray(rows) ? rows : getAllHistoryRows();
     const map = {};
-    matchHistory.forEach((entry) => {
+    sourceRows.forEach((entry) => {
         const winner = entry.winnerTeam || "UNKNOWN";
         if (!map[winner]) map[winner] = { team: winner, wins: 0, games: 0 };
         map[winner].wins += 1;
@@ -606,12 +842,13 @@ function getChampionDisplayNameByKey(key) {
     return CHAMP_DB[key]?.name || key || "-";
 }
 
-function getDraftStatsRows(limit = 8) {
+function getDraftStatsRows(limit = 8, rows = null) {
+    const sourceRows = Array.isArray(rows) ? rows : getAllHistoryRows();
     const pickMap = {};
     const banMap = {};
     let totalPickCount = 0;
     let totalBanCount = 0;
-    matchHistory.forEach((entry) => {
+    sourceRows.forEach((entry) => {
         const pickKeys = Array.isArray(entry.pickKeys) ? entry.pickKeys : [];
         const banKeys = Array.isArray(entry.banKeys) ? entry.banKeys : [];
         pickKeys.forEach((k) => {
@@ -629,7 +866,7 @@ function getDraftStatsRows(limit = 8) {
         .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name, "ko-KR"))
         .slice(0, limit);
     return {
-        totalSeries: matchHistory.length,
+        totalSeries: sourceRows.length,
         totalPickCount,
         totalBanCount,
         topPicks: sortRows(pickMap),
@@ -641,17 +878,19 @@ function renderHomeHistory() {
     const logList = document.getElementById("home-log-list");
     const rankingList = document.getElementById("home-ranking-list");
     const champStats = document.getElementById("home-champ-stats");
+    const allRows = getAllHistoryRows();
     if (logList) {
-        if (matchHistory.length === 0) {
+        if (allRows.length === 0) {
             logList.innerHTML = '<div class="home-empty">아직 기록이 없습니다.</div>';
         } else {
-            logList.innerHTML = matchHistory.slice(0, 12).map((entry) => {
-                return `<div class="home-log-item"><b>${entry.modeLabel}</b> <span>${entry.winnerTeam} 승 (${entry.scoreText})</span><em>${formatTimeLabel(entry.playedAt)}</em></div>`;
+            logList.innerHTML = allRows.slice(0, 12).map((entry) => {
+                const sourceText = entry.source === "remote" ? "온라인" : "로컬";
+                return `<div class="home-log-item"><b>[${sourceText}] ${entry.modeLabel}</b> <span>${entry.winnerTeam} 승 (${entry.scoreText})</span><em>${formatTimeLabel(entry.playedAt)}</em></div>`;
             }).join("");
         }
     }
     if (rankingList) {
-        const ranks = getRankingRows();
+        const ranks = getRankingRows(allRows);
         if (ranks.length === 0) {
             rankingList.innerHTML = '<div class="home-empty">랭킹 데이터가 없습니다.</div>';
         } else {
@@ -662,7 +901,7 @@ function renderHomeHistory() {
         }
     }
     if (champStats) {
-        const draftStats = getDraftStatsRows(7);
+        const draftStats = getDraftStatsRows(7, allRows);
         const makeRows = (rows, tone) => {
             if (!rows || rows.length === 0) return '<div class="home-empty">아직 누적 데이터가 없습니다.</div>';
             return rows.map((row, idx) => `<div class="home-rank-item"><span>${idx + 1}. ${row.name}</span><b class="${tone}">${row.count}회</b></div>`).join("");
@@ -683,7 +922,10 @@ function bindHomeActionButtons() {
     const buttonMap = [
         { id: "home-btn-worlds-open", handler: openWorldsModal, label: "월즈 모드 설정" },
         { id: "home-btn-worlds-disable", handler: disableWorldsMode, label: "월즈 모드 해제" },
-        { id: "home-btn-tutorial-open", handler: openTutorial, label: "게임 설명 보기" }
+        { id: "home-btn-tutorial-open", handler: openTutorial, label: "게임 설명 보기" },
+        { id: "home-btn-remote-save", handler: saveRemoteConfigFromInputs, label: "온라인 기록 연결" },
+        { id: "home-btn-remote-refresh", handler: refreshRemoteHistory, label: "온라인 기록 새로고침" },
+        { id: "home-btn-remote-disable", handler: disableRemoteHistory, label: "온라인 기록 해제" }
     ];
     buttonMap.forEach(({ id, handler, label }) => {
         const btn = document.getElementById(id);
@@ -839,6 +1081,7 @@ function openHome() {
     renderHomeStats();
     renderHomeHistory();
     applyTeamNameInputs();
+    applyRemoteConfigInputs();
     shouldResetOnStrategyConfirm = true;
     setDisplayById("home-page", "flex");
     setDisplayById("game-shell", "none");
@@ -848,6 +1091,7 @@ function openHome() {
     setDisplayById("result-modal", "none");
     setDisplayById("worlds-modal", "none");
     applyWorldsTeamColors();
+    refreshRemoteHistory();
 }
 
 function selectMode(modeKey) {
@@ -1053,7 +1297,8 @@ function renderTraitBlock(opts) {
     const condition = opts?.condition || "발동 조건 충족";
     const effect = opts?.effect || "효과 데이터 없음";
     const wrapperClass = opts?.wrapperClass || "trait-item";
-    const ownerHtml = champName ? `<span class="trait-owner">${escapeHtml(champName)}</span>` : "";
+    const showOwner = opts?.showOwner !== false;
+    const ownerHtml = showOwner && champName ? `<span class="trait-owner">${escapeHtml(champName)}</span>` : "";
     const rule = getTraitRule(champName, traitName);
     const levelLabel = rule.level === "hard" ? "난도 높음" : (rule.level === "easy" ? "난도 낮음" : "난도 보통");
     return `
@@ -1087,7 +1332,8 @@ function renderChampionTraitInfo(champName) {
             traitName: t.name,
             condition: t.condition,
             effect: t.effect,
-            wrapperClass: "tip-trait-item"
+            wrapperClass: "tip-trait-item",
+            showOwner: false
         })).join("")}
     </div>
     `;
@@ -1673,6 +1919,7 @@ async function init() {
     };
     startYoutubeBgm();
     openHome();
+    openTutorial();
 }
 
 function bindChampionInfoInteractions() {
@@ -1875,9 +2122,18 @@ function updateUI() {
             });
         }
         
-        const nextTeam = step.t.toUpperCase();
         const isAiTurn = userTeam && step.t === aiTeam;
-        document.getElementById('step-msg').innerText = isAiTurn ? `AI(${nextTeam}) ${step.type.toUpperCase()}...` : `${nextTeam} ${step.type.toUpperCase()}...`;
+        const actionLabel = step.type === "ban" ? "밴" : "픽";
+        const actionObject = step.type === "ban" ? "밴할 챔피언" : "픽할 챔피언";
+        const remainCount = getRemainingActionsInCurrentPhase(currentStep, step.t, step.type);
+        const remainText = remainCount > 1 ? ` (이번 ${actionLabel} 페이즈 남은 ${remainCount}개)` : "";
+        if (!userTeam || !aiTeam) {
+            document.getElementById("step-msg").innerText = "진영을 선택하면 밴픽이 시작됩니다.";
+        } else if (isAiTurn) {
+            document.getElementById("step-msg").innerText = `AI가 ${actionLabel}을 하고 있습니다...${remainText}`;
+        } else {
+            document.getElementById("step-msg").innerText = `${actionObject}을 선택해주세요!${remainText}`;
+        }
         if (isAiTurn && !aiThinking) {
             aiThinking = true;
             setTimeout(aiTakeTurn, 550);
@@ -1889,6 +2145,17 @@ function updateUI() {
         showFinalResult();
     }
     updatePickConfirmUI();
+}
+
+function getRemainingActionsInCurrentPhase(stepIndex, team, type) {
+    if (stepIndex < 0 || stepIndex >= DRAFT_ORDER.length) return 0;
+    let count = 0;
+    for (let i = stepIndex; i < DRAFT_ORDER.length; i++) {
+        const s = DRAFT_ORDER[i];
+        if (!s || s.type !== type) break;
+        if (s.t === team) count++;
+    }
+    return count;
 }
 
 function getCompLabel(stats) {
