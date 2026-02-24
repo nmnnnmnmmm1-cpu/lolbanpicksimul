@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>LoL Pro Draft Simulator v3.0</title>
+    <title>LoL Pro Draft Simulator v0.2 (beta)</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles/main.css?v=20260224-4">
+    <link rel="stylesheet" href="styles/main.css?v=20260224-6">
 </head>
 <body>
 
 <div id="home-page" class="home-page">
     <div class="home-card">
         <h1 class="home-title">LoL Banpick Simulator</h1>
+        <p class="home-version">v0.2 (beta)</p>
         <p class="home-desc">모드를 고르고 팀 이름/전략을 설정한 뒤 밴픽으로 승패를 가르는 게임입니다.</p>
         <div class="home-team-setup">
             <div class="home-input-wrap">
@@ -47,11 +48,15 @@
                 <h3>로컬 랭킹</h3>
                 <div id="home-ranking-list" class="home-ranking-list"></div>
             </div>
+            <div class="home-log-panel">
+                <h3>챔피언 픽/밴 통계</h3>
+                <div id="home-champ-stats" class="home-ranking-list"></div>
+            </div>
         </div>
         <div class="home-actions">
-            <button type="button" class="tutorial-btn" onclick="openWorldsModal()">월즈 모드 설정</button>
-            <button type="button" class="tutorial-btn" onclick="disableWorldsMode()">월즈 모드 해제</button>
-            <button type="button" class="tutorial-btn" onclick="openTutorial()">게임 설명 보기</button>
+            <button type="button" class="tutorial-btn" id="home-btn-worlds-open">월즈 모드 설정</button>
+            <button type="button" class="tutorial-btn" id="home-btn-worlds-disable">월즈 모드 해제</button>
+            <button type="button" class="tutorial-btn" id="home-btn-tutorial-open">게임 설명 보기</button>
         </div>
         <p class="home-note">기록/랭킹은 현재 브라우저(이 기기) 기준으로 저장됩니다.</p>
     </div>
@@ -247,7 +252,7 @@
 </div>
 </div>
 
-<script src="data/champions.js?v=20260224-4"></script>
-<script src="scripts/app.js?v=20260224-4"></script>
+<script src="data/champions.js?v=20260224-6"></script>
+<script src="scripts/app.js?v=20260224-6"></script>
 </body>
 </html>

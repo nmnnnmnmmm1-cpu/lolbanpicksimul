@@ -280,6 +280,14 @@ const TEAM_PROFILE_KEY = "lol_draft_team_profile_v1";
 const MATCH_HISTORY_KEY = "lol_draft_match_history_v1";
 const TRAIT_ANALYTICS_KEY = "lol_trait_analytics_v1";
 const MAX_MATCH_HISTORY = 80;
+const DEFAULT_BLUE_COLOR = "#00a3ff";
+const DEFAULT_RED_COLOR = "#e74c3c";
+const AI_SHORTLIST_PICK = 18;
+const AI_SHORTLIST_BAN = 24;
+const AI_IMMEDIATE_WEIGHT = 0.6;
+const AI_RESPONSE_WEIGHT = 0.4;
+let homeActionBound = false;
+let seriesDraftStats = { picks: [], bans: [] };
 const MODE_CONFIGS = {
     single: { label: "단판", maxGames: 1, winTarget: 1, hardFearless: false },
     bo3: { label: "3전제 (하드피어리스)", maxGames: 3, winTarget: 2, hardFearless: true },
@@ -364,6 +372,9 @@ let worldsRosters = [];
 let worldsConfig = { myTeamId: "", enemyTeamId: "" };
 
 function getChampionImageUrl(key) {
+    if (key === "Yunara") {
+        return "https://placehold.co/120x120/121c23/c8aa6e?text=%EC%9C%A0%EB%82%98%EB%9D%BC";
+    }
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
     return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
 }
@@ -485,9 +496,9 @@ async function loadWorldsData() {
     };
     try {
         const [teams, players, rosters] = await Promise.all([
-            loadJson("data/teams.json?v=20260224-4"),
-            loadJson("data/players.json?v=20260224-4"),
-            loadJson("data/worlds_roster.json?v=20260224-4")
+            loadJson("data/teams.json?v=20260224-6"),
+            loadJson("data/players.json?v=20260224-6"),
+            loadJson("data/worlds_roster.json?v=20260224-6")
         ]);
         worldsTeams = Array.isArray(teams) ? teams : [];
         worldsPlayers = Array.isArray(players) ? players : [];
@@ -510,6 +521,26 @@ function getWorldsPlayerById(playerId) {
 
 function getWorldsRosterByTeamId(teamId) {
     return worldsRosters.find((r) => r.teamId === teamId) || null;
+}
+
+function getWorldsTeamColor(team, fallback) {
+    return team?.primaryColor || team?.secondaryColor || fallback;
+}
+
+function applyWorldsTeamColors() {
+    const root = document.documentElement;
+    if (!root) return;
+    if (!worldsModeEnabled || !userTeam) {
+        root.style.setProperty("--blue", DEFAULT_BLUE_COLOR);
+        root.style.setProperty("--red", DEFAULT_RED_COLOR);
+        return;
+    }
+    const blueTeamId = userTeam === "blue" ? worldsConfig.myTeamId : worldsConfig.enemyTeamId;
+    const redTeamId = userTeam === "red" ? worldsConfig.myTeamId : worldsConfig.enemyTeamId;
+    const blueTeam = getWorldsTeamById(blueTeamId);
+    const redTeam = getWorldsTeamById(redTeamId);
+    root.style.setProperty("--blue", getWorldsTeamColor(blueTeam, DEFAULT_BLUE_COLOR));
+    root.style.setProperty("--red", getWorldsTeamColor(redTeam, DEFAULT_RED_COLOR));
 }
 
 function formatTimeLabel(ts) {
@@ -571,9 +602,45 @@ function getRankingRows() {
         .slice(0, 10);
 }
 
+function getChampionDisplayNameByKey(key) {
+    return CHAMP_DB[key]?.name || key || "-";
+}
+
+function getDraftStatsRows(limit = 8) {
+    const pickMap = {};
+    const banMap = {};
+    let totalPickCount = 0;
+    let totalBanCount = 0;
+    matchHistory.forEach((entry) => {
+        const pickKeys = Array.isArray(entry.pickKeys) ? entry.pickKeys : [];
+        const banKeys = Array.isArray(entry.banKeys) ? entry.banKeys : [];
+        pickKeys.forEach((k) => {
+            if (!k) return;
+            pickMap[k] = (pickMap[k] || 0) + 1;
+            totalPickCount += 1;
+        });
+        banKeys.forEach((k) => {
+            if (!k) return;
+            banMap[k] = (banMap[k] || 0) + 1;
+            totalBanCount += 1;
+        });
+    });
+    const sortRows = (mapObj) => Object.keys(mapObj).map((key) => ({ key, name: getChampionDisplayNameByKey(key), count: mapObj[key] }))
+        .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name, "ko-KR"))
+        .slice(0, limit);
+    return {
+        totalSeries: matchHistory.length,
+        totalPickCount,
+        totalBanCount,
+        topPicks: sortRows(pickMap),
+        topBans: sortRows(banMap)
+    };
+}
+
 function renderHomeHistory() {
     const logList = document.getElementById("home-log-list");
     const rankingList = document.getElementById("home-ranking-list");
+    const champStats = document.getElementById("home-champ-stats");
     if (logList) {
         if (matchHistory.length === 0) {
             logList.innerHTML = '<div class="home-empty">아직 기록이 없습니다.</div>';
@@ -594,6 +661,41 @@ function renderHomeHistory() {
             }).join("");
         }
     }
+    if (champStats) {
+        const draftStats = getDraftStatsRows(7);
+        const makeRows = (rows, tone) => {
+            if (!rows || rows.length === 0) return '<div class="home-empty">아직 누적 데이터가 없습니다.</div>';
+            return rows.map((row, idx) => `<div class="home-rank-item"><span>${idx + 1}. ${row.name}</span><b class="${tone}">${row.count}회</b></div>`).join("");
+        };
+        champStats.innerHTML = `
+            <div class="home-log-item"><b>누적 시리즈</b><span>${draftStats.totalSeries}회</span></div>
+            <div class="home-log-item"><b>누적 픽 / 밴</b><span>${draftStats.totalPickCount} / ${draftStats.totalBanCount}</span></div>
+            <div class="home-log-item"><b>TOP 픽</b><span></span></div>
+            ${makeRows(draftStats.topPicks, "type-dive")}
+            <div class="home-log-item"><b>TOP 밴</b><span></span></div>
+            ${makeRows(draftStats.topBans, "type-poke")}
+        `;
+    }
+}
+
+function bindHomeActionButtons() {
+    if (homeActionBound) return;
+    const buttonMap = [
+        { id: "home-btn-worlds-open", handler: openWorldsModal, label: "월즈 모드 설정" },
+        { id: "home-btn-worlds-disable", handler: disableWorldsMode, label: "월즈 모드 해제" },
+        { id: "home-btn-tutorial-open", handler: openTutorial, label: "게임 설명 보기" }
+    ];
+    buttonMap.forEach(({ id, handler, label }) => {
+        const btn = document.getElementById(id);
+        if (!btn) {
+            console.warn(`[HOME] 버튼을 찾지 못했습니다: ${label} (${id})`);
+            return;
+        }
+        if (btn.dataset.bound === "1") return;
+        btn.addEventListener("click", handler);
+        btn.dataset.bound = "1";
+    });
+    homeActionBound = true;
 }
 
 function applyModeConfig(modeKey) {
@@ -624,7 +726,8 @@ function renderWorldsPlayerCard(player, team) {
     if (!player) return "";
     const champs = (player.signatureChamps || []).join(", ");
     const types = (player.prefTypes || []).map((t) => TYPE_LABEL[t] || t).join(" / ");
-    return `<div class="worlds-player-card">
+    const edge = getWorldsTeamColor(team, "#456");
+    return `<div class="worlds-player-card" style="border-color:${edge}; box-shadow: inset 3px 0 0 ${edge};">
         <img class="worlds-player-photo" src="${player.photo || ""}" alt="${player.nick}" onerror="this.onerror=null;this.src='https://placehold.co/72x72/101820/c8aa6e?text=${encodeURIComponent(player.nick)}';">
         <div class="worlds-player-meta">
             <b>${player.nick}</b>
@@ -649,7 +752,8 @@ function renderWorldsRosterPreview(containerId, teamId) {
         const player = getWorldsPlayerById(playerId);
         return renderWorldsPlayerCard(player, team);
     }).join("");
-    box.innerHTML = `<div class="worlds-team-head"><img src="${team.logo || ""}" alt="${team.name}" onerror="this.style.display='none'"><b>${team.name}</b></div>${cards}`;
+    const teamColor = getWorldsTeamColor(team, "#3f5563");
+    box.innerHTML = `<div class="worlds-team-head" style="border-color:${teamColor};"><img src="${team.logo || ""}" alt="${team.name}" onerror="this.style.display='none'"><b style="color:${teamColor};">${team.name}</b></div>${cards}`;
 }
 
 function onWorldsTeamChange() {
@@ -716,6 +820,7 @@ function confirmWorldsMode() {
     applyTeamNameInputs();
     const status = document.getElementById("worlds-status");
     if (status) status.innerText = `활성화됨: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`;
+    applyWorldsTeamColors();
     updateSeriesInfo();
     closeWorldsModal();
 }
@@ -726,6 +831,7 @@ function disableWorldsMode() {
     worldsConfig.enemyTeamId = "";
     const status = document.getElementById("worlds-status");
     if (status) status.innerText = "비활성화";
+    applyWorldsTeamColors();
     updateSeriesInfo();
 }
 
@@ -741,6 +847,7 @@ function openHome() {
     setDisplayById("tutorial-modal", "none");
     setDisplayById("result-modal", "none");
     setDisplayById("worlds-modal", "none");
+    applyWorldsTeamColors();
 }
 
 function selectMode(modeKey) {
@@ -1160,9 +1267,13 @@ function canAssignDistinctPositions(championKeys) {
     return true;
 }
 
-function canPickForTeam(team, key) {
-    const selected = picks[team].filter(Boolean);
+function canPickForTeamState(team, key, picksState) {
+    const selected = (picksState[team] || []).filter(Boolean);
     return canAssignDistinctPositions([...selected, key]);
+}
+
+function canPickForTeam(team, key) {
+    return canPickForTeamState(team, key, picks);
 }
 
 function updateSeriesInfo() {
@@ -1377,6 +1488,7 @@ function resetSeries() {
     seriesWins = { blue: 0, red: 0 };
     seriesRoleWins = { user: 0, ai: 0 };
     fearlessLocked = new Set();
+    seriesDraftStats = { picks: [], bans: [] };
     lastSeriesEnded = false;
     startGameDraft();
 }
@@ -1421,6 +1533,7 @@ function confirmStrategyAndStart() {
 function chooseSide(side) {
     userTeam = side;
     aiTeam = side === "blue" ? "red" : "blue";
+    applyWorldsTeamColors();
     shouldResetOnStrategyConfirm = true;
     setDisplayById("side-select-modal", "none");
     renderStrategyModal();
@@ -1443,6 +1556,7 @@ function chooseSide(side) {
 }
 
 async function init() {
+    bindHomeActionButtons();
     const bBans = document.getElementById('b-bans');
     const rBans = document.getElementById('r-bans');
     const bPicks = document.getElementById('b-picks');
@@ -1716,12 +1830,14 @@ function selectChamp(key, byAI = false) {
     
     if (step.type === 'ban') {
         bans[step.t][step.id] = key;
+        seriesDraftStats.bans.push(key);
         const banEl = document.getElementById(`${step.t[0]}-ban-${step.id}`);
         banEl.style.backgroundImage = `url(${getChampionImageUrl(key)})`;
         banEl.dataset.champKey = key;
         banEl.classList.add("has-info");
     } else {
         picks[step.t][step.id] = key;
+        seriesDraftStats.picks.push(key);
         refreshUI(step.t);
     }
 
@@ -1742,8 +1858,22 @@ function updateUI() {
     if (currentStep < DRAFT_ORDER.length) {
         wrTrack.style.display = "none";
         const step = DRAFT_ORDER[currentStep];
-        const elId = step.type === 'ban' ? `${step.t[0]}-ban-${step.id}` : `${step.t[0]}-slot-${step.id}`;
-        document.getElementById(elId).classList.add('active');
+        if (step.type === 'ban') {
+            const banEl = document.getElementById(`${step.t[0]}-ban-${step.id}`);
+            if (banEl) banEl.classList.add('active');
+        } else {
+            const pickedPosSet = new Set(
+                (picks[step.t] || [])
+                    .filter(Boolean)
+                    .map((key) => CHAMP_DB[key]?.pos?.[0])
+                    .filter(Boolean)
+            );
+            POSITIONS.forEach((pos, idx) => {
+                if (pickedPosSet.has(pos)) return;
+                const slotEl = document.getElementById(`${step.t[0]}-slot-${idx}`);
+                if (slotEl) slotEl.classList.add('active');
+            });
+        }
         
         const nextTeam = step.t.toUpperCase();
         const isAiTurn = userTeam && step.t === aiTeam;
@@ -2468,6 +2598,34 @@ function getWinRateByStats(b, r) {
     return getWinRateDetails(b, r).blueWin;
 }
 
+function evaluateDraftState(picksState) {
+    const traitCtx = evaluateTraitContext(picksState);
+    const strategyCtx = evaluateStrategyContext(picksState, traitCtx.stats);
+    const worldsCtx = evaluateWorldsContext(picksState, strategyCtx.stats);
+    const b = worldsCtx.stats.blue;
+    const r = worldsCtx.stats.red;
+    const details = getWinRateDetails(b, r);
+    let strategyBlueEdge = 0;
+    if (strategyCtx.effect.team === "blue") strategyBlueEdge += strategyCtx.effect.winBonus;
+    if (strategyCtx.effect.team === "red") strategyBlueEdge -= strategyCtx.effect.winBonus;
+    const worldsBlueEdge = (worldsCtx.bonus.blue - worldsCtx.bonus.red) * 1.15;
+    const blueWin = clampPercent(
+        details.blueWin
+        + (traitCtx.bonus.blue.win - traitCtx.bonus.red.win)
+        + strategyBlueEdge
+        + worldsBlueEdge
+    );
+    const phases = getPhaseProjection(b, r, blueWin);
+    phases.earlyWin = clampPercent(phases.earlyWin + (traitCtx.bonus.blue.early - traitCtx.bonus.red.early));
+    phases.midWin = clampPercent(phases.midWin + (traitCtx.bonus.blue.mid - traitCtx.bonus.red.mid));
+    phases.lateWin = clampPercent(
+        phases.lateWin
+        + (traitCtx.bonus.blue.late - traitCtx.bonus.red.late)
+        + (traitCtx.bonus.blue.lateBias - traitCtx.bonus.red.lateBias) * 2
+    );
+    return { blueWin, b, r, phases, details, traitCtx, strategyCtx, worldsCtx };
+}
+
 function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null, worldsCtx = null) {
     const wrap = document.getElementById('mobile-team-mini');
     if (!wrap) return;
@@ -2527,26 +2685,13 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null,
 }
 
 function calculateStats() {
-    const traitCtx = evaluateTraitContext(picks);
-    const strategyCtx = evaluateStrategyContext(picks, traitCtx.stats);
-    const worldsCtx = evaluateWorldsContext(picks, strategyCtx.stats);
-    const b = worldsCtx.stats.blue;
-    const r = worldsCtx.stats.red;
+    const evaluated = evaluateDraftState(picks);
+    const { blueWin: bWin, b, r, phases, details, traitCtx, strategyCtx, worldsCtx } = evaluated;
     const blueRole = getTeamRoleLabel('blue');
     const redRole = getTeamRoleLabel('red');
     document.getElementById('blue-info').innerText = `${blueRole} (BLUE)`;
     document.getElementById('red-info').innerText = `${redRole} (RED)`;
     updateTeamPanels(b, r, traitCtx, strategyCtx, worldsCtx);
-    const details = getWinRateDetails(b, r);
-    let strategyBlueEdge = 0;
-    if (strategyCtx.effect.team === "blue") strategyBlueEdge += strategyCtx.effect.winBonus;
-    if (strategyCtx.effect.team === "red") strategyBlueEdge -= strategyCtx.effect.winBonus;
-    const worldsBlueEdge = (worldsCtx.bonus.blue - worldsCtx.bonus.red) * 1.15;
-    const bWin = clampPercent(details.blueWin + (traitCtx.bonus.blue.win - traitCtx.bonus.red.win) + strategyBlueEdge + worldsBlueEdge);
-    const phases = getPhaseProjection(b, r, bWin);
-    phases.earlyWin = clampPercent(phases.earlyWin + (traitCtx.bonus.blue.early - traitCtx.bonus.red.early));
-    phases.midWin = clampPercent(phases.midWin + (traitCtx.bonus.blue.mid - traitCtx.bonus.red.mid));
-    phases.lateWin = clampPercent(phases.lateWin + (traitCtx.bonus.blue.late - traitCtx.bonus.red.late) + (traitCtx.bonus.blue.lateBias - traitCtx.bonus.red.lateBias) * 2);
     renderMobileTeamMini(b, r, phases, traitCtx, strategyCtx, worldsCtx);
     if (currentStep >= DRAFT_ORDER.length) {
         document.getElementById('blue-win-bar').style.width = bWin + "%";
@@ -2557,65 +2702,161 @@ function calculateStats() {
     return { bWin, b, r, phases, details, traitCtx, strategyCtx, worldsCtx };
 }
 
+function getPerspectiveWinForTeam(team, blueWin) {
+    return team === "blue" ? blueWin : (100 - blueWin);
+}
+
+function getTakenSetFromState(picksState, bansState) {
+    const taken = new Set([...fearlessLocked]);
+    ["blue", "red"].forEach((team) => {
+        (picksState[team] || []).forEach((k) => { if (k) taken.add(k); });
+        (bansState[team] || []).forEach((k) => { if (k) taken.add(k); });
+    });
+    return taken;
+}
+
+function getCandidatesForStep(step, picksState, bansState) {
+    const taken = getTakenSetFromState(picksState, bansState);
+    let candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
+    if (step.type === "pick") {
+        candidates = candidates.filter((key) => canPickForTeamState(step.t, key, picksState));
+        if (candidates.length === 0) {
+            candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
+        }
+    }
+    return candidates.sort((a, b) => a.localeCompare(b, "en"));
+}
+
+function applyStepActionTemp(step, key, picksState, bansState) {
+    if (step.type === "pick") {
+        const prev = picksState[step.t][step.id];
+        picksState[step.t][step.id] = key;
+        return () => { picksState[step.t][step.id] = prev; };
+    }
+    const prev = bansState[step.t][step.id];
+    bansState[step.t][step.id] = key;
+    return () => { bansState[step.t][step.id] = prev; };
+}
+
+function getQuickPickScore(aiSide, key, picksState) {
+    const champ = CHAMP_DB[key];
+    if (!champ) return -Infinity;
+    let score = champ.dmg * 1.35 + champ.tank * 0.95 + champ.cc * 1.5 + champ.profile.scale * 1.2 + champ.phase.mid * 0.35;
+    const strategyTargetTeam = userTeam || "blue";
+    if (aiSide === strategyTargetTeam) {
+        score += getStrategyFitState(champ, selectedStrategyKey) * 1.8;
+    }
+    const enemySide = aiSide === "blue" ? "red" : "blue";
+    const enemyDominant = getDominantProfile(getTeamStats(enemySide, picksState));
+    const beats = { Dive: "Poke", Poke: "Anti", Anti: "Dive" };
+    if (beats[champ.profile.type] === enemyDominant.type) {
+        score += 2 + enemyDominant.value * 0.3;
+    } else if (beats[enemyDominant.type] === champ.profile.type) {
+        score -= 1.4 + enemyDominant.value * 0.2;
+    }
+    return score;
+}
+
+function getQuickBanThreatScore(aiSide, key, picksState) {
+    const enemySide = aiSide === "blue" ? "red" : "blue";
+    if (!canPickForTeamState(enemySide, key, picksState)) return -Infinity;
+    const champ = CHAMP_DB[key];
+    if (!champ) return -Infinity;
+    const traitCount = getTraitsByChampionName(champ.name).length;
+    return champ.dmg * 1.25 + champ.tank * 0.65 + champ.cc * 1.6 + champ.profile.scale * 1.1 + champ.phase.mid * 0.3 + traitCount * 0.8;
+}
+
+function simulateBestResponseAiPerspective(aiSide, responseStep, picksState, bansState) {
+    const candidates = getCandidatesForStep(responseStep, picksState, bansState);
+    if (candidates.length === 0) {
+        const baseline = evaluateDraftState(picksState);
+        return getPerspectiveWinForTeam(aiSide, baseline.blueWin);
+    }
+    let bestEnemyPerspective = -Infinity;
+    let worstAiPerspective = -Infinity;
+    let bestKey = null;
+    candidates.forEach((key) => {
+        const undo = applyStepActionTemp(responseStep, key, picksState, bansState);
+        const res = evaluateDraftState(picksState);
+        const enemyPerspective = getPerspectiveWinForTeam(responseStep.t, res.blueWin);
+        const aiPerspective = getPerspectiveWinForTeam(aiSide, res.blueWin);
+        undo();
+        const isBetter = enemyPerspective > bestEnemyPerspective + 1e-9
+            || (Math.abs(enemyPerspective - bestEnemyPerspective) < 1e-9 && (bestKey === null || key.localeCompare(bestKey, "en") < 0));
+        if (isBetter) {
+            bestEnemyPerspective = enemyPerspective;
+            worstAiPerspective = aiPerspective;
+            bestKey = key;
+        }
+    });
+    return worstAiPerspective;
+}
+
+function getThreatIfEnemyGetsKey(aiSide, key, picksState) {
+    const enemySide = aiSide === "blue" ? "red" : "blue";
+    if (!canPickForTeamState(enemySide, key, picksState)) return 0;
+    const slotIdx = picksState[enemySide].findIndex((v) => !v);
+    if (slotIdx < 0) return 0;
+    const prev = picksState[enemySide][slotIdx];
+    picksState[enemySide][slotIdx] = key;
+    const res = evaluateDraftState(picksState);
+    picksState[enemySide][slotIdx] = prev;
+    return 100 - getPerspectiveWinForTeam(aiSide, res.blueWin);
+}
+
 function aiTakeTurn() {
     if (!userTeam || currentStep >= DRAFT_ORDER.length) return;
     const step = DRAFT_ORDER[currentStep];
     if (step.t !== aiTeam) return;
 
-    const taken = new Set([...picks.blue, ...picks.red, ...bans.blue, ...bans.red, ...fearlessLocked]);
-    let candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
-    if (step.type === 'pick') {
-        candidates = candidates.filter((key) => canPickForTeam(aiTeam, key));
-    }
-    if (candidates.length === 0) {
-        if (step.type === 'pick') candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
-        else {
-            aiThinking = false;
-            return;
-        }
-    }
+    const picksState = { blue: [...picks.blue], red: [...picks.red] };
+    const bansState = { blue: [...bans.blue], red: [...bans.red] };
+    const candidates = getCandidatesForStep(step, picksState, bansState);
     if (candidates.length === 0) {
         aiThinking = false;
         return;
     }
+    const shortlistSize = step.type === "pick" ? AI_SHORTLIST_PICK : AI_SHORTLIST_BAN;
+    const quickRanked = candidates.map((key) => {
+        const quick = step.type === "pick"
+            ? getQuickPickScore(aiTeam, key, picksState)
+            : getQuickBanThreatScore(aiTeam, key, picksState);
+        return { key, quick };
+    }).sort((a, b) => {
+        if (b.quick !== a.quick) return b.quick - a.quick;
+        return a.key.localeCompare(b.key, "en");
+    });
+    const shortlist = quickRanked.slice(0, shortlistSize).map((row) => row.key);
+    const nextStep = DRAFT_ORDER[currentStep + 1];
+    const hasEnemyResponse = !!(nextStep && nextStep.t !== aiTeam);
 
-    let bestKey = candidates[0];
+    let bestKey = shortlist[0];
     let bestScore = -Infinity;
-    const enemyTeam = aiTeam === 'blue' ? 'red' : 'blue';
-    candidates.forEach((key) => {
-        let score = 0;
-        const champ = CHAMP_DB[key];
-        if (step.type === 'pick') {
-            const saved = picks[aiTeam][step.id];
-            picks[aiTeam][step.id] = key;
-            const b = getTeamStats('blue', picks);
-            const r = getTeamStats('red', picks);
-            const bWin = getWinRateByStats(b, r);
-            const perspective = aiTeam === 'blue' ? bWin : (100 - bWin);
-            const bonus = champ.profile.scale * 1.2 + champ.cc * 0.4;
-            score = perspective + bonus;
-            picks[aiTeam][step.id] = saved;
+    shortlist.forEach((key) => {
+        let immediate = 0;
+        let worstAfterEnemyResponse = 0;
+        if (step.type === "pick") {
+            const undo = applyStepActionTemp(step, key, picksState, bansState);
+            const res = evaluateDraftState(picksState);
+            immediate = getPerspectiveWinForTeam(aiTeam, res.blueWin);
+            worstAfterEnemyResponse = hasEnemyResponse
+                ? simulateBestResponseAiPerspective(aiTeam, nextStep, picksState, bansState)
+                : immediate;
+            undo();
         } else {
-            // 밴은 "상대가 가져갔을 때 내 승률이 가장 떨어지는 챔피언"을 우선 제거
-            let simulatedThreat = 0;
-            if (canPickForTeam(enemyTeam, key)) {
-                const slotIdx = picks[enemyTeam].findIndex((v) => !v);
-                if (slotIdx >= 0) {
-                    const saved = picks[enemyTeam][slotIdx];
-                    picks[enemyTeam][slotIdx] = key;
-                    const b = getTeamStats('blue', picks);
-                    const r = getTeamStats('red', picks);
-                    const bWin = getWinRateByStats(b, r);
-                    const aiPerspective = aiTeam === 'blue' ? bWin : (100 - bWin);
-                    simulatedThreat = 100 - aiPerspective;
-                    picks[enemyTeam][slotIdx] = saved;
-                }
-            }
-            const rawPower = champ.dmg * 0.75 + champ.tank * 0.55 + champ.cc * 1.2 + champ.profile.scale * 1.1;
-            score = simulatedThreat + rawPower * 0.45;
+            const threat = getThreatIfEnemyGetsKey(aiTeam, key, picksState);
+            const undo = applyStepActionTemp(step, key, picksState, bansState);
+            immediate = threat;
+            worstAfterEnemyResponse = hasEnemyResponse
+                ? (100 - simulateBestResponseAiPerspective(aiTeam, nextStep, picksState, bansState))
+                : immediate;
+            undo();
         }
-        if (score > bestScore) {
-            bestScore = score;
+        const finalScore = immediate * AI_IMMEDIATE_WEIGHT + worstAfterEnemyResponse * AI_RESPONSE_WEIGHT;
+        const isBetter = finalScore > bestScore + 1e-9
+            || (Math.abs(finalScore - bestScore) < 1e-9 && key.localeCompare(bestKey, "en") < 0);
+        if (isBetter) {
+            bestScore = finalScore;
             bestKey = key;
         }
     });
@@ -3415,7 +3656,9 @@ function startSimulationMatch() {
                 winnerTeam: winnerRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName,
                 loserTeam: loserRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName,
                 scoreText: `${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}`,
-                strategyLabel: STRATEGY_CONFIGS[selectedStrategyKey]?.label || "-"
+                strategyLabel: STRATEGY_CONFIGS[selectedStrategyKey]?.label || "-",
+                pickKeys: [...seriesDraftStats.picks],
+                banKeys: [...seriesDraftStats.bans]
             });
         }
 
@@ -3453,6 +3696,7 @@ function handleNextAction() {
         userTeam = userTeam === "blue" ? "red" : "blue";
     }
     aiTeam = userTeam === "blue" ? "red" : "blue";
+    applyWorldsTeamColors();
     currentGame += 1;
     shouldResetOnStrategyConfirm = false;
     renderStrategyModal();

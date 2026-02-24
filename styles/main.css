@@ -600,6 +600,7 @@ body {
 }
 
 .home-title { margin: 0; color: var(--gold); font-size: 28px; text-align: center; }
+.home-version { margin: 4px 0 0; color: #9bb1be; font-size: 12px; text-align: center; }
 .home-desc { margin: 8px 0 16px; color: #d6e0e8; font-size: 14px; text-align: center; }
 .home-note { margin: 12px 0 0; color: #9bb1be; font-size: 11px; text-align: center; }
 
@@ -645,7 +646,7 @@ body {
 
 .home-stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin-top: 12px;
 }
@@ -836,6 +837,9 @@ body {
     align-items: center;
     gap: 8px;
     margin-bottom: 6px;
+    border: 1px solid #3d5564;
+    border-radius: 7px;
+    padding: 6px;
     color: #e5f1f8;
 }
 .worlds-team-head img {

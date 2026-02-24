@@ -3,24 +3,32 @@
     "id": "t1",
     "name": "T1",
     "region": "LCK",
-    "logo": "https://placehold.co/64x64/121212/ffffff?text=T1"
+    "logo": "https://placehold.co/64x64/121212/ffffff?text=T1",
+    "primaryColor": "#e53935",
+    "secondaryColor": "#111111"
   },
   {
     "id": "geng",
     "name": "Gen.G",
     "region": "LCK",
-    "logo": "https://placehold.co/64x64/1f2937/facc15?text=GEN"
+    "logo": "https://placehold.co/64x64/1f2937/facc15?text=GEN",
+    "primaryColor": "#facc15",
+    "secondaryColor": "#1f2937"
   },
   {
     "id": "g2",
     "name": "G2 Esports",
     "region": "LEC",
-    "logo": "https://placehold.co/64x64/0f172a/60a5fa?text=G2"
+    "logo": "https://placehold.co/64x64/0f172a/60a5fa?text=G2",
+    "primaryColor": "#60a5fa",
+    "secondaryColor": "#0f172a"
   },
   {
     "id": "blg",
     "name": "Bilibili Gaming",
     "region": "LPL",
-    "logo": "https://placehold.co/64x64/1b1b1b/f87171?text=BLG"
+    "logo": "https://placehold.co/64x64/1b1b1b/f87171?text=BLG",
+    "primaryColor": "#f87171",
+    "secondaryColor": "#1b1b1b"
   }
 ]
