@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>LoL Pro Draft Simulator v0.2 (beta)</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles/main.css?v=20260227-14">
+    <link rel="stylesheet" href="styles/main.css?v=20260227-16">
 </head>
 <body>
 
@@ -96,17 +96,19 @@
 <div id="game-shell">
 <div class="header">
     <div id="header-main-row" style="display:flex; justify-content: space-between; font-weight: bold;">
-        <span id="blue-info" style="color:var(--blue)">AI TEAM (BLUE)</span>
+        <div id="blue-info" class="team-head team-head-blue">
+            <span class="team-head-name">AI TEAM (BLUE)</span>
+            <span class="team-head-sub">성향 정보</span>
+        </div>
         <span id="step-msg" style="color:var(--gold); font-size: 20px;">밴픽 시작</span>
-        <span id="red-info" style="color:var(--red)">MY TEAM (RED)</span>
+        <div id="red-info" class="team-head team-head-red">
+            <span class="team-head-name">MY TEAM (RED)</span>
+            <span class="team-head-sub">성향 정보</span>
+        </div>
     </div>
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
     <div id="realteam-mode-badge" class="realteam-mode-badge off">실제 팀 모드 OFF</div>
-    <div id="realteam-brief" class="realteam-brief">실제 팀 모드 비활성</div>
-    <div class="header-tools">
-        <span class="bgm-label">BGM: YouTube</span>
-        <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
-    </div>
+    <span id="yt-bgm-status" class="bgm-file" style="display:none;">자동 재생 시도중...</span>
     <div class="winrate-track">
         <div id="blue-win-bar"></div>
         <div class="wr-label">
@@ -207,6 +209,15 @@
             <button type="button" class="mobile-close-btn" onclick="closeMobileChampionInfo()">닫기</button>
         </div>
         <div id="mobile-champ-body" class="mobile-champ-body"></div>
+    </div>
+</div>
+<div id="player-info-modal">
+    <div class="player-info-card">
+        <div class="player-info-head">
+            <strong id="player-info-title">선수 상세 정보</strong>
+            <button type="button" class="mobile-close-btn" onclick="closePlayerInfoModal()">닫기</button>
+        </div>
+        <div id="player-info-body" class="player-info-body"></div>
     </div>
 </div>
 <div id="side-select-modal">
@@ -357,6 +368,6 @@
 
 <script src="data/champions.js?v=20260227-11"></script>
 <script src="data/traits.js?v=20260227-11"></script>
-<script src="scripts/app.js?v=20260227-15"></script>
+<script src="scripts/app.js?v=20260227-16"></script>
 </body>
 </html>

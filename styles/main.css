@@ -44,6 +44,32 @@ body {
 #blue-info,
 #red-info {
     font-size: 17px;
+    display: flex;
+    flex-direction: column;
+    min-width: 230px;
+    line-height: 1.15;
+}
+
+.team-head-name {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.team-head-sub {
+    margin-top: 3px;
+    font-size: 12px;
+    color: #9fb3c2;
+    font-weight: 600;
+}
+
+.team-head-blue .team-head-name { color: var(--blue); }
+.team-head-red .team-head-name { color: var(--red); }
+.team-head-blue .team-head-sub { color: #88d9ff; }
+.team-head-red .team-head-sub { color: #ffb2a8; }
+
+#red-info {
+    align-items: flex-end;
+    text-align: right;
 }
 
 #step-msg {
@@ -86,6 +112,10 @@ body {
     color: #aac0ce;
     font-size: 11px;
     padding: 6px 8px;
+}
+
+.header-tools {
+    display: none;
 }
 
 .realteam-brief-line {
@@ -265,8 +295,8 @@ body {
 }
 
 .side {
-    width: 300px;
-    min-width: 280px;
+    width: 348px;
+    min-width: 324px;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -338,9 +368,12 @@ body {
 
 .player-chip {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 5px;
-    max-width: 170px;
+    gap: 4px;
+    width: 78px;
+    min-width: 78px;
+    cursor: pointer;
 }
 
 .player-chip.off {
@@ -352,29 +385,30 @@ body {
 }
 
 .player-photo {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
     object-fit: cover;
     border: 1px solid #4a6272;
     background: #0f171e;
 }
 
 .player-nick {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: #dbe8f0;
-    line-height: 1;
+    line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 138px;
+    max-width: 76px;
+    text-align: center;
 }
 
 .player-note {
     font-size: 10px;
     color: #93a8b6;
-    max-width: 170px;
+    max-width: 210px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -386,24 +420,26 @@ body {
 
 .slot.worlds-mode-slot .worlds-slot-player {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     min-width: 0;
-    max-width: 118px;
+    width: 86px;
+    min-width: 86px;
 }
 
 .slot.worlds-mode-slot .player-photo {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border-radius: 9px;
     border-color: #5d7c8f;
 }
 
 .slot.worlds-mode-slot .player-nick {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     color: #e6f0f6;
-    max-width: 74px;
+    max-width: 84px;
 }
 
 .slot.worlds-mode-slot .champ-img {
@@ -738,12 +774,48 @@ body {
 
 .radar-wrap { margin-top: 8px; border: 1px solid #2e414f; border-radius: 8px; background: #0e171f; padding: 6px; }
 .radar-svg { width: 100%; height: 190px; }
+.radar-meta {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+.radar-meta-type {
+    font-size: 11px;
+    font-weight: 700;
+}
+.radar-meta-score {
+    font-size: 11px;
+    color: #b8cbd8;
+}
 .radar-ring { fill: none; stroke: #2e4150; stroke-width: 1; }
 .radar-axis { stroke: #324757; stroke-width: 1; }
 .radar-label { fill: #a8bdcb; font-size: 10px; }
 .radar-area { stroke-width: 2; fill-opacity: 0.24; }
 .radar-wrap.blue .radar-area { fill: #45b7ff; stroke: #7ad0ff; }
 .radar-wrap.red .radar-area { fill: #ff816e; stroke: #ffae95; }
+
+.team-power-wrap {
+    margin-top: 8px;
+    border: 1px solid #314653;
+    border-radius: 8px;
+    background: #0f171e;
+    padding: 6px;
+}
+.team-power-title {
+    font-size: 11px;
+    color: #a7bdcb;
+    margin-bottom: 3px;
+}
+.team-power-svg { width: 100%; height: 92px; }
+.team-power-axis { stroke: #344a59; stroke-width: 1; }
+.team-power-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.team-power-dot { fill: #ffd166; }
+.team-power-label { fill: #c5d5df; font-size: 10px; }
+.team-power-value { fill: #edf5fa; font-size: 10px; }
+.team-power-wrap.blue .team-power-line { stroke: #53c4ff; }
+.team-power-wrap.red .team-power-line { stroke: #ff8f7f; }
 
 .team-summary {
     margin-top: 8px;
@@ -759,15 +831,46 @@ body {
 }
 
 .team-summary .title { font-weight: bold; margin-bottom: 6px; color: var(--gold); }
-.team-summary .row { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-.team-summary .row > span:last-child { text-align: right; }
-.team-summary .row.row-wrap > span:last-child { flex: 1; white-space: normal; line-height: 1.35; }
-.mini-bars { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
-.mini-bar { display: flex; align-items: center; gap: 5px; }
-.mini-bar-label { width: 28px; color: #9fb3c2; font-size: 10px; }
-.mini-bar-track { flex: 1; height: 6px; background: #22303a; border-radius: 999px; overflow: hidden; }
-.mini-bar-fill { display: block; height: 100%; border-radius: 999px; }
-.mini-bar-value { width: 26px; text-align: right; font-size: 10px; color: #d4dde3; }
+.summary-kpi-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.summary-kpi-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #354a58;
+    border-radius: 999px;
+    background: #101a22;
+    color: #d8e5ee;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 8px;
+}
+.summary-aux-line {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #9cb2c1;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+.summary-graph-grid {
+    margin-top: 6px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+.summary-worlds-note {
+    margin-top: 6px;
+    border: 1px solid #2f4351;
+    border-radius: 7px;
+    background: #0f1a22;
+    color: #abc0cd;
+    font-size: 11px;
+    padding: 6px 8px;
+    line-height: 1.4;
+}
 
 .locked-wrap { margin-top: 8px; padding: 8px; border: 1px solid #2d3b45; border-radius: 6px; background: #101a21; }
 .locked-title { font-size: 10px; color: #9fb3c2; margin-bottom: 5px; }
@@ -780,7 +883,8 @@ body {
 #side-select-modal,
 #strategy-modal,
 #worlds-modal,
-#champ-stats-modal {
+#champ-stats-modal,
+#player-info-modal {
     position: fixed;
     inset: 0;
     display: none;
@@ -797,6 +901,7 @@ body {
 #worlds-challenge-modal { z-index: 3285; }
 #worlds-challenge-live-modal { z-index: 3310; }
 #champ-stats-modal { z-index: 3380; }
+#player-info-modal { z-index: 3390; }
 
 .home-card {
     width: min(760px, 92vw);
@@ -1104,6 +1209,133 @@ body {
     border-radius: 12px;
     padding: 18px;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+.player-info-card {
+    width: min(540px, 92vw);
+    max-height: 84vh;
+    overflow: auto;
+    background: linear-gradient(180deg, #14202a, #0c151c);
+    border: 1px solid #3a4f5e;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.52);
+}
+.player-info-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.player-info-head strong {
+    color: #e9f2f8;
+    font-size: 18px;
+}
+.player-info-body {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.player-info-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #355063;
+    border-radius: 10px;
+    background: #111d26;
+    padding: 10px;
+}
+.player-info-photo {
+    width: 68px;
+    height: 68px;
+    border-radius: 10px;
+    border: 1px solid #4a6779;
+    object-fit: cover;
+    background: #0c151b;
+}
+.player-info-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.player-info-meta b {
+    color: #f0f7fb;
+    font-size: 15px;
+}
+.player-info-meta span {
+    color: #b1c5d2;
+    font-size: 12px;
+}
+.player-info-section {
+    border: 1px solid #324a59;
+    border-radius: 10px;
+    background: #101b22;
+    padding: 8px;
+}
+.player-info-section-title {
+    color: #ffd57f;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+.player-info-signatures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.player-sig-item {
+    width: 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.player-sig-item img {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid #445f71;
+    object-fit: cover;
+    background: #0e161d;
+}
+.player-sig-item span {
+    font-size: 11px;
+    color: #c8d8e3;
+    text-align: center;
+    line-height: 1.2;
+}
+.player-info-signatures-empty {
+    font-size: 12px;
+    color: #8fa5b3;
+}
+.player-info-bonus-row {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0;
+    border-top: 1px solid #263844;
+}
+.player-info-bonus-row:first-of-type { border-top: 0; }
+.player-info-bonus-row span {
+    color: #c8d8e3;
+    font-size: 12px;
+}
+.player-info-bonus-row b {
+    color: #e6f0f6;
+    font-size: 12px;
+    font-weight: 600;
+}
+.bonus-on {
+    font-size: 11px;
+    color: #8ee1b6;
+    font-weight: 700;
+}
+.bonus-off {
+    font-size: 11px;
+    color: #f5a7a7;
+    font-weight: 700;
 }
 
 .tutorial-title { margin: 0 0 8px; color: var(--gold); font-size: 22px; }
@@ -1731,6 +1963,11 @@ body {
         justify-content: center !important;
         gap: 8px;
     }
+    #blue-info, #red-info {
+        min-width: 108px;
+    }
+    .team-head-name { font-size: 12px; }
+    .team-head-sub { font-size: 10px; }
 
     .header-tools {
         display: none;
@@ -1788,12 +2025,12 @@ body {
         font-size: 12px;
         font-weight: 700;
     }
-    .player-chip { max-width: 96px; gap: 3px; }
-    .player-photo { width: 14px; height: 14px; }
-    .player-nick { font-size: 8px; max-width: 74px; }
+    .player-chip { width: 60px; min-width: 60px; gap: 2px; }
+    .player-photo { width: 24px; height: 24px; border-radius: 7px; }
+    .player-nick { font-size: 9px; max-width: 58px; }
     .player-note {
-        font-size: 7px;
-        max-width: 96px;
+        font-size: 8px;
+        max-width: 120px;
     }
 
     .pos-indicator {
