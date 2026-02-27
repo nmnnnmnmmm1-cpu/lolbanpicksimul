@@ -2957,6 +2957,7 @@ function chooseSide(side) {
 
 async function init() {
     ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal"].forEach(hoistModalToBody);
+    ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal", "strategy-modal", "side-select-modal", "result-modal"].forEach((id) => setDisplayById(id, "none"));
     bindHomeActionButtons();
     const bBans = document.getElementById('b-bans');
     const rBans = document.getElementById('r-bans');
@@ -4924,19 +4925,20 @@ function renderGoldKillSection(res) {
 
 function buildNarrationOnlyBody(res, projection) {
     return `
-        <div class="sim-wrap">
+        <div class="sim-wrap result-glass-block">
             <div class="sim-title">10초 경기 시뮬레이션</div>
+            <div class="sim-subtitle">중계진 해설 로그가 실시간으로 갱신됩니다.</div>
             ${renderLiveBattleHeader(projection)}
             ${renderPhaseRowsForPerspective(res)}
-            <div id="narrator-feed" class="narrator-feed"><div class="narrator-line">해설 준비중...</div></div>
+            <div id="narrator-feed" class="narrator-feed"><div class="narrator-line show">해설 준비중...</div></div>
         </div>
     `;
 }
 
 function buildSimulationLobbyBody(res, projection) {
-    return '<div class="sim-wrap">' +
+    return '<div class="sim-wrap result-glass-block">' +
             '<div class="sim-title">시뮬레이션 준비 완료</div>' +
-            '<p style="margin:0 0 10px; color:#c8d7e2; font-size:13px;">밴픽 결과를 바탕으로 10초 해설 시뮬레이션을 시작합니다.</p>' +
+            '<p class="sim-subtitle">밴픽 결과를 기반으로 10초 경기 시뮬레이션을 시작합니다.</p>' +
             renderLiveBattleHeader(projection) +
             renderPhaseRowsForPerspective(res) +
         '</div>';
@@ -5120,32 +5122,112 @@ function getFinishPhaseSummary(res, winner) {
     }
     return { phase: "후반", reason: "후반 운영/한타 우위(후반 " + late.toFixed(1) + "%)로 최종 승부를 결정했습니다." };
 }
+function getResultBarPercent(value, max) {
+    const n = Number(value) || 0;
+    const m = Math.max(1, Number(max) || 1);
+    return Math.max(0, Math.min(100, (n / m) * 100));
+}
+
+function renderResultMetricRow(label, value, max, toneClass, icon) {
+    const pct = getResultBarPercent(value, max);
+    return `<div class="result-metric-row">
+        <span class="result-metric-label">${icon ? icon + " " : ""}${label}</span>
+        <div class="result-metric-track"><span class="result-metric-fill ${toneClass}" style="width:${pct.toFixed(1)}%;"></span></div>
+        <b class="result-metric-value">${formatNum(value)}</b>
+    </div>`;
+}
+
+function renderResultTypeMeter(label, value, cls) {
+    const pct = getResultBarPercent(value, 15);
+    return `<div class="result-type-meter">
+        <span class="result-type-label ${cls}">${label}</span>
+        <div class="result-type-track"><span class="result-type-fill ${cls}" style="width:${pct.toFixed(1)}%;"></span></div>
+        <b>${formatNum(value)}</b>
+    </div>`;
+}
+
+function renderResultTeamCard(team, stats, compLabel) {
+    const teamName = teamDisplayName(team);
+    const tone = team === "blue" ? "blue" : "red";
+    return `<section class="result-team-card ${tone}">
+        <div class="result-team-head">
+            <div class="result-team-title-wrap">
+                <h3 class="result-team-name">${escapeHtml(teamName)}</h3>
+                <span class="result-comp-badge">${escapeHtml(compLabel)}</span>
+            </div>
+            <span class="result-side-chip ${tone}">${team.toUpperCase()}</span>
+        </div>
+        <div class="result-metrics">
+            ${renderResultMetricRow("CC", stats.cc, 15, "tone-cc", "🧩")}
+            ${renderResultMetricRow("딜링", stats.dmg, 50, "tone-dmg", "⚔")}
+            ${renderResultMetricRow("탱킹", stats.tank, 50, "tone-tank", "🛡")}
+        </div>
+        <div class="result-sub-block">
+            <div class="result-sub-title">팀 유형</div>
+            ${renderResultTypeMeter("돌진", stats.dive, "type-dive")}
+            ${renderResultTypeMeter("포킹", stats.poke, "type-poke")}
+            ${renderResultTypeMeter("받아치기", stats.anti, "type-anti")}
+        </div>
+        <div class="result-sub-block">
+            <div class="result-sub-title">파워커브</div>
+            <div class="result-phase-mini">
+                <span>초 ${formatNum(stats.early)}</span>
+                <span>중 ${formatNum(stats.mid)}</span>
+                <span>후 ${formatNum(stats.late)}</span>
+            </div>
+        </div>
+    </section>`;
+}
+
 function buildResultBody(res, winner, loser, seriesEnded) {
     const bComp = getCompLabel(res.b);
     const rComp = getCompLabel(res.r);
     const winnerMvp = buildTeamMvp(winner, res);
-    const winnerTeamLabel = winner === "blue" ? "블루팀" : "레드팀";
+    const winnerTeamLabel = winner === "blue" ? teamDisplayName("blue") : teamDisplayName("red");
     const finish = getFinishPhaseSummary(res, winner);
     const strategyEffect = res.strategyCtx && res.strategyCtx.effect ? res.strategyCtx.effect : null;
     const strategyTeamLabel = strategyEffect ? teamDisplayName(strategyEffect.team) : "-";
     const strategyName = strategyEffect ? (STRATEGY_CONFIGS[strategyEffect.strategy]?.label || "전략") : "-";
-    const strategyText = strategyEffect ? `${strategyTeamLabel} 전략(${strategyName}) 적합 ${formatNum(strategyEffect.fit)} / 부조화 ${formatNum(strategyEffect.mismatch)} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${formatNum(strategyEffect.winBonus)}` : "전략 보정 없음";
+    const strategyText = strategyEffect
+        ? `${strategyTeamLabel} ${strategyName} · 적합 ${formatNum(strategyEffect.fit)} / 부조화 ${formatNum(strategyEffect.mismatch)} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${formatNum(strategyEffect.winBonus)}`
+        : "전략 보정 없음";
     const worldsText = worldsModeEnabled && res.worldsCtx
-        ? `${teamDisplayName("blue")} +${formatNum(res.worldsCtx.bonus.blue || 0)} / ${teamDisplayName("red")} +${formatNum(res.worldsCtx.bonus.red || 0)}`
+        ? `${teamDisplayName("blue")} +${formatNum(res.worldsCtx.bonus.blue || 0)} · ${teamDisplayName("red")} +${formatNum(res.worldsCtx.bonus.red || 0)}`
         : "OFF";
+
     const winnerRole = winner === userTeam ? "user" : "ai";
     const loserRole = winnerRole === "user" ? "ai" : "user";
+    const blueWr = roundToOne(res.bWin);
+    const redWr = roundToOne(100 - res.bWin);
+
     return `
-        <p style="color:var(--gold);font-weight:bold;">세트 스코어: ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
-        <p style="font-size:12px;color:#9ec4d9;">전략 적용: ${strategyText}</p>
-        <p style="font-size:12px;color:#9ec4d9;">실제 팀 보정: ${worldsText}</p>
-        <p>🔵 블루팀: ${bComp} (CC ${formatNum(res.b.cc)} / 딜 ${formatNum(res.b.dmg)} / 탱 ${formatNum(res.b.tank)})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${formatNum(res.b.dive)} / 포킹 ${formatNum(res.b.poke)} / 받아치기 ${formatNum(res.b.anti)} | 시간대: 초 ${formatNum(res.b.early)} / 중 ${formatNum(res.b.mid)} / 후 ${formatNum(res.b.late)}</p>
-        <p>🔴 레드팀: ${rComp} (CC ${formatNum(res.r.cc)} / 딜 ${formatNum(res.r.dmg)} / 탱 ${formatNum(res.r.tank)})</p>
-        <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${formatNum(res.r.dive)} / 포킹 ${formatNum(res.r.poke)} / 받아치기 ${formatNum(res.r.anti)} | 시간대: 초 ${formatNum(res.r.early)} / 중 ${formatNum(res.r.mid)} / 후 ${formatNum(res.r.late)}</p>
-        <div class="mvp-wrap single">
+        <div class="result-overview-strip">
+            <div class="result-overview-main">
+                <span class="result-overview-label">종료 시점</span>
+                <b class="result-overview-value">${finish.phase}</b>
+                <span class="result-overview-reason">${finish.reason}</span>
+            </div>
+            <div class="result-overview-kpis">
+                <span class="result-overview-chip blue">BLUE ${formatNum(blueWr)}%</span>
+                <span class="result-overview-chip red">RED ${formatNum(redWr)}%</span>
+            </div>
+        </div>
+
+        <div class="result-info-line">
+            <span>세트 스코어</span>
+            <b>${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}</b>
+        </div>
+        <div class="result-info-line slim"><span>전략 적용</span><b>${strategyText}</b></div>
+        <div class="result-info-line slim"><span>실제 팀 보정</span><b>${worldsText}</b></div>
+
+        <div class="result-dashboard-grid">
+            ${renderResultTeamCard("blue", res.b, bComp)}
+            ${renderResultTeamCard("red", res.r, rComp)}
+        </div>
+
+        <div class="mvp-wrap single result-glass-block">
             <div class="mvp-card ${winner}">
-                <div class="mvp-title">${winnerTeamLabel} POG</div>
+                <div class="mvp-title">POG · ${escapeHtml(winnerTeamLabel)}</div>
                 ${
                     winnerMvp
                         ? `<div class="mvp-head"><img class="mvp-portrait mvp-player-photo" src="${winnerMvp.playerPhoto || getPlayerPhotoFallbackByNick(winnerMvp.playerNick || 'POG', 72)}" alt="${winnerMvp.playerNick || 'PLAYER'}" onerror="this.onerror=null;this.src='${getPlayerPhotoFallbackByNick('POG', 72)}';"><div class="mvp-head-meta"><div class="mvp-player-name">${winnerMvp.playerNick || '선수 미지정'}</div><div class="mvp-name">${winnerMvp.name} (${winnerMvp.title})</div></div><img class="mvp-portrait" src="${getChampionImageUrl(winnerMvp.key)}" alt="${winnerMvp.name}" onerror="this.onerror=null;this.src='https://placehold.co/72x72/121c23/c8aa6e?text=${encodeURIComponent(winnerMvp.name)}';"></div><div class="mvp-reason">${winnerMvp.reason}</div>`
@@ -5153,20 +5235,34 @@ function buildResultBody(res, winner, loser, seriesEnded) {
                 }
             </div>
         </div>
-        <div class="mvp-wrap">
+
+        <div class="mvp-wrap result-glass-block">
             <div class="mvp-card blue"><div class="mvp-title">블루팀 특성</div>${renderTraitResultSection(res.traitCtx && res.traitCtx.traits && res.traitCtx.traits.blue)}</div>
             <div class="mvp-card red"><div class="mvp-title">레드팀 특성</div>${renderTraitResultSection(res.traitCtx && res.traitCtx.traits && res.traitCtx.traits.red)}</div>
         </div>
-        <div class="sim-wrap">
-            <div class="sim-title">10초 경기 시뮬레이션</div>
+
+        <div class="sim-wrap result-glass-block">
+            <div class="sim-title">경기 리플레이 대시보드</div>
             ${renderPhaseRowsForPerspective(res)}
             ${renderGoldKillSection(res)}
-            <div class="narrator-feed"><div class="narrator-line">해설 종료. 결과가 확정되었습니다.</div></div>
+            <div class="narrator-feed"><div class="narrator-line show">해설 종료. 결과가 확정되었습니다.</div></div>
         </div>
-        <hr style="border-color:#333">
-        <h2 style="color:var(--gold)">최종 승리 확률: ${winner === "blue" ? res.bWin.toFixed(1) : (100-res.bWin).toFixed(1)}%</h2>
-        <p style="font-size:12px;color:${seriesEnded ? '#ffd180' : '#9fb3c2'};">${seriesEnded ? `시리즈 종료: ${winnerRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName} 승리 (${seriesRoleWins[winnerRole]}-${seriesRoleWins[loserRole]})` : (hardFearless ? `다음 SET ${currentGame + 1}에서 하드 피어리스 잠금이 유지됩니다.` : `다음 SET ${currentGame + 1}은 잠금 없이 진행됩니다.`)}</p>
+
+        <p class="result-next-hint">${seriesEnded ? `시리즈 종료: ${winnerRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName} 승리 (${seriesRoleWins[winnerRole]}-${seriesRoleWins[loserRole]})` : (hardFearless ? `다음 SET ${currentGame + 1}에서도 하드 피어리스 잠금이 유지됩니다.` : `다음 SET ${currentGame + 1}은 잠금 없이 진행됩니다.`)}</p>
     `;
+}
+
+function appendNarratorLine(feed, text) {
+    if (!feed) return;
+    const line = document.createElement("div");
+    line.className = "narrator-line";
+    line.textContent = text;
+    feed.appendChild(line);
+    requestAnimationFrame(() => line.classList.add("show"));
+    const limit = 7;
+    while (feed.children.length > limit) {
+        feed.removeChild(feed.firstElementChild);
+    }
 }
 
 function startResultNarration(res, finalWinner, projection, onComplete) {
@@ -5178,7 +5274,10 @@ function startResultNarration(res, finalWinner, projection, onComplete) {
     nextBtn.disabled = true;
     nextBtn.style.opacity = "0.6";
     nextBtn.innerText = "경기 진행중... 10";
-    feed.innerHTML = `<div class="narrator-line">🎙 해설: 밴픽 결과를 바탕으로 시뮬레이션을 시작합니다.</div>`;
+    if (feed) {
+        feed.innerHTML = "";
+        appendNarratorLine(feed, "🎙 해설: 밴픽 결과를 바탕으로 시뮬레이션을 시작합니다.");
+    }
     resultFlowState = "simulating";
     updateLiveBattlePanel(projection, 0);
 
@@ -5188,10 +5287,8 @@ function startResultNarration(res, finalWinner, projection, onComplete) {
         const remain = Math.max(10 - idx, 0);
         updateLiveBattlePanel(projection, Math.min(idx / 10, 1));
         const maxNarrationLines = Math.min(lines.length, 9);
-        if (idx <= maxNarrationLines) {
-            const line = lines[idx - 1];
-            feed.innerHTML += `<div class="narrator-line">🎙 ${line}</div>`;
-            feed.scrollTop = feed.scrollHeight;
+        if (idx <= maxNarrationLines && feed) {
+            appendNarratorLine(feed, `🎙 ${lines[idx - 1]}`);
         }
         nextBtn.innerText = remain > 0 ? `경기 진행중... ${remain}` : "결과 계산중...";
         if (idx >= 10) {
