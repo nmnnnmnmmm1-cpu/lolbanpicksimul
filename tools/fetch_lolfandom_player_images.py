@@ -3,6 +3,7 @@ import json
 import re
 import ssl
 import time
+import html
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -14,9 +15,22 @@ UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
 SSL_CTX = ssl._create_unverified_context()
 API = "https://lol.fandom.com/api.php"
 
+# Nickname alias for ambiguous titles on Fandom.
+TITLE_ALIAS_BY_NICK = {
+    "PerfecT": "Perfect",
+    "DuDu": "Dudu",
+    "Junjia": "JunJia",
+}
 
-def fetch_text(url: str) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+
+# Force a specific LOL Fandom page title per player id when needed.
+# Example: "t1_faker": "Faker (Lee Sang-hyeok)"
+PLAYER_TITLE_OVERRIDES = {
+}
+
+
+def fetch_text(url: str, accept: str = "application/json") -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": accept})
     with urllib.request.urlopen(req, timeout=20, context=SSL_CTX) as res:
         data = res.read()
     return data.decode("utf-8", errors="ignore")
@@ -52,7 +66,11 @@ def ext_from(ctype: str, url: str) -> str:
 def clean_image_url(url: str) -> str:
     if not url:
         return ""
+    if url.startswith("//"):
+        url = "https:" + url
     if "/revision/" in url:
+        if "/revision/latest" in url:
+            return url.split("/revision/latest")[0] + "/revision/latest"
         return url.split("/revision/")[0]
     return url
 
@@ -74,7 +92,7 @@ def page_thumb_by_title(title: str) -> str:
         "action": "query",
         "titles": title,
         "prop": "pageimages",
-        "pithumbsize": "800",
+        "pithumbsize": "1200",
         "redirects": "1",
         "format": "json",
         "origin": "*",
@@ -90,11 +108,71 @@ def page_thumb_by_title(title: str) -> str:
     return ""
 
 
-def search_titles(nick: str, limit: int = 5):
+def fetch_parsed_page_html(title: str) -> str:
+    params = {
+        "action": "parse",
+        "page": title,
+        "prop": "text",
+        "redirects": "1",
+        "formatversion": "2",
+        "format": "json",
+        "origin": "*",
+    }
+    url = API + "?" + urllib.parse.urlencode(params)
+    data = fetch_json(url)
+    return (data.get("parse") or {}).get("text") or ""
+
+
+def get_infobox_block(page_html: str) -> str:
+    if not page_html:
+        return ""
+    m = re.search(r"<aside[^>]*class=\"[^\"]*(portable-infobox|pi-theme)[^\"]*\"[\s\S]*?</aside>", page_html, flags=re.IGNORECASE)
+    if m:
+        return m.group(0)
+    t = re.search(r"<table[^>]*class=\"[^\"]*infobox[^\"]*\"[\s\S]*?</table>", page_html, flags=re.IGNORECASE)
+    if t:
+        return t.group(0)
+    return ""
+
+
+def strip_tags(html_text: str) -> str:
+    txt = re.sub(r"<[^>]+>", " ", html_text or "")
+    return re.sub(r"\s+", " ", html.unescape(txt)).strip().lower()
+
+
+def is_player_infobox(block: str) -> bool:
+    low = strip_tags(block)
+    if not low:
+        return False
+    hit = 0
+    for token in ["role", "team", "residency", "real name", "status", "birthday", "country"]:
+        if token in low:
+            hit += 1
+    return hit >= 2
+
+
+def extract_infobox_image(page_html: str) -> str:
+    block = get_infobox_block(page_html)
+    if not block:
+        return ""
+    for attr in ["data-src", "srcset", "src"]:
+        mm = re.search(rf"{attr}\\s*=\\s*\"([^\"]+)\"", block, flags=re.IGNORECASE)
+        if not mm:
+            continue
+        raw = html.unescape(mm.group(1)).strip()
+        if attr == "srcset":
+            raw = raw.split(",")[0].strip().split(" ")[0].strip()
+        src = clean_image_url(raw)
+        if src and not is_bad_image(src):
+            return src
+    return ""
+
+
+def search_titles(nick: str, limit: int = 10):
     params = {
         "action": "query",
         "list": "search",
-        "srsearch": nick,
+        "srsearch": f'"{nick}"',
         "srlimit": str(limit),
         "format": "json",
         "origin": "*",
@@ -115,35 +193,70 @@ def search_titles(nick: str, limit: int = 5):
     return titles
 
 
-def build_candidates(nick: str):
+def build_candidate_titles(pid: str, nick: str):
     n = (nick or "").strip()
     if not n:
         return []
-    candidates = [n, n.replace("_", " "), re.sub(r"\s+", " ", n)]
     out = []
-    for c in candidates:
+    alias = TITLE_ALIAS_BY_NICK.get(n)
+    base = [n, n.replace("_", " "), re.sub(r"\s+", " ", n)]
+    if alias:
+        base.extend([alias, alias.replace("_", " ")])
+    for c in base:
         c = c.strip()
         if c and c not in out:
             out.append(c)
+    for c in list(out):
+        tagged = f"{c} (player)"
+        if tagged not in out:
+            out.append(tagged)
     return out
 
 
-def resolve_player_image(nick: str) -> str:
-    for cand in build_candidates(nick):
+def resolve_player_image(pid: str, nick: str) -> str:
+    forced = PLAYER_TITLE_OVERRIDES.get(pid)
+    if forced:
+        try:
+            page = fetch_parsed_page_html(forced)
+            block = get_infobox_block(page)
+            if block and is_player_infobox(block):
+                src = extract_infobox_image(page) or page_thumb_by_title(forced)
+                if src and not is_bad_image(src):
+                    return src
+        except Exception:
+            pass
+
+    for cand in build_candidate_titles(pid, nick):
+        try:
+            page = fetch_parsed_page_html(cand)
+            block = get_infobox_block(page)
+            if block and is_player_infobox(block):
+                src = extract_infobox_image(page)
+                if src:
+                    return src
+        except Exception:
+            pass
+
+    for title in search_titles(nick, limit=10):
+        try:
+            page = fetch_parsed_page_html(title)
+            block = get_infobox_block(page)
+            if not block or not is_player_infobox(block):
+                continue
+            src = extract_infobox_image(page) or page_thumb_by_title(title)
+            if src and not is_bad_image(src):
+                return src
+        except Exception:
+            continue
+
+    for cand in build_candidate_titles(pid, nick):
         try:
             src = page_thumb_by_title(cand)
-            if src:
+            if src and not is_bad_image(src):
                 return src
         except Exception:
             pass
 
-    for title in search_titles(nick, limit=8):
-        try:
-            src = page_thumb_by_title(title)
-            if src:
-                return src
-        except Exception:
-            continue
     return ""
 
 
@@ -169,11 +282,11 @@ def main():
             continue
 
         try:
-            image_url = resolve_player_image(nick)
+            image_url = resolve_player_image(pid, nick)
             if not image_url:
                 fail += 1
                 print(f"[FAIL] {nick} ({pid}) - image not found")
-                time.sleep(0.1)
+                time.sleep(0.06)
                 continue
 
             img_bytes, ctype = fetch_bytes(image_url)
@@ -195,7 +308,7 @@ def main():
             fail += 1
             print(f"[ERR] {nick} ({pid}) - {e}")
 
-        time.sleep(0.08)
+        time.sleep(0.05)
 
     with PLAYERS_JSON.open("w", encoding="utf-8") as f:
         json.dump(players, f, ensure_ascii=False, indent=2)
