@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>LoL Pro Draft Simulator v0.2 (beta)</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles/main.css?v=20260224-9">
+    <link rel="stylesheet" href="styles/main.css?v=20260227-11">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
         <h1 class="home-title">LoL Banpick Simulator</h1>
         <p class="home-version">v0.2 (beta)</p>
         <p class="home-desc">모드를 고르고 팀 이름/전략을 설정한 뒤 밴픽으로 승패를 가르는 게임입니다.</p>
-        <div class="home-team-setup">
+        <div class="home-team-setup" id="home-team-setup">
             <div class="home-input-wrap">
                 <label for="my-team-name">내 팀 이름</label>
                 <input id="my-team-name" type="text" maxlength="24" placeholder="MY TEAM">
@@ -24,6 +24,13 @@
                 <input id="ai-team-name" type="text" maxlength="24" placeholder="AI TEAM">
             </div>
             <button type="button" class="home-save-btn" onclick="saveTeamNameInputs()">팀 이름 저장</button>
+        </div>
+        <div id="home-worlds-team-panel" class="home-worlds-team-panel hidden">
+            <div class="home-worlds-head">
+                <div id="home-worlds-team-title" class="home-worlds-team-title">실제 선수 모드 팀</div>
+                <button type="button" class="home-save-btn small" onclick="requestWorldsTeamChange()">팀 변경</button>
+            </div>
+            <div id="home-worlds-roster" class="home-worlds-roster"></div>
         </div>
         <div class="mode-grid">
             <button type="button" class="mode-btn" onclick="selectMode('single')">
@@ -37,6 +44,14 @@
             <button type="button" class="mode-btn" onclick="selectMode('bo5')">
                 <span class="mode-name">5전제 (하드피어리스)</span>
                 <span id="record-bo5" class="mode-record">승률 0% | 연승 0</span>
+            </button>
+            <button type="button" class="mode-btn" id="home-btn-worlds-challenge" onclick="openWorldsChallengeSetup()">
+                <span class="mode-name">월즈 도전 (실제 팀 모드 필요)</span>
+                <span id="worlds-challenge-status" class="mode-record">실제 팀 모드 OFF</span>
+            </button>
+            <button type="button" class="mode-btn" id="home-btn-ai-balance">
+                <span class="mode-name">AI 밸런스 시뮬 20판</span>
+                <span class="mode-record">랜덤 팀 자동 밴픽/경기</span>
             </button>
         </div>
         <div class="home-stats-grid">
@@ -54,8 +69,8 @@
             </div>
         </div>
         <div class="home-actions">
-            <button type="button" class="tutorial-btn" id="home-btn-worlds-open">월즈 모드 설정</button>
-            <button type="button" class="tutorial-btn" id="home-btn-worlds-disable">월즈 모드 해제</button>
+            <button type="button" class="tutorial-btn" id="home-btn-worlds-open">실제 팀 모드 설정</button>
+            <button type="button" class="tutorial-btn" id="home-btn-worlds-disable">실제 팀 모드 해제</button>
             <button type="button" class="tutorial-btn" id="home-btn-tutorial-open">게임 설명 보기</button>
         </div>
         <div class="remote-config">
@@ -86,10 +101,8 @@
         <span id="red-info" style="color:var(--red)">MY TEAM (RED)</span>
     </div>
     <div id="series-info" style="font-size:12px; color:#9fb3c2; margin-top:6px; text-align:center;">BO5 준비중</div>
-    <div id="objective-brief" class="objective-brief">
-        <span class="obj-team-badges"><b class="obj-team-name">MY TEAM</b><span class="obj-badge dragon">용 0</span><span class="obj-badge baron">바론 0</span></span>
-        <span class="obj-team-badges"><b class="obj-team-name">AI TEAM</b><span class="obj-badge dragon">용 0</span><span class="obj-badge baron">바론 0</span></span>
-    </div>
+    <div id="realteam-mode-badge" class="realteam-mode-badge off">실제 팀 모드 OFF</div>
+    <div id="realteam-brief" class="realteam-brief">실제 팀 모드 비활성</div>
     <div class="header-tools">
         <span class="bgm-label">BGM: YouTube</span>
         <span id="yt-bgm-status" class="bgm-file">자동 재생 시도중...</span>
@@ -219,15 +232,15 @@
 </div>
 <div id="worlds-modal">
     <div class="worlds-card">
-        <h2 class="side-title">월즈 모드 설정 (베타)</h2>
-        <p class="side-desc">팀을 선택하면 팀 선호 전략 + 선수 주챔 기반 밴픽 보정이 적용됩니다.</p>
+        <h2 class="side-title">실제 팀 모드 설정 (베타)</h2>
+        <p class="side-desc">팀을 선택하면 팀 성향(선호 전략) + 선수 주챔 기반 보정이 적용됩니다.</p>
         <div class="worlds-setup-row">
             <label>내 팀</label>
             <select id="worlds-my-team" onchange="onWorldsTeamChange()"></select>
             <label>상대 팀</label>
             <select id="worlds-enemy-team" onchange="onWorldsTeamChange()"></select>
         </div>
-        <div id="worlds-status" class="worlds-status">비활성화</div>
+        <div id="worlds-status" class="worlds-status">실제 팀 모드 비활성화 (OFF)</div>
         <div class="worlds-roster-grid">
             <div id="worlds-my-roster" class="worlds-roster"></div>
             <div id="worlds-enemy-roster" class="worlds-roster"></div>
@@ -236,6 +249,68 @@
             <button type="button" class="tutorial-btn" onclick="confirmWorldsMode()">적용</button>
             <button type="button" class="tutorial-btn" onclick="closeWorldsModal()">닫기</button>
         </div>
+    </div>
+</div>
+<div id="worlds-challenge-modal">
+    <div class="worlds-challenge-card">
+        <h2 class="side-title">월즈 도전 설정</h2>
+        <p class="side-desc">8팀 토너먼트: 8강 BO1, 4강 BO3(피어리스), 결승 BO5(피어리스)</p>
+        <div id="worlds-challenge-mode-state" class="worlds-status">실제 팀 모드 OFF</div>
+        <div class="worlds-setup-row">
+            <label>내 팀</label>
+            <select id="challenge-user-team" onchange="onChallengeSetupChange()"></select>
+            <label>참가팀 구성</label>
+            <div class="challenge-toggle-row">
+                <button type="button" id="challenge-random-btn" class="tutorial-btn" onclick="setChallengeSelectionMode(true)">랜덤 설정</button>
+                <button type="button" id="challenge-manual-btn" class="tutorial-btn" onclick="setChallengeSelectionMode(false)">직접 지정</button>
+            </div>
+        </div>
+        <div id="challenge-manual-wrap" class="challenge-manual-wrap">
+            <div class="challenge-manual-title">LCK 3팀 + 해외 4팀 직접 지정</div>
+            <div class="challenge-manual-grid">
+                <div>
+                    <div class="challenge-col-title">LCK 슬롯</div>
+                    <select id="challenge-lck-0" onchange="onChallengeSetupChange()"></select>
+                    <select id="challenge-lck-1" onchange="onChallengeSetupChange()"></select>
+                    <select id="challenge-lck-2" onchange="onChallengeSetupChange()"></select>
+                </div>
+                <div>
+                    <div class="challenge-col-title">해외 슬롯</div>
+                    <select id="challenge-intl-0" onchange="onChallengeSetupChange()"></select>
+                    <select id="challenge-intl-1" onchange="onChallengeSetupChange()"></select>
+                    <select id="challenge-intl-2" onchange="onChallengeSetupChange()"></select>
+                    <select id="challenge-intl-3" onchange="onChallengeSetupChange()"></select>
+                </div>
+            </div>
+        </div>
+        <div id="challenge-participants-preview" class="worlds-roster"></div>
+        <div class="strategy-actions">
+            <button type="button" class="tutorial-btn" onclick="startWorldsChallenge()">월즈 도전 시작</button>
+            <button type="button" class="tutorial-btn" onclick="closeWorldsChallengeSetup()">닫기</button>
+        </div>
+    </div>
+</div>
+<div id="worlds-challenge-live-modal">
+    <div class="worlds-challenge-live-card">
+        <h2 class="side-title">월즈 도전 진행</h2>
+        <div id="challenge-live-stage" class="challenge-live-stage">대회 준비중...</div>
+        <div id="challenge-live-bracket" class="challenge-live-bracket"></div>
+        <div id="challenge-live-log" class="challenge-live-log"></div>
+        <div class="strategy-actions">
+            <button type="button" class="tutorial-btn" onclick="closeWorldsChallengeLive()">닫기</button>
+        </div>
+    </div>
+</div>
+<div id="ai-balance-modal">
+    <div class="ai-balance-card">
+        <h2 class="side-title">AI 밸런스 시뮬레이션</h2>
+        <p class="side-desc">AI vs AI 랜덤 팀 대진으로 20경기를 자동 실행하고 챔피언/팀/조합 승률을 누적합니다.</p>
+        <div class="strategy-actions">
+            <button type="button" class="tutorial-btn" id="ai-balance-run-btn">20판 실행</button>
+            <button type="button" class="tutorial-btn" onclick="closeAiBalanceModal()">닫기</button>
+        </div>
+        <div id="ai-balance-status" class="worlds-status">대기중</div>
+        <div id="ai-balance-results" class="challenge-live-log"></div>
     </div>
 </div>
 <div id="tutorial-modal">
@@ -280,8 +355,8 @@
 </div>
 </div>
 
-<script src="data/champions.js?v=20260224-9"></script>
-<script src="data/traits.js?v=20260224-9"></script>
-<script src="scripts/app.js?v=20260224-9"></script>
+<script src="data/champions.js?v=20260227-11"></script>
+<script src="data/traits.js?v=20260227-11"></script>
+<script src="scripts/app.js?v=20260227-11"></script>
 </body>
 </html>

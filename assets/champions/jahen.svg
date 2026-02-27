@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3f1f1f"/>
+      <stop offset="100%" stop-color="#13171f"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#g)"/>
+  <rect x="5" y="5" width="110" height="110" fill="none" stroke="#ff9f7e" stroke-width="2"/>
+  <text x="60" y="58" text-anchor="middle" fill="#ffe2d4" font-size="16" font-family="Malgun Gothic, sans-serif">자헨</text>
+  <text x="60" y="78" text-anchor="middle" fill="#d7b3a2" font-size="11" font-family="Malgun Gothic, sans-serif">CUSTOM TOP</text>
+</svg>

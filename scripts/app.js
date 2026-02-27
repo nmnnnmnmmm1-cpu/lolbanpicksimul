@@ -3,6 +3,10 @@ const CDN_VERSION = "14.24.1";
 const CHAMP_IMG_KEY_MAP = {
     Ksante: "KSante"
 };
+const CUSTOM_CHAMP_IMG_MAP = {
+    Yunara: "assets/champions/yunara.svg",
+    Jahen: "assets/champions/jahen.svg"
+};
 const TYPE_LABEL = {
     Dive: "돌진",
     Poke: "포킹",
@@ -72,6 +76,13 @@ function getDmgTypeColorClass(dmgType) {
     if (dmgType === "AD") return "dmg-ad";
     if (dmgType === "AP") return "dmg-ap";
     return "dmg-hybrid";
+}
+
+function toRomanScale(scale) {
+    const n = Math.max(1, Math.min(3, Number(scale) || 1));
+    if (n === 1) return "I";
+    if (n === 2) return "II";
+    return "III";
 }
 
 function normalizeNameToken(v) {
@@ -280,8 +291,26 @@ const AI_SHORTLIST_PICK = 18;
 const AI_SHORTLIST_BAN = 24;
 const AI_IMMEDIATE_WEIGHT = 0.6;
 const AI_RESPONSE_WEIGHT = 0.4;
+const AI_THINK_MIN_MS = 1000;
+const AI_THINK_MAX_MS = 5000;
+const WORLDS_CHALLENGE_STAGES = [
+    { key: "QF", label: "8강", bestOf: 1, fearless: false },
+    { key: "SF", label: "4강", bestOf: 3, fearless: true },
+    { key: "F", label: "결승", bestOf: 5, fearless: true }
+];
 let homeActionBound = false;
 let seriesDraftStats = { picks: [], bans: [] };
+let worldsChallengeState = {
+    selectionRandom: true,
+    userTeamId: "",
+    manualLck: ["", "", ""],
+    manualIntl: ["", "", "", ""],
+    participants: [],
+    rounds: [],
+    logs: [],
+    running: false
+};
+let aiBalanceSimRunning = false;
 const MODE_CONFIGS = {
     single: { label: "단판", maxGames: 1, winTarget: 1, hardFearless: false },
     bo3: { label: "3전제 (하드피어리스)", maxGames: 3, winTarget: 2, hardFearless: true },
@@ -369,8 +398,8 @@ let worldsRosters = [];
 let worldsConfig = { myTeamId: "", enemyTeamId: "" };
 
 function getChampionImageUrl(key) {
-    if (key === "Yunara") {
-        return getChampionFallbackImageUrl("YUNARA");
+    if (CUSTOM_CHAMP_IMG_MAP[key]) {
+        return CUSTOM_CHAMP_IMG_MAP[key];
     }
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
     return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
@@ -386,6 +415,59 @@ function isElementVisible(el) {
     const style = window.getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
     return el.getClientRects().length > 0;
+}
+
+function hoistModalToBody(id) {
+    const el = document.getElementById(id);
+    if (!el || !document.body) return;
+    if (el.parentElement !== document.body) {
+        document.body.appendChild(el);
+    }
+}
+
+function renderHomeWorldsTeamPanel() {
+    const panel = document.getElementById("home-worlds-team-panel");
+    const setup = document.getElementById("home-team-setup");
+    const title = document.getElementById("home-worlds-team-title");
+    const rosterWrap = document.getElementById("home-worlds-roster");
+    if (!panel || !setup || !title || !rosterWrap) return;
+
+    const active = !!(worldsModeEnabled && worldsConfig.myTeamId);
+    setup.classList.toggle("hidden", active);
+    panel.classList.toggle("hidden", !active);
+    if (!active) {
+        rosterWrap.innerHTML = "";
+        return;
+    }
+
+    const myTeam = getWorldsTeamById(worldsConfig.myTeamId);
+    const myRoster = getWorldsRosterByTeamId(worldsConfig.myTeamId);
+    title.innerText = `${myTeam?.name || "내 팀"} 로스터`;
+    if (!myRoster || !myRoster.players) {
+        rosterWrap.innerHTML = '<div class="home-empty">로스터 데이터가 없습니다.</div>';
+        return;
+    }
+
+    rosterWrap.innerHTML = POSITIONS.map((pos) => {
+        const playerId = myRoster.players[pos];
+        const player = getWorldsPlayerById(playerId);
+        if (!player) {
+            return `<div class="home-worlds-player"><div class="home-worlds-player-head"><b>${pos}</b></div><span>선수 정보 없음</span></div>`;
+        }
+        const sig = (player.signatureChamps || []).slice(0, 3).join(", ");
+        const photo = player.photo || getWorldsPlayerPhotoFallback(player);
+        return `<div class="home-worlds-player"><div class="home-worlds-player-head"><img src="${photo}" alt="${player.nick}" onerror="this.onerror=null;this.src='${getWorldsPlayerPhotoFallback(player)}';"><b>${pos} ${escapeHtml(player.nick)}</b></div><span>${escapeHtml(sig || "시그니처 없음")}</span></div>`;
+    }).join("");
+}
+
+function requestWorldsTeamChange() {
+    if (!worldsModeEnabled) {
+        openWorldsModal();
+        return;
+    }
+    teamProfile.worldsTeamLocked = false;
+    saveTeamProfile();
+    openWorldsModal(true);
 }
 
 function loadModeRecords() {
@@ -419,14 +501,15 @@ function saveModeRecords() {
 }
 
 function loadTeamProfile() {
-    const fallback = { myTeamName: "MY TEAM", aiTeamName: "AI TEAM" };
+    const fallback = { myTeamName: "MY TEAM", aiTeamName: "AI TEAM", worldsTeamLocked: false };
     try {
         const raw = localStorage.getItem(TEAM_PROFILE_KEY);
         if (!raw) return fallback;
         const parsed = JSON.parse(raw);
         return {
             myTeamName: (parsed.myTeamName || "").trim() || fallback.myTeamName,
-            aiTeamName: (parsed.aiTeamName || "").trim() || fallback.aiTeamName
+            aiTeamName: (parsed.aiTeamName || "").trim() || fallback.aiTeamName,
+            worldsTeamLocked: !!parsed.worldsTeamLocked
         };
     } catch (_) {
         return fallback;
@@ -540,8 +623,12 @@ function normalizeHistoryEntry(entry, source = "local") {
         loserTeam: payload.loserTeam || "",
         scoreText: payload.scoreText || payload.score_text || "-",
         strategyLabel: payload.strategyLabel || "-",
+        winnerSide: payload.winnerSide || "",
+        loserSide: payload.loserSide || "",
         pickKeys: Array.isArray(payload.pickKeys) ? payload.pickKeys : [],
         banKeys: Array.isArray(payload.banKeys) ? payload.banKeys : [],
+        bluePickKeys: Array.isArray(payload.bluePickKeys) ? payload.bluePickKeys : [],
+        redPickKeys: Array.isArray(payload.redPickKeys) ? payload.redPickKeys : [],
         localMatchId: payload.localMatchId || "",
         remoteId: payload.remoteId || "",
         source
@@ -601,8 +688,12 @@ async function refreshRemoteHistory() {
                 loserTeam: payload.loserTeam || "",
                 scoreText: row.score_text || payload.scoreText || "-",
                 strategyLabel: payload.strategyLabel || "-",
+                winnerSide: payload.winnerSide || "",
+                loserSide: payload.loserSide || "",
                 pickKeys: payload.pickKeys || [],
                 banKeys: payload.banKeys || [],
+                bluePickKeys: payload.bluePickKeys || [],
+                redPickKeys: payload.redPickKeys || [],
                 localMatchId: payload.localMatchId || "",
                 remoteId: row.id || ""
             }, "remote");
@@ -629,8 +720,12 @@ async function uploadRemoteMatchHistory(entry) {
             loserTeam: entry.loserTeam || "",
             scoreText: entry.scoreText || "",
             strategyLabel: entry.strategyLabel || "",
+            winnerSide: entry.winnerSide || "",
+            loserSide: entry.loserSide || "",
             pickKeys: Array.isArray(entry.pickKeys) ? entry.pickKeys : [],
-            banKeys: Array.isArray(entry.banKeys) ? entry.banKeys : []
+            banKeys: Array.isArray(entry.banKeys) ? entry.banKeys : [],
+            bluePickKeys: Array.isArray(entry.bluePickKeys) ? entry.bluePickKeys : [],
+            redPickKeys: Array.isArray(entry.redPickKeys) ? entry.redPickKeys : []
         };
         const body = {
             player_name: teamProfile.myTeamName || "MY TEAM",
@@ -665,6 +760,7 @@ function disableRemoteHistory() {
     saveRemoteConfig();
     remoteMatchHistory = [];
     applyRemoteConfigInputs();
+    updateWorldsChallengeButtonState();
     renderHomeHistory();
 }
 
@@ -775,6 +871,20 @@ function getWorldsTeamIdBySideForUi(side) {
     return worldsConfig.enemyTeamId || "";
 }
 
+function getPlayerPhotoFallbackByNick(nick, size = 36) {
+    const txt = encodeURIComponent(String(nick || "P").slice(0, 2));
+    return `https://placehold.co/${size}x${size}/101820/c8aa6e?text=${txt}`;
+}
+
+function getWorldsPlayerPhotoFallback(player) {
+    return getPlayerPhotoFallbackByNick(player?.nick || "P", 36);
+}
+
+function getWorldsTeamIdByTeam(teamSide) {
+    if (!worldsModeEnabled || !userTeam) return "";
+    return teamSide === userTeam ? (worldsConfig.myTeamId || "") : (worldsConfig.enemyTeamId || "");
+}
+
 function renderWorldsSlotHints() {
     ["blue", "red"].forEach((side) => {
         const teamId = getWorldsTeamIdBySideForUi(side);
@@ -783,21 +893,35 @@ function renderWorldsSlotHints() {
             const slot = document.getElementById(`${side[0]}-slot-${idx}`);
             if (!slot) return;
             const noteEl = slot.querySelector(".player-note");
-            if (!noteEl) return;
+            const chipEl = slot.querySelector(".player-chip");
+            const photoEl = slot.querySelector(".player-photo");
+            const nickEl = slot.querySelector(".player-nick");
+            if (!noteEl || !chipEl || !photoEl || !nickEl) return;
             if (!worldsModeEnabled || !roster || !roster.players) {
                 noteEl.innerText = "";
+                chipEl.classList.add("off");
                 return;
             }
             const playerId = roster.players[pos];
             const player = getWorldsPlayerById(playerId);
             if (!player) {
                 noteEl.innerText = "";
+                chipEl.classList.add("off");
                 return;
             }
             const champs = (player.signatureChamps || []).slice(0, 3).join(", ");
-            noteEl.innerText = `${player.nick} | ${champs}`;
+            nickEl.innerText = player.nick || "-";
+            photoEl.src = player.photo || getWorldsPlayerPhotoFallback(player);
+            photoEl.alt = player.nick || "PLAYER";
+            photoEl.onerror = () => {
+                photoEl.onerror = null;
+                photoEl.src = getWorldsPlayerPhotoFallback(player);
+            };
+            noteEl.innerText = champs ? `주챔: ${champs}` : "";
+            chipEl.classList.remove("off");
         });
     });
+    renderWorldsSlotHints();
 }
 
 function formatTimeLabel(ts) {
@@ -820,6 +944,7 @@ function saveTeamNameInputs() {
     aiInput.value = teamProfile.aiTeamName;
     saveTeamProfile();
     updateObjectiveBrief(0, 0, 0, 0, teamProfile.myTeamName, teamProfile.aiTeamName);
+    renderHomeWorldsTeamPanel();
     renderHomeHistory();
 }
 
@@ -830,6 +955,7 @@ function applyTeamNameInputs() {
     myInput.value = teamProfile.myTeamName;
     aiInput.value = teamProfile.aiTeamName;
     updateObjectiveBrief(0, 0, 0, 0, teamProfile.myTeamName, teamProfile.aiTeamName);
+    renderHomeWorldsTeamPanel();
 }
 
 function recordMatchHistory(entry) {
@@ -905,27 +1031,54 @@ function getChampionUsageRows(rows = null) {
     const sourceRows = Array.isArray(rows) ? rows : getAllHistoryRows();
     const statsMap = {};
     CHAMP_KEYS.forEach((key) => {
-        statsMap[key] = { key, name: getChampionDisplayNameByKey(key), pick: 0, ban: 0, total: 0 };
+        statsMap[key] = { key, name: getChampionDisplayNameByKey(key), pick: 0, ban: 0, total: 0, games: 0, wins: 0, losses: 0, winRate: null };
     });
+
     sourceRows.forEach((entry) => {
         const pickKeys = Array.isArray(entry.pickKeys) ? entry.pickKeys : [];
         const banKeys = Array.isArray(entry.banKeys) ? entry.banKeys : [];
+
         pickKeys.forEach((k) => {
             if (!k) return;
-            if (!statsMap[k]) statsMap[k] = { key: k, name: getChampionDisplayNameByKey(k), pick: 0, ban: 0, total: 0 };
+            if (!statsMap[k]) statsMap[k] = { key: k, name: getChampionDisplayNameByKey(k), pick: 0, ban: 0, total: 0, games: 0, wins: 0, losses: 0, winRate: null };
             statsMap[k].pick += 1;
             statsMap[k].total += 1;
         });
+
         banKeys.forEach((k) => {
             if (!k) return;
-            if (!statsMap[k]) statsMap[k] = { key: k, name: getChampionDisplayNameByKey(k), pick: 0, ban: 0, total: 0 };
+            if (!statsMap[k]) statsMap[k] = { key: k, name: getChampionDisplayNameByKey(k), pick: 0, ban: 0, total: 0, games: 0, wins: 0, losses: 0, winRate: null };
             statsMap[k].ban += 1;
             statsMap[k].total += 1;
         });
+
+        const bluePicks = Array.isArray(entry.bluePickKeys) ? entry.bluePickKeys.filter(Boolean) : [];
+        const redPicks = Array.isArray(entry.redPickKeys) ? entry.redPickKeys.filter(Boolean) : [];
+        const winnerSide = entry.winnerSide === "blue" || entry.winnerSide === "red" ? entry.winnerSide : "";
+
+        if (!winnerSide || (bluePicks.length === 0 && redPicks.length === 0)) return;
+
+        bluePicks.forEach((k) => {
+            if (!statsMap[k]) return;
+            statsMap[k].games += 1;
+            if (winnerSide === "blue") statsMap[k].wins += 1;
+            else statsMap[k].losses += 1;
+        });
+        redPicks.forEach((k) => {
+            if (!statsMap[k]) return;
+            statsMap[k].games += 1;
+            if (winnerSide === "red") statsMap[k].wins += 1;
+            else statsMap[k].losses += 1;
+        });
     });
+
+    Object.values(statsMap).forEach((row) => {
+        row.winRate = row.games > 0 ? roundToOne((row.wins / row.games) * 100) : null;
+    });
+
     return Object.values(statsMap).sort((a, b) => {
         if (b.total !== a.total) return b.total - a.total;
-        if (b.pick !== a.pick) return b.pick - a.pick;
+        if (b.games !== a.games) return b.games - a.games;
         return a.name.localeCompare(b.name, "ko-KR");
     });
 }
@@ -945,6 +1098,7 @@ function renderChampionStatsModal(rows) {
             <div class="champ-stat-meta">
                 <b>${row.name}</b>
                 <span>픽 ${formatNum(row.pick)} / 밴 ${formatNum(row.ban)} / 총 ${formatNum(row.total)}</span>
+                <span class="champ-winrate">승률 ${row.winRate === null ? "-" : `${formatNum(row.winRate)}%`} (전적 ${formatNum(row.wins)}승 ${formatNum(row.losses)}패)</span>
             </div>
         </div>
     `).join("");
@@ -1016,9 +1170,10 @@ function renderHomeHistory() {
 function bindHomeActionButtons() {
     if (homeActionBound) return;
     const buttonMap = [
-        { id: "home-btn-worlds-open", handler: openWorldsModal, label: "월즈 모드 설정" },
-        { id: "home-btn-worlds-disable", handler: disableWorldsMode, label: "월즈 모드 해제" },
+        { id: "home-btn-worlds-open", handler: openWorldsModal, label: "실제 팀 모드 설정" },
+        { id: "home-btn-worlds-disable", handler: disableWorldsMode, label: "실제 팀 모드 해제" },
         { id: "home-btn-tutorial-open", handler: openTutorial, label: "게임 설명 보기" },
+        { id: "home-btn-ai-balance", handler: openAiBalanceModal, label: "AI 밸런스 시뮬 20판" },
         { id: "home-btn-remote-save", handler: saveRemoteConfigFromInputs, label: "온라인 기록 연결" },
         { id: "home-btn-remote-refresh", handler: refreshRemoteHistory, label: "온라인 기록 새로고침" },
         { id: "home-btn-remote-disable", handler: disableRemoteHistory, label: "온라인 기록 해제" }
@@ -1119,7 +1274,7 @@ function renderWorldsModalOptions() {
     if (worldsTeams.length === 0) {
         mySel.innerHTML = '<option value="">데이터 없음</option>';
         enemySel.innerHTML = '<option value="">데이터 없음</option>';
-        status.innerText = "월즈 데이터 로드 실패 (data/*.json 확인)";
+        status.innerText = "실제 팀 데이터 로드 실패 (data/*.json 확인)";
         return;
     }
     mySel.innerHTML = worldsTeams.map((t) => `<option value="${t.id}">${t.name}</option>`).join("");
@@ -1128,12 +1283,21 @@ function renderWorldsModalOptions() {
     worldsConfig.myTeamId = mySel.value;
     onWorldsTeamChange();
     status.innerText = worldsModeEnabled
-        ? `활성화됨: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`
-        : "비활성화";
+        ? `실제 팀 모드 ON: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`
+        : "실제 팀 모드 OFF";
+    renderRealTeamModeBrief();
+    updateWorldsChallengeButtonState();
+    renderHomeWorldsTeamPanel();
 }
 
-function openWorldsModal() {
+function openWorldsModal(forceChange = false) {
+    if (worldsModeEnabled && teamProfile.worldsTeamLocked && !forceChange) {
+        alert("실제 선수 모드 팀은 1회 선택으로 잠겨 있습니다. 홈의 '팀 변경' 버튼을 눌러 변경하세요.");
+        return;
+    }
     renderWorldsModalOptions();
+    updateWorldsChallengeButtonState();
+    renderWorldsChallengeSetup();
     setDisplayById("worlds-modal", "flex");
 }
 
@@ -1151,15 +1315,20 @@ function confirmWorldsMode() {
     worldsConfig.myTeamId = myTeamObj.id;
     worldsConfig.enemyTeamId = enemyTeamObj.id;
     worldsModeEnabled = true;
+    teamProfile.worldsTeamLocked = true;
     teamProfile.myTeamName = myTeamObj.name;
     teamProfile.aiTeamName = enemyTeamObj.name;
     saveTeamProfile();
     applyTeamNameInputs();
     const status = document.getElementById("worlds-status");
-    if (status) status.innerText = `활성화됨: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`;
+    if (status) status.innerText = `실제 팀 모드 ON: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`;
     applyWorldsTeamColors();
     renderWorldsSlotHints();
     updateSeriesInfo();
+    renderStrategyModal();
+    renderRealTeamModeBrief();
+    updateWorldsChallengeButtonState();
+    renderHomeWorldsTeamPanel();
     closeWorldsModal();
 }
 
@@ -1167,18 +1336,771 @@ function disableWorldsMode() {
     worldsModeEnabled = false;
     worldsConfig.myTeamId = "";
     worldsConfig.enemyTeamId = "";
+    teamProfile.worldsTeamLocked = false;
+    saveTeamProfile();
     const status = document.getElementById("worlds-status");
-    if (status) status.innerText = "비활성화";
+    if (status) status.innerText = "실제 팀 모드 OFF";
     applyWorldsTeamColors();
     renderWorldsSlotHints();
     updateSeriesInfo();
+    renderStrategyModal();
+    renderRealTeamModeBrief();
+    updateWorldsChallengeButtonState();
+    renderHomeWorldsTeamPanel();
 }
+
+function updateWorldsChallengeButtonState() {
+    const btn = document.getElementById("home-btn-worlds-challenge");
+    const status = document.getElementById("worlds-challenge-status");
+    const modeState = document.getElementById("worlds-challenge-mode-state");
+    const enabled = !!(worldsModeEnabled && worldsConfig.myTeamId && worldsConfig.enemyTeamId);
+    if (btn) btn.disabled = !enabled;
+    if (status) status.innerText = enabled ? `실제 팀 모드 ON (${teamProfile.myTeamName})` : "실제 팀 모드 OFF";
+    if (modeState) modeState.innerText = enabled
+        ? `실제 팀 모드 ON: ${teamProfile.myTeamName} vs ${teamProfile.aiTeamName}`
+        : "실제 팀 모드 OFF (월즈 도전 비활성)";
+}
+
+function challengeShuffle(arr) {
+    const out = [...arr];
+    for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+}
+
+function challengeSample(arr, count) {
+    return challengeShuffle(arr).slice(0, Math.max(0, Math.min(count, arr.length)));
+}
+
+function challengeUnique(values) {
+    const out = [];
+    values.forEach((v) => {
+        if (!v || out.includes(v)) return;
+        out.push(v);
+    });
+    return out;
+}
+
+function getChallengeRegionPools(userTeamId) {
+    const others = worldsTeams.filter((t) => t.id !== userTeamId);
+    const lck = others.filter((t) => String(t.region || "").toUpperCase() === "LCK");
+    const intl = others.filter((t) => String(t.region || "").toUpperCase() !== "LCK");
+    return { lck, intl };
+}
+
+function fillChallengeRandomSlots() {
+    const userTeamId = worldsChallengeState.userTeamId;
+    const pools = getChallengeRegionPools(userTeamId);
+    worldsChallengeState.manualLck = challengeSample(pools.lck.map((t) => t.id), 3);
+    worldsChallengeState.manualIntl = challengeSample(pools.intl.map((t) => t.id), 4);
+}
+
+function collectWorldsChallengeParticipants() {
+    const userTeamId = worldsChallengeState.userTeamId;
+    const userTeam = getWorldsTeamById(userTeamId);
+    if (!userTeam) return { ok: false, msg: "내 팀을 선택해주세요.", teams: [] };
+    const pools = getChallengeRegionPools(userTeamId);
+    const lckIds = challengeUnique(worldsChallengeState.manualLck).slice(0, 3);
+    const intlIds = challengeUnique(worldsChallengeState.manualIntl).slice(0, 4);
+    if (lckIds.length !== 3 || intlIds.length !== 4) {
+        return { ok: false, msg: "LCK 3팀 + 해외 4팀을 모두 지정해야 합니다.", teams: [] };
+    }
+    const validLck = lckIds.every((id) => pools.lck.some((t) => t.id === id));
+    const validIntl = intlIds.every((id) => pools.intl.some((t) => t.id === id));
+    if (!validLck || !validIntl) {
+        return { ok: false, msg: "팀 구성이 잘못되었습니다. 다시 지정해주세요.", teams: [] };
+    }
+    const ids = [userTeamId, ...lckIds, ...intlIds];
+    if (challengeUnique(ids).length !== 8) {
+        return { ok: false, msg: "중복 팀 없이 8개 팀을 구성해주세요.", teams: [] };
+    }
+    const teams = ids.map((id) => getWorldsTeamById(id)).filter(Boolean);
+    return { ok: teams.length === 8, msg: teams.length === 8 ? "" : "팀 데이터가 부족합니다.", teams };
+}
+
+function renderWorldsChallengeParticipantsPreview() {
+    const box = document.getElementById("challenge-participants-preview");
+    if (!box) return;
+    const collected = collectWorldsChallengeParticipants();
+    if (!collected.ok) {
+        box.innerHTML = `<div class="worlds-empty">${escapeHtml(collected.msg || "팀을 구성해주세요.")}</div>`;
+        return;
+    }
+    const chips = collected.teams.map((team) => `
+        <div class="challenge-team-chip">
+            <img src="${team.logo || ""}" alt="${escapeHtml(team.name)}" onerror="this.style.display='none'">
+            <span>${escapeHtml(team.name)} <em style="color:#89a8bb;font-style:normal;">(${escapeHtml(team.region || "-")})</em></span>
+        </div>
+    `).join("");
+    box.innerHTML = `<div class="challenge-manual-title">참가 팀 미리보기 (총 ${collected.teams.length}팀)</div><div class="challenge-preview-grid">${chips}</div>`;
+}
+
+function renderWorldsChallengeSetup() {
+    const userSel = document.getElementById("challenge-user-team");
+    if (!userSel) return;
+    if (!worldsChallengeState.userTeamId) {
+        worldsChallengeState.userTeamId = worldsConfig.myTeamId || worldsTeams[0]?.id || "";
+    }
+    const allOpts = worldsTeams.map((t) => `<option value="${t.id}">${t.name} (${t.region})</option>`).join("");
+    userSel.innerHTML = allOpts;
+    userSel.value = worldsChallengeState.userTeamId;
+
+    const pools = getChallengeRegionPools(worldsChallengeState.userTeamId);
+    const makeOptions = (arr, selected) => {
+        const list = ['<option value="">선택</option>', ...arr.map((t) => `<option value="${t.id}">${t.name}</option>`)].join("");
+        return { list, selected: selected || "" };
+    };
+    for (let i = 0; i < 3; i++) {
+        const el = document.getElementById(`challenge-lck-${i}`);
+        if (!el) continue;
+        const opt = makeOptions(pools.lck, worldsChallengeState.manualLck[i]);
+        el.innerHTML = opt.list;
+        el.value = opt.selected;
+    }
+    for (let i = 0; i < 4; i++) {
+        const el = document.getElementById(`challenge-intl-${i}`);
+        if (!el) continue;
+        const opt = makeOptions(pools.intl, worldsChallengeState.manualIntl[i]);
+        el.innerHTML = opt.list;
+        el.value = opt.selected;
+    }
+
+    const randomBtn = document.getElementById("challenge-random-btn");
+    const manualBtn = document.getElementById("challenge-manual-btn");
+    const manualWrap = document.getElementById("challenge-manual-wrap");
+    if (randomBtn) randomBtn.classList.toggle("active", !!worldsChallengeState.selectionRandom);
+    if (manualBtn) manualBtn.classList.toggle("active", !worldsChallengeState.selectionRandom);
+    if (manualWrap) manualWrap.classList.toggle("off", !!worldsChallengeState.selectionRandom);
+    updateWorldsChallengeButtonState();
+    renderWorldsChallengeParticipantsPreview();
+}
+
+function onChallengeSetupChange() {
+    const userSel = document.getElementById("challenge-user-team");
+    if (userSel) worldsChallengeState.userTeamId = userSel.value || "";
+    for (let i = 0; i < 3; i++) {
+        const el = document.getElementById(`challenge-lck-${i}`);
+        worldsChallengeState.manualLck[i] = el ? (el.value || "") : "";
+    }
+    for (let i = 0; i < 4; i++) {
+        const el = document.getElementById(`challenge-intl-${i}`);
+        worldsChallengeState.manualIntl[i] = el ? (el.value || "") : "";
+    }
+    if (worldsChallengeState.selectionRandom) fillChallengeRandomSlots();
+    renderWorldsChallengeSetup();
+}
+
+function setChallengeSelectionMode(randomMode) {
+    worldsChallengeState.selectionRandom = !!randomMode;
+    if (worldsChallengeState.selectionRandom) fillChallengeRandomSlots();
+    renderWorldsChallengeSetup();
+}
+
+function openWorldsChallengeSetup() {
+    if (!worldsModeEnabled) {
+        alert("실제 팀 모드를 먼저 활성화해주세요.");
+        return;
+    }
+    worldsChallengeState.userTeamId = worldsConfig.myTeamId || worldsTeams[0]?.id || "";
+    fillChallengeRandomSlots();
+    renderWorldsChallengeSetup();
+    setDisplayById("worlds-challenge-modal", "flex");
+}
+
+function closeWorldsChallengeSetup() {
+    setDisplayById("worlds-challenge-modal", "none");
+}
+
+function closeWorldsChallengeLive() {
+    worldsChallengeState.running = false;
+    setDisplayById("worlds-challenge-live-modal", "none");
+}
+
+function challengeSleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function renderWorldsChallengeLive() {
+    const stageEl = document.getElementById("challenge-live-stage");
+    const bracketEl = document.getElementById("challenge-live-bracket");
+    const logEl = document.getElementById("challenge-live-log");
+    if (!stageEl || !bracketEl || !logEl) return;
+    const roundsHtml = worldsChallengeState.rounds.map((round) => {
+        const lines = round.matches.map((m) => `<div class="challenge-match-line">${escapeHtml(m.blueName)} vs ${escapeHtml(m.redName)} · ${escapeHtml(m.score || "진행중")}${m.winnerName ? ` · 승자 ${escapeHtml(m.winnerName)}` : ""}</div>`).join("");
+        return `<div><div class="challenge-round-title">${escapeHtml(round.label)}</div>${lines}</div>`;
+    }).join("");
+    bracketEl.innerHTML = roundsHtml || '<div class="worlds-empty">대진 생성 중...</div>';
+    logEl.innerHTML = worldsChallengeState.logs.join("") || '<div class="worlds-empty">경기 로그 대기중...</div>';
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function challengeTeamNameById(teamId) {
+    return getWorldsTeamById(teamId)?.name || teamId || "-";
+}
+
+function createChallengeMatches(teamIds) {
+    const shuffled = challengeShuffle(teamIds);
+    const matches = [];
+    for (let i = 0; i < shuffled.length; i += 2) {
+        const a = shuffled[i];
+        const b = shuffled[i + 1];
+        if (!a || !b) continue;
+        const blueFirst = Math.random() < 0.5;
+        matches.push({
+            blueTeamId: blueFirst ? a : b,
+            redTeamId: blueFirst ? b : a
+        });
+    }
+    return matches;
+}
+
+function getChallengeWinTarget(bestOf) {
+    return Math.floor(bestOf / 2) + 1;
+}
+
+function getChallengeCandidates(step, picksState, bansState, teamLocks) {
+    const taken = new Set();
+    ["blue", "red"].forEach((t) => {
+        (picksState[t] || []).forEach((k) => { if (k) taken.add(k); });
+        (bansState[t] || []).forEach((k) => { if (k) taken.add(k); });
+    });
+    let candidates = CHAMP_KEYS.filter((key) => !taken.has(key));
+    if (step.type === "pick") {
+        candidates = candidates.filter((key) => canPickForTeamState(step.t, key, picksState));
+        const lockSet = teamLocks[step.t] || new Set();
+        const unlocked = candidates.filter((key) => !lockSet.has(key));
+        if (unlocked.length > 0) candidates = unlocked;
+    }
+    return candidates;
+}
+
+function evaluateDraftStateForTeams(picksState, blueTeamId, redTeamId) {
+    const snapshot = {
+        worldsModeEnabled,
+        userTeam,
+        aiTeam,
+        selectedStrategyKey,
+        worldsConfig: { ...worldsConfig }
+    };
+    worldsModeEnabled = true;
+    userTeam = "blue";
+    aiTeam = "red";
+    selectedStrategyKey = "General";
+    worldsConfig.myTeamId = blueTeamId;
+    worldsConfig.enemyTeamId = redTeamId;
+    const out = evaluateDraftState(picksState);
+    worldsModeEnabled = snapshot.worldsModeEnabled;
+    userTeam = snapshot.userTeam;
+    aiTeam = snapshot.aiTeam;
+    selectedStrategyKey = snapshot.selectedStrategyKey;
+    worldsConfig.myTeamId = snapshot.worldsConfig.myTeamId;
+    worldsConfig.enemyTeamId = snapshot.worldsConfig.enemyTeamId;
+    return out;
+}
+
+function getChallengeTeamStyleBonus(teamId, key) {
+    const team = getWorldsTeamById(teamId);
+    const champ = CHAMP_DB[key];
+    if (!team || !champ) return 0;
+    const style = team.prefStrategy || "General";
+    const state = getWorldsTeamStyleFitState(champ, style);
+    if (state > 0) return 2.6;
+    if (state < 0) return -2.1;
+    return 0;
+}
+
+function getChallengeSignatureBonus(teamId, key) {
+    const champ = CHAMP_DB[key];
+    const roster = getWorldsRosterByTeamId(teamId);
+    if (!champ || !roster || !roster.players) return 0;
+    let anySig = false;
+    let posSig = 0;
+    POSITIONS.forEach((pos) => {
+        const pid = roster.players[pos];
+        const player = getWorldsPlayerById(pid);
+        if (!player) return;
+        const sig = hasSignatureChampion(player, champ.name);
+        if (!sig) return;
+        anySig = true;
+        if ((champ.pos || []).includes(pos)) posSig += 1;
+    });
+    if (posSig > 0) return 4.2 + posSig * 0.8;
+    return anySig ? 1.6 : 0;
+}
+
+function scoreChallengePick(step, key, picksState, blueTeamId, redTeamId) {
+    const champ = CHAMP_DB[key];
+    if (!champ) return -999;
+    const teamId = step.t === "blue" ? blueTeamId : redTeamId;
+    const enemyTeamId = step.t === "blue" ? redTeamId : blueTeamId;
+    const base = champ.dmg * 1.25 + champ.tank * 0.85 + champ.cc * 1.6 + champ.profile.scale * 1.15 + champ.phase.mid * 0.45;
+    let score = base + getChallengeTeamStyleBonus(teamId, key) + getChallengeSignatureBonus(teamId, key);
+    score += getChallengeSignatureBonus(enemyTeamId, key) * 0.25;
+    return score;
+}
+
+function scoreChallengeBan(step, key, picksState, blueTeamId, redTeamId) {
+    const champ = CHAMP_DB[key];
+    if (!champ) return -999;
+    const enemyTeamId = step.t === "blue" ? redTeamId : blueTeamId;
+    const threat = champ.dmg * 1.1 + champ.cc * 1.5 + champ.profile.scale * 1.1 + champ.phase.mid * 0.4;
+    return threat + getChallengeSignatureBonus(enemyTeamId, key) * 1.15 + getChallengeTeamStyleBonus(enemyTeamId, key) * 0.8;
+}
+
+function chooseChallengeAction(step, picksState, bansState, blueTeamId, redTeamId, teamLocks) {
+    const candidates = getChallengeCandidates(step, picksState, bansState, teamLocks);
+    if (candidates.length === 0) return null;
+    const shortlist = candidates
+        .map((key) => ({
+            key,
+            quick: step.type === "pick"
+                ? scoreChallengePick(step, key, picksState, blueTeamId, redTeamId)
+                : scoreChallengeBan(step, key, picksState, blueTeamId, redTeamId)
+        }))
+        .sort((a, b) => (b.quick - a.quick) || a.key.localeCompare(b.key, "en"))
+        .slice(0, 12)
+        .map((x) => x.key);
+
+    let best = shortlist[0];
+    let bestScore = -Infinity;
+    shortlist.forEach((key) => {
+        const prev = step.type === "pick" ? picksState[step.t][step.id] : bansState[step.t][step.id];
+        if (step.type === "pick") picksState[step.t][step.id] = key;
+        else bansState[step.t][step.id] = key;
+
+        const ev = evaluateDraftStateForTeams(picksState, blueTeamId, redTeamId);
+        const perspective = step.t === "blue" ? ev.blueWin : (100 - ev.blueWin);
+        const score = perspective + (Math.random() * 0.8);
+
+        if (step.type === "pick") picksState[step.t][step.id] = prev;
+        else bansState[step.t][step.id] = prev;
+
+        if (score > bestScore) {
+            bestScore = score;
+            best = key;
+        }
+    });
+    return best;
+}
+
+function challengeDistribute(total, weights) {
+    const safeWeights = weights.map((w) => Math.max(0.1, w));
+    const sum = safeWeights.reduce((a, b) => a + b, 0);
+    const raw = safeWeights.map((w) => (w / sum) * total);
+    const out = raw.map((v) => Math.floor(v));
+    let remain = total - out.reduce((a, b) => a + b, 0);
+    const idxOrder = raw
+        .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+        .sort((a, b) => b.frac - a.frac)
+        .map((x) => x.i);
+    let ptr = 0;
+    while (remain > 0 && idxOrder.length) {
+        out[idxOrder[ptr % idxOrder.length]] += 1;
+        ptr += 1;
+        remain -= 1;
+    }
+    return out;
+}
+
+function buildChallengeKdaRows(picksState, blueKills, redKills, blueTeamId, redTeamId) {
+    const makeRows = (team, teamKills, enemyKills, teamId) => {
+        const assigned = getTeamAssignedMap(team, picksState);
+        const keys = POSITIONS.map((pos) => assigned.byPos[pos] || null);
+        const champs = keys.map((k) => (k ? CHAMP_DB[k] : null));
+        const killWeights = champs.map((c) => c ? (c.dmg + c.phase.mid * 0.4 + c.profile.scale) : 1);
+        const deathWeights = champs.map((c) => c ? Math.max(1, 12 - c.tank - c.cc * 0.6) : 1);
+        const assistWeights = champs.map((c) => c ? (c.tank + c.cc * 2 + c.profile.scale + 1) : 1);
+        const kills = challengeDistribute(teamKills, killWeights);
+        const deaths = challengeDistribute(enemyKills, deathWeights);
+        const assists = challengeDistribute(Math.max(teamKills + 3, Math.round(teamKills * 1.8)), assistWeights);
+        const roster = getWorldsRosterByTeamId(teamId);
+        return POSITIONS.map((pos, idx) => {
+            const key = keys[idx];
+            const player = roster ? getWorldsPlayerById(roster.players[pos]) : null;
+            return {
+                pos,
+                player: player?.nick || "-",
+                champ: key ? (CHAMP_DB[key]?.name || key) : "-",
+                k: kills[idx] || 0,
+                d: deaths[idx] || 0,
+                a: assists[idx] || 0
+            };
+        });
+    };
+    return {
+        blue: makeRows("blue", blueKills, redKills, blueTeamId),
+        red: makeRows("red", redKills, blueKills, redTeamId)
+    };
+}
+
+function buildChallengeCasterLines(game, stageLabel, isMatchPoint) {
+    const blueTeamName = challengeTeamNameById(game.blueTeamId);
+    const redTeamName = challengeTeamNameById(game.redTeamId);
+    const winnerTeamName = challengeTeamNameById(game.winnerTeamId);
+    const winnerSide = game.winnerSide;
+    const loserTeamName = winnerSide === "blue" ? redTeamName : blueTeamName;
+    const favoredEarly = game.res.phases.earlyWin >= 50 ? "blue" : "red";
+    const jungPosKey = getTeamChampByPos(favoredEarly, game.picksState, "JNG");
+    const jungPlayer = jungPosKey ? getWorldsPlayerForChampion(favoredEarly, jungPosKey, game.picksState) : null;
+    const jungLabel = jungPlayer?.nick || "정글러";
+    const jungChamp = jungPosKey ? (CHAMP_DB[jungPosKey]?.name || jungPosKey) : "챔피언";
+
+    const winnerCarryKey = getPhaseImpactChampion(winnerSide, "late");
+    const sigLine = (() => {
+        const assigned = getTeamAssignedMap(winnerSide, game.picksState);
+        for (const pos of POSITIONS) {
+            const key = assigned.byPos[pos];
+            if (!key) continue;
+            const player = getWorldsPlayerForChampion(winnerSide, key, game.picksState);
+            if (player && hasSignatureChampion(player, CHAMP_DB[key]?.name || key)) {
+                return `"${player.nick} 선수의 시그니처 카드 ${CHAMP_DB[key]?.name || key}, 협곡을 지배합니다!"`;
+            }
+        }
+        return "";
+    })();
+
+    const lines = [];
+    lines.push(`전용준: ${jungLabel}(${jungChamp})가 바텀 갱을 완벽히 성공시킵니다! 피지컬이 폭발합니다!`);
+    lines.push(`이현우: ${favoredEarly === "blue" ? blueTeamName : redTeamName}의 전매특허 스노우볼링, 초반부터 굴러갑니다!`);
+    if (sigLine) lines.push(`전용준: ${sigLine}`);
+    lines.push(`이현우: ${winnerCarryKey}가 한타 구도를 장악합니다. ${winnerTeamName}이 전장을 찢어놓고 있어요!`);
+    if (isMatchPoint) {
+        lines.push(`전용준: 넥서스가 파괴됩니다! ${winnerTeamName}이 이변을 만들어내며 다음 라운드로 진출합니다!`);
+    } else {
+        lines.push(`전용준: ${winnerTeamName}이 세트를 가져갑니다! ${loserTeamName}은 다시 밴픽을 정비해야 합니다!`);
+    }
+    return lines;
+}
+
+function renderChallengeGoldTrack(blueGoldDiff) {
+    const pct = Math.max(0, Math.min(100, 50 + (blueGoldDiff / 12000) * 50));
+    return `<div class="challenge-gold-track"><span class="challenge-gold-fill" style="width:${pct.toFixed(1)}%"></span></div>`;
+}
+
+function renderChallengeKdaTable(rows, teamName) {
+    return `<table class="challenge-kda-table"><thead><tr><th colspan="4">${escapeHtml(teamName)} KDA</th></tr><tr><th>포지션</th><th>선수/챔피언</th><th>K/D/A</th><th>KDA</th></tr></thead><tbody>${rows.map((r) => {
+        const ratio = ((r.k + r.a) / Math.max(1, r.d)).toFixed(2);
+        return `<tr><td>${r.pos}</td><td>${escapeHtml(r.player)} · ${escapeHtml(r.champ)}</td><td>${r.k}/${r.d}/${r.a}</td><td>${ratio}</td></tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+function simulateChallengeGame(blueTeamId, redTeamId, stageRule, teamLocksBySide) {
+    const picksState = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
+    const bansState = { blue: [null, null, null, null, null], red: [null, null, null, null, null] };
+
+    DRAFT_ORDER.forEach((step) => {
+        const key = chooseChallengeAction(step, picksState, bansState, blueTeamId, redTeamId, teamLocksBySide);
+        if (!key) return;
+        if (step.type === "pick") picksState[step.t][step.id] = key;
+        else bansState[step.t][step.id] = key;
+    });
+
+    const res = evaluateDraftStateForTeams(picksState, blueTeamId, redTeamId);
+    const winnerSide = rollWinnerFromWinRate(res.blueWin);
+    const finish = getFinishPhaseSummary(res, winnerSide);
+
+    const edge = res.blueWin - 50;
+    const blueKills = Math.max(4, Math.min(20, Math.round(9 + edge / 6)));
+    const redKills = Math.max(3, Math.min(18, Math.round(9 - edge / 7)));
+    const blueGoldDiff = Math.round(edge * 210 + (res.phases.earlyWin - 50) * 90 + (res.phases.midWin - 50) * 70);
+
+    const kda = buildChallengeKdaRows(picksState, blueKills, redKills, blueTeamId, redTeamId);
+    return {
+        blueTeamId,
+        redTeamId,
+        picksState,
+        bansState,
+        res,
+        winnerSide,
+        winnerTeamId: winnerSide === "blue" ? blueTeamId : redTeamId,
+        finish,
+        blueKills,
+        redKills,
+        blueGoldDiff,
+        kda
+    };
+}
+
+function simulateChallengeSeries(match, stageRule) {
+    const target = getChallengeWinTarget(stageRule.bestOf);
+    const score = { blue: 0, red: 0 };
+    const games = [];
+    const teamLocksBySide = {
+        blue: new Set(),
+        red: new Set()
+    };
+
+    for (let gameNo = 1; gameNo <= stageRule.bestOf; gameNo++) {
+        if (score.blue >= target || score.red >= target) break;
+        const game = simulateChallengeGame(match.blueTeamId, match.redTeamId, stageRule, teamLocksBySide);
+        games.push(game);
+        score[game.winnerSide] += 1;
+        if (stageRule.fearless) {
+            (game.picksState.blue || []).forEach((k) => { if (k) teamLocksBySide.blue.add(k); });
+            (game.picksState.red || []).forEach((k) => { if (k) teamLocksBySide.red.add(k); });
+        }
+    }
+
+    const winnerSide = score.blue > score.red ? "blue" : "red";
+    const winnerTeamId = winnerSide === "blue" ? match.blueTeamId : match.redTeamId;
+    const winnerName = challengeTeamNameById(winnerTeamId);
+    return {
+        ...match,
+        bestOf: stageRule.bestOf,
+        fearless: stageRule.fearless,
+        score,
+        scoreText: `${score.blue}:${score.red}`,
+        winnerSide,
+        winnerTeamId,
+        winnerName,
+        games
+    };
+}
+
+function buildChallengeGameLogHtml(stageLabel, seriesResult, game, gameNo) {
+    const blueName = challengeTeamNameById(game.blueTeamId);
+    const redName = challengeTeamNameById(game.redTeamId);
+    const lines = buildChallengeCasterLines(game, stageLabel, seriesResult.bestOf === 1 || gameNo === seriesResult.games.length);
+    const bluePicks = getTeamAssignedMap("blue", game.picksState).byPos;
+    const redPicks = getTeamAssignedMap("red", game.picksState).byPos;
+    const pickLine = (teamPicks) => POSITIONS.map((pos) => `${pos}:${CHAMP_DB[teamPicks[pos]]?.name || '-'}`).join(" | ");
+    return `
+        <div class="challenge-log-entry">
+            <div class="challenge-log-title">${stageLabel} G${gameNo} · ${blueName} vs ${redName} · 승자 ${challengeTeamNameById(game.winnerTeamId)}</div>
+            <div class="challenge-log-line">종료 시점: <b>${game.finish.phase}</b> | ${game.finish.reason}</div>
+            <div class="challenge-log-line">킬스코어: ${blueName} ${game.blueKills} : ${game.redKills} ${redName}</div>
+            <div class="challenge-log-line">골드(블루 기준): ${formatGoldDiff(game.blueGoldDiff)}</div>
+            ${renderChallengeGoldTrack(game.blueGoldDiff)}
+            <div class="challenge-log-line" style="margin-top:4px;">블루 픽: ${pickLine(bluePicks)}</div>
+            <div class="challenge-log-line">레드 픽: ${pickLine(redPicks)}</div>
+            ${renderChallengeKdaTable(game.kda.blue, blueName)}
+            ${renderChallengeKdaTable(game.kda.red, redName)}
+            ${lines.map((line) => `<div class="challenge-log-line">🎙 ${escapeHtml(line)}</div>`).join("")}
+        </div>
+    `;
+}
+
+async function runWorldsChallengeTournament(participants) {
+    worldsChallengeState.running = true;
+    worldsChallengeState.participants = participants;
+    worldsChallengeState.rounds = [];
+    worldsChallengeState.logs = [];
+    setDisplayById("worlds-challenge-live-modal", "flex");
+
+    let currentTeams = participants.map((t) => t.id);
+    for (let stageIdx = 0; stageIdx < WORLDS_CHALLENGE_STAGES.length; stageIdx++) {
+        const stageRule = WORLDS_CHALLENGE_STAGES[stageIdx];
+        const stageLabel = `${stageRule.label} · BO${stageRule.bestOf}${stageRule.fearless ? " (피어리스)" : ""}`;
+        const stageEl = document.getElementById("challenge-live-stage");
+        if (stageEl) stageEl.innerText = `${stageLabel} 진행 중...`;
+
+        let matches = [];
+        if (stageRule.key === "QF") {
+            matches = createChallengeMatches(currentTeams);
+        } else {
+            const seeded = challengeShuffle(currentTeams);
+            matches = [];
+            for (let i = 0; i < seeded.length; i += 2) {
+                const a = seeded[i];
+                const b = seeded[i + 1];
+                if (!a || !b) continue;
+                const blueFirst = Math.random() < 0.5;
+                matches.push({ blueTeamId: blueFirst ? a : b, redTeamId: blueFirst ? b : a });
+            }
+        }
+
+        const roundRecord = { label: stageLabel, matches: [] };
+        worldsChallengeState.rounds.push(roundRecord);
+        renderWorldsChallengeLive();
+
+        const winners = [];
+        for (let i = 0; i < matches.length; i++) {
+            if (!worldsChallengeState.running) return;
+            const m = matches[i];
+            const series = simulateChallengeSeries(m, stageRule);
+            winners.push(series.winnerTeamId);
+            roundRecord.matches.push({
+                blueName: challengeTeamNameById(series.blueTeamId),
+                redName: challengeTeamNameById(series.redTeamId),
+                score: series.scoreText,
+                winnerName: series.winnerName
+            });
+            worldsChallengeState.logs.push(`<div class="challenge-log-entry"><div class="challenge-log-title">${stageLabel} Match ${i + 1}</div><div class="challenge-log-line">${challengeTeamNameById(series.blueTeamId)} vs ${challengeTeamNameById(series.redTeamId)} · 결과 ${series.scoreText} · 승자 ${series.winnerName}</div></div>`);
+            series.games.forEach((game, gameNo) => {
+                worldsChallengeState.logs.push(buildChallengeGameLogHtml(stageLabel, series, game, gameNo + 1));
+            });
+            renderWorldsChallengeLive();
+            await challengeSleep(350);
+        }
+        currentTeams = winners;
+    }
+
+    const championId = currentTeams[0];
+    const championName = challengeTeamNameById(championId);
+    worldsChallengeState.logs.push(`<div class="challenge-log-entry"><div class="challenge-log-title">대회 종료</div><div class="challenge-log-line">🏆 우승: ${escapeHtml(championName)}</div></div>`);
+    const stageEl = document.getElementById("challenge-live-stage");
+    if (stageEl) stageEl.innerText = `대회 종료 · 우승 ${championName}`;
+    renderWorldsChallengeLive();
+}
+
+function startWorldsChallenge() {
+    if (!worldsModeEnabled) {
+        alert("실제 팀 모드를 먼저 활성화해주세요.");
+        return;
+    }
+    const collected = collectWorldsChallengeParticipants();
+    if (!collected.ok) {
+        alert(collected.msg || "참가 팀 구성이 올바르지 않습니다.");
+        return;
+    }
+    worldsChallengeState.userTeamId = collected.teams[0].id;
+    closeWorldsChallengeSetup();
+    runWorldsChallengeTournament(collected.teams);
+}
+
+function openAiBalanceModal() {
+    const statusEl = document.getElementById("ai-balance-status");
+    const resultsEl = document.getElementById("ai-balance-results");
+    if (statusEl) statusEl.innerText = "대기중";
+    if (resultsEl) resultsEl.innerHTML = '<div class="worlds-empty">20판 실행 버튼을 눌러주세요.</div>';
+    setDisplayById("ai-balance-modal", "flex");
+}
+
+function closeAiBalanceModal() {
+    if (aiBalanceSimRunning) return;
+    setDisplayById("ai-balance-modal", "none");
+}
+
+function getAiBalanceTeamPair() {
+    if (!Array.isArray(worldsTeams) || worldsTeams.length < 2) return null;
+    const pool = [...worldsTeams];
+    const a = pool[Math.floor(Math.random() * pool.length)];
+    const remains = pool.filter((t) => t.id !== a.id);
+    const b = remains[Math.floor(Math.random() * remains.length)];
+    return a && b ? { blue: a, red: b } : null;
+}
+
+function renderAiBalanceTable(title, rows, cols) {
+    if (!rows || rows.length === 0) return `<div class="ai-balance-section-title">${title}</div><div class="worlds-empty">데이터 없음</div>`;
+    const head = cols.map((c) => `<th>${c.label}</th>`).join("");
+    const body = rows.map((row) => `<tr>${cols.map((c) => `<td>${c.render(row)}</td>`).join("")}</tr>`).join("");
+    return `<div class="ai-balance-section-title">${title}</div><table class="ai-balance-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+async function runAiBalanceSimulation(rounds = 20) {
+    if (aiBalanceSimRunning) return;
+    const statusEl = document.getElementById("ai-balance-status");
+    const resultsEl = document.getElementById("ai-balance-results");
+    if (!statusEl || !resultsEl) return;
+
+    if (!Array.isArray(worldsTeams) || worldsTeams.length < 2) {
+        statusEl.innerText = "실패: 실제 팀 데이터가 필요합니다.";
+        return;
+    }
+
+    aiBalanceSimRunning = true;
+    statusEl.innerText = `시뮬레이션 진행중... (0/${rounds})`;
+    resultsEl.innerHTML = "";
+
+    const champMap = {};
+    const teamMap = {};
+    const compMap = {};
+    const logs = [];
+
+    const pushChamp = (key, won) => {
+        if (!key) return;
+        if (!champMap[key]) champMap[key] = { key, name: CHAMP_DB[key]?.name || key, games: 0, wins: 0 };
+        champMap[key].games += 1;
+        if (won) champMap[key].wins += 1;
+    };
+    const pushTeam = (teamId, won) => {
+        if (!teamId) return;
+        if (!teamMap[teamId]) teamMap[teamId] = { teamId, name: getWorldsTeamById(teamId)?.name || teamId, games: 0, wins: 0 };
+        teamMap[teamId].games += 1;
+        if (won) teamMap[teamId].wins += 1;
+    };
+    const pushComp = (label, won) => {
+        if (!label) return;
+        if (!compMap[label]) compMap[label] = { label, games: 0, wins: 0 };
+        compMap[label].games += 1;
+        if (won) compMap[label].wins += 1;
+    };
+
+    try {
+        for (let i = 1; i <= rounds; i++) {
+            const pair = getAiBalanceTeamPair();
+            if (!pair) break;
+            const game = simulateChallengeGame(pair.blue.id, pair.red.id, { bestOf: 1, fearless: false }, { blue: new Set(), red: new Set() });
+            const winnerTeamId = game.winnerTeamId;
+
+            pushTeam(pair.blue.id, winnerTeamId === pair.blue.id);
+            pushTeam(pair.red.id, winnerTeamId === pair.red.id);
+
+            (game.picksState.blue || []).filter(Boolean).forEach((k) => pushChamp(k, winnerTeamId === pair.blue.id));
+            (game.picksState.red || []).filter(Boolean).forEach((k) => pushChamp(k, winnerTeamId === pair.red.id));
+
+            const bComp = getCompLabel(game.res.bStats || getTeamStats("blue", game.picksState));
+            const rComp = getCompLabel(game.res.rStats || getTeamStats("red", game.picksState));
+            pushComp(bComp, winnerTeamId === pair.blue.id);
+            pushComp(rComp, winnerTeamId === pair.red.id);
+
+            logs.push(`<div class="ai-balance-log-item">#${i} ${escapeHtml(pair.blue.name)} vs ${escapeHtml(pair.red.name)} · 승자 <b>${escapeHtml(getWorldsTeamById(winnerTeamId)?.name || winnerTeamId)}</b> · 종료 ${escapeHtml(game.finish.phase)}</div>`);
+
+            if (i % 4 === 0 || i === rounds) {
+                statusEl.innerText = `시뮬레이션 진행중... (${i}/${rounds})`;
+                resultsEl.innerHTML = logs.slice(-8).join("");
+                await challengeSleep(40);
+            }
+        }
+
+        const champRows = Object.values(champMap)
+            .map((r) => ({ ...r, winRate: r.games > 0 ? roundToOne((r.wins / r.games) * 100) : 0 }))
+            .sort((a, b) => (b.winRate - a.winRate) || (b.games - a.games))
+            .slice(0, 20);
+        const teamRows = Object.values(teamMap)
+            .map((r) => ({ ...r, winRate: r.games > 0 ? roundToOne((r.wins / r.games) * 100) : 0 }))
+            .sort((a, b) => (b.winRate - a.winRate) || (b.games - a.games));
+        const compRows = Object.values(compMap)
+            .map((r) => ({ ...r, winRate: r.games > 0 ? roundToOne((r.wins / r.games) * 100) : 0 }))
+            .sort((a, b) => (b.winRate - a.winRate) || (b.games - a.games));
+
+        const html = [
+            renderAiBalanceTable("챔피언 승률 TOP 20", champRows, [
+                { label: "챔피언", render: (r) => `${escapeHtml(r.name)}` },
+                { label: "승률", render: (r) => `${formatNum(r.winRate)}%` },
+                { label: "전적", render: (r) => `${formatNum(r.wins)}승 ${formatNum(r.games - r.wins)}패` },
+                { label: "표본", render: (r) => `${formatNum(r.games)}` }
+            ]),
+            renderAiBalanceTable("팀 승률", teamRows, [
+                { label: "팀", render: (r) => `${escapeHtml(r.name)}` },
+                { label: "승률", render: (r) => `${formatNum(r.winRate)}%` },
+                { label: "전적", render: (r) => `${formatNum(r.wins)}승 ${formatNum(r.games - r.wins)}패` },
+                { label: "표본", render: (r) => `${formatNum(r.games)}` }
+            ]),
+            renderAiBalanceTable("조합 유형 승률", compRows, [
+                { label: "조합", render: (r) => `${escapeHtml(r.label)}` },
+                { label: "승률", render: (r) => `${formatNum(r.winRate)}%` },
+                { label: "전적", render: (r) => `${formatNum(r.wins)}승 ${formatNum(r.games - r.wins)}패` },
+                { label: "표본", render: (r) => `${formatNum(r.games)}` }
+            ]),
+            '<div class="ai-balance-section-title">최근 경기 로그</div>' + logs.slice(-10).join("")
+        ];
+        resultsEl.innerHTML = html.join("");
+        statusEl.innerText = `완료: ${rounds}판 시뮬레이션`;
+    } finally {
+        aiBalanceSimRunning = false;
+    }
+}
+
 
 function openHome(showTutorialOnHome = true) {
     renderHomeStats();
     renderHomeHistory();
     applyTeamNameInputs();
     applyRemoteConfigInputs();
+    updateWorldsChallengeButtonState();
     shouldResetOnStrategyConfirm = true;
     setDisplayById("home-page", "flex");
     setDisplayById("game-shell", "none");
@@ -1187,7 +2109,10 @@ function openHome(showTutorialOnHome = true) {
     setDisplayById("tutorial-modal", "none");
     setDisplayById("result-modal", "none");
     setDisplayById("worlds-modal", "none");
+    setDisplayById("worlds-challenge-modal", "none");
+    setDisplayById("worlds-challenge-live-modal", "none");
     setDisplayById("champ-stats-modal", "none");
+    setDisplayById("ai-balance-modal", "none");
     applyWorldsTeamColors();
     refreshRemoteHistory();
     if (showTutorialOnHome) {
@@ -1465,10 +2390,21 @@ function isMobileView() {
 
 function buildChampionInfoHtml(c, isFearlessLocked) {
     const posLabel = Array.isArray(c.pos) ? c.pos.join("/") : "-";
+    const typeClass = getTypeColorClass(c.profile.type);
+    const dmgClass = getDmgTypeColorClass(c.dmgType);
+    const typeScaleRoman = toRomanScale(c.profile.scale);
     return `
         <div class="tip-title-row">
             <b class="tip-title-name">${c.name}</b>
-            <span class="tip-title-meta">${posLabel} | ${TYPE_LABEL[c.profile.type]} ${c.profile.scale} | ${c.dmgType}</span>
+            <span class="tip-title-meta">
+                <span class="tip-pos-label">${posLabel}</span>
+                <span class="tip-meta-sep">|</span>
+                <span class="meta-badge ${typeClass}">
+                    ${TYPE_LABEL[c.profile.type]} <span class="tip-roman-level">${typeScaleRoman}</span>
+                </span>
+                <span class="tip-meta-sep">|</span>
+                <span class="meta-badge ${dmgClass}">${c.dmgType}</span>
+            </span>
         </div>
         ${renderCcPips(c.cc)}
         ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
@@ -1523,47 +2459,42 @@ function renderPhaseLineChart(phase) {
 }
 
 function renderRadarChart(stats, teamClass) {
-    const max = 50;
+    const max = 15;
     const values = [
-        Math.min(stats.dive * 3 + stats.cc, max),
-        Math.min(stats.poke * 3 + stats.dmg, max),
-        Math.min(stats.tank + stats.anti * 3, max),
-        Math.min(stats.cc * 3 + stats.anti * 2, max),
-        Math.min(stats.dmg + stats.tank, max),
-        Math.min((stats.early + stats.mid + stats.late) / 2, max)
+        Math.min(stats.dive, max),
+        Math.min(stats.poke, max),
+        Math.min(stats.anti, max)
     ];
-    const labels = ["이니시", "포킹", "유지", "CC", "난전", "운영"];
-    const cx = 110, cy = 100, radius = 76;
-    const points = values.map((v, i) => {
-        const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
-        const r = (v / max) * radius;
+    const labels = ["돌진", "포킹", "받아치기"];
+    const cx = 110, cy = 98, radius = 76;
+    const toPoint = (value, idx, scale = 1) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * idx / 3);
+        const r = (value / max) * radius * scale;
         const x = cx + Math.cos(angle) * r;
         const y = cy + Math.sin(angle) * r;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
+        return { x, y };
+    };
+    const points = values.map((v, i) => {
+        const p = toPoint(v, i);
+        return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
     }).join(" ");
     const rings = [0.25, 0.5, 0.75, 1].map((ratio) => {
-        const ringPoints = values.map((_, i) => {
-            const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
-            const x = cx + Math.cos(angle) * radius * ratio;
-            const y = cy + Math.sin(angle) * radius * ratio;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        const ring = values.map((_, i) => {
+            const p = toPoint(max * ratio, i);
+            return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
         }).join(" ");
-        return `<polygon points="${ringPoints}" class="radar-ring"></polygon>`;
+        return `<polygon points="${ring}" class="radar-ring"></polygon>`;
     }).join("");
     const axes = values.map((_, i) => {
-        const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
-        const x = cx + Math.cos(angle) * radius;
-        const y = cy + Math.sin(angle) * radius;
-        return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="radar-axis"></line>`;
+        const p = toPoint(max, i);
+        return `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" class="radar-axis"></line>`;
     }).join("");
     const labelEls = labels.map((label, i) => {
-        const angle = -Math.PI / 2 + (Math.PI * 2 * i / values.length);
-        const x = cx + Math.cos(angle) * (radius + 16);
-        const y = cy + Math.sin(angle) * (radius + 16);
-        return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" class="radar-label">${label}</text>`;
+        const p = toPoint(max, i, 1.2);
+        return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="middle" class="radar-label">${label}</text>`;
     }).join("");
     return `<div class="radar-wrap ${teamClass}">
-        <svg viewBox="0 0 220 200" class="radar-svg" role="img" aria-label="팀 시너지 레이더 차트">
+        <svg viewBox="0 0 220 200" class="radar-svg" role="img" aria-label="팀 조합 삼각 차트">
             ${rings}
             ${axes}
             <polygon points="${points}" class="radar-area"></polygon>
@@ -1571,6 +2502,7 @@ function renderRadarChart(stats, teamClass) {
         </svg>
     </div>`;
 }
+
 
 function renderSynergyMeter(stats, teamClass) {
     const dominant = getDominantProfile(stats);
@@ -1668,11 +2600,85 @@ function canPickForTeam(team, key) {
     return canPickForTeamState(team, key, picks);
 }
 
+function getWorldsStyleEffectText(style) {
+    if (style === "Dive" || style === "Poke" || style === "Anti") {
+        return "적합 1명당 유형 +1.2 / 딜 +0.5 / 탱 +0.3 / 중반 +0.6, 부조화 시 딜 -0.5";
+    }
+    if (style === "Early") {
+        return "적합 1명당 초반 +2.0 / 중반 +0.6 / 딜 +0.6, 부조화 시 초반 -1.6";
+    }
+    if (style === "Mid") {
+        return "적합 1명당 중반 +2.0 / CC +0.4 / 딜 +0.4, 부조화 시 중반 -1.6";
+    }
+    if (style === "Late") {
+        return "적합 1명당 후반 +2.0 / 탱 +0.8 / 딜 +0.4, 부조화 시 후반 -1.6";
+    }
+    return "추가 보정 없음";
+}
+
+function getRealTeamEffectSummaryBySide(side) {
+    const detail = getRealTeamStyleDetailBySide(side);
+    if (!detail) return `${side === "blue" ? "블루" : "레드"}: 팀 미지정`;
+    return `${detail.teamName} (${detail.prefLabel}) · ${detail.effectText}`;
+}
+
+function getRealTeamStyleDetailBySide(side) {
+    const teamId = getWorldsTeamIdBySideForUi(side);
+    const team = getWorldsTeamById(teamId);
+    if (!team) return null;
+    const style = team.prefStrategy || "General";
+    const prefLabel = team.prefLabel || (STRATEGY_CONFIGS[style]?.label || "일반적");
+    return {
+        teamName: team.name || "-",
+        prefLabel,
+        effectText: getWorldsStyleEffectText(style)
+    };
+}
+
+function getRealTeamStrategyGuideHtml() {
+    if (!worldsModeEnabled || !userTeam) {
+        return `<div class="strategy-guide-line"><b>실제 팀 모드 OFF</b> 상태입니다. 팀 성향/선수 주챔 보정이 적용되지 않습니다.</div>`;
+    }
+    const common = "공통 효과: 선수 주챔 픽 시 챔피언 강점 시간대 +1.6, 딜 +1.1, 보정 +2.2";
+    const blueLine = getRealTeamEffectSummaryBySide("blue");
+    const redLine = getRealTeamEffectSummaryBySide("red");
+    return `
+        <div class="strategy-guide-line"><b>실제 팀 모드 ON</b> (${teamProfile.myTeamName} vs ${teamProfile.aiTeamName})</div>
+        <div class="strategy-guide-line">- 블루: ${blueLine}</div>
+        <div class="strategy-guide-line">- 레드: ${redLine}</div>
+        <div class="strategy-guide-line">- ${common}</div>
+    `;
+}
+
+function renderRealTeamModeBrief() {
+    const badge = document.getElementById("realteam-mode-badge");
+    const brief = document.getElementById("realteam-brief");
+    if (badge) {
+        badge.classList.toggle("on", !!worldsModeEnabled);
+        badge.classList.toggle("off", !worldsModeEnabled);
+        badge.innerText = worldsModeEnabled ? "실제 팀 모드 ON" : "실제 팀 모드 OFF";
+    }
+    if (!brief) return;
+    if (!worldsModeEnabled || !userTeam) {
+        brief.innerHTML = `<span class="realteam-brief-muted">실제 팀 모드가 OFF 상태라 팀 성향/선수 보정이 적용되지 않습니다.</span>`;
+        return;
+    }
+    const blueLine = getRealTeamEffectSummaryBySide("blue");
+    const redLine = getRealTeamEffectSummaryBySide("red");
+    brief.innerHTML = `
+        <div class="realteam-brief-line"><b>블루</b> ${escapeHtml(blueLine)}</div>
+        <div class="realteam-brief-line"><b>레드</b> ${escapeHtml(redLine)}</div>
+    `;
+}
+
 function updateSeriesInfo() {
     const mode = MODE_CONFIGS[selectedModeKey];
     const strategyLabel = STRATEGY_CONFIGS[selectedStrategyKey]?.label || "전략 미선택";
-    const worldsTag = worldsModeEnabled ? " | 월즈 모드 ON" : "";
-    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName} | 전략 ${strategyLabel}${worldsTag}`;
+    const realTeamTag = worldsModeEnabled ? " | 실제 팀 모드 ON" : " | 실제 팀 모드 OFF";
+    document.getElementById('series-info').innerText = `${mode.label} | SET ${currentGame}/${maxGames} | SCORE ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName} | 전략 ${strategyLabel}${realTeamTag}`;
+    renderRealTeamModeBrief();
+    updateWorldsChallengeButtonState();
+    renderHomeWorldsTeamPanel();
 }
 
 function getTeamRoleLabel(team) {
@@ -1901,6 +2907,7 @@ function renderStrategyModal() {
             <div class="strategy-guide-line">적합 챔피언을 많이 고를수록 보너스, 반대 성향을 고를수록 페널티가 생깁니다.</div>
             <div class="strategy-guide-line"><b>일반적</b> 선택 시 전략 보정 없이 기본 밴픽 점수만으로 계산됩니다.</div>
             <div class="strategy-guide-line">현재 선택: <b>${STRATEGY_CONFIGS[selectedStrategyKey]?.label || "일반적"}</b></div>
+            ${getRealTeamStrategyGuideHtml()}
         `;
     }
 }
@@ -1949,6 +2956,7 @@ function chooseSide(side) {
 }
 
 async function init() {
+    ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal"].forEach(hoistModalToBody);
     bindHomeActionButtons();
     const bBans = document.getElementById('b-bans');
     const rBans = document.getElementById('r-bans');
@@ -1964,8 +2972,8 @@ async function init() {
     POSITIONS.forEach((pos, i) => {
         bBans.innerHTML += `<div class="ban-slot" id="b-ban-${i}"></div>`;
         rBans.innerHTML += `<div class="ban-slot" id="r-ban-${i}"></div>`;
-        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
-        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
+        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-hint"><div class="player-chip off"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="player-note"></div></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
+        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-hint"><div class="player-chip off"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="player-note"></div></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
 
         const bBan = document.getElementById(`b-ban-${i}`);
         const rBan = document.getElementById(`r-ban-${i}`);
@@ -2047,6 +3055,29 @@ async function init() {
         worldsModal.addEventListener('click', (e) => {
             if (e.target === worldsModal) closeWorldsModal();
         });
+    }
+    const challengeModal = document.getElementById('worlds-challenge-modal');
+    if (challengeModal) {
+        challengeModal.addEventListener('click', (e) => {
+            if (e.target === challengeModal) closeWorldsChallengeSetup();
+        });
+    }
+    const challengeLiveModal = document.getElementById('worlds-challenge-live-modal');
+    if (challengeLiveModal) {
+        challengeLiveModal.addEventListener('click', (e) => {
+            if (e.target === challengeLiveModal) closeWorldsChallengeLive();
+        });
+    }
+    const aiBalanceModal = document.getElementById('ai-balance-modal');
+    if (aiBalanceModal) {
+        aiBalanceModal.addEventListener('click', (e) => {
+            if (e.target === aiBalanceModal) closeAiBalanceModal();
+        });
+    }
+    const aiBalanceRunBtn = document.getElementById('ai-balance-run-btn');
+    if (aiBalanceRunBtn && aiBalanceRunBtn.dataset.bound !== "1") {
+        aiBalanceRunBtn.addEventListener('click', () => runAiBalanceSimulation(20));
+        aiBalanceRunBtn.dataset.bound = "1";
     }
     const champStatsModal = document.getElementById('champ-stats-modal');
     if (champStatsModal) {
@@ -2286,7 +3317,8 @@ function updateUI() {
         }
         if (isAiTurn && !aiThinking) {
             aiThinking = true;
-            setTimeout(aiTakeTurn, 550);
+            const thinkMs = Math.floor(Math.random() * (AI_THINK_MAX_MS - AI_THINK_MIN_MS + 1)) + AI_THINK_MIN_MS;
+            setTimeout(aiTakeTurn, thinkMs);
         }
     } else {
         wrTrack.style.display = "flex";
@@ -2365,6 +3397,20 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
     const redRole = getTeamRoleLabel('red');
     const worldsBlue = worldsCtx ? (worldsCtx.bonus.blue || 0) : 0;
     const worldsRed = worldsCtx ? (worldsCtx.bonus.red || 0) : 0;
+    const blueRealTeamDetail = worldsModeEnabled ? getRealTeamStyleDetailBySide("blue") : null;
+    const redRealTeamDetail = worldsModeEnabled ? getRealTeamStyleDetailBySide("red") : null;
+    const blueRealTeamStyleText = blueRealTeamDetail
+        ? `${blueRealTeamDetail.teamName} · ${blueRealTeamDetail.prefLabel}`
+        : "미지정";
+    const redRealTeamStyleText = redRealTeamDetail
+        ? `${redRealTeamDetail.teamName} · ${redRealTeamDetail.prefLabel}`
+        : "미지정";
+    const blueRealTeamEffectText = blueRealTeamDetail
+        ? blueRealTeamDetail.effectText
+        : "실제 팀 정보를 찾지 못해 보정이 적용되지 않습니다.";
+    const redRealTeamEffectText = redRealTeamDetail
+        ? redRealTeamDetail.effectText
+        : "실제 팀 정보를 찾지 못해 보정이 적용되지 않습니다.";
     blueSummary.innerHTML = `
         <div class="title">블루팀 요약 (${blueRole})</div>
         <div class="row"><span>기본</span><span>CC ${formatNum(b.cc)} | 딜 ${formatNum(b.dmg)} | 탱 ${formatNum(b.tank)}</span></div>
@@ -2373,7 +3419,9 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
         <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${formatNum(b.dive)}</span> / <span class="type-poke">포킹 ${formatNum(b.poke)}</span> / <span class="type-anti">받아치기 ${formatNum(b.anti)}</span></span></div>
         <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(b).type)}">${getCompLabel(b)}</span></div>
         <div class="row"><span>전략</span><span>${renderStrategySummary(strategyCtx, "blue")}</span></div>
-        <div class="row"><span>월즈 보정</span><span>${worldsModeEnabled ? `+${formatNum(worldsBlue)}` : '<span style="color:#7f95a3;">비활성</span>'}</span></div>
+        <div class="row"><span>실제 팀 보정</span><span>${worldsModeEnabled ? `+${formatNum(worldsBlue)}` : '<span style="color:#7f95a3;">OFF</span>'}</span></div>
+        <div class="row"><span>실제 팀 성향</span><span>${worldsModeEnabled ? escapeHtml(blueRealTeamStyleText) : '<span style="color:#7f95a3;">OFF</span>'}</span></div>
+        <div class="row row-wrap"><span>실제 팀 효과</span><span>${worldsModeEnabled ? escapeHtml(blueRealTeamEffectText) : '<span style="color:#7f95a3;">OFF</span>'}</span></div>
         ${renderSynergyMeter(b, "blue")}
         ${renderRadarChart(b, "blue")}
         ${makeBars(b, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
@@ -2387,7 +3435,9 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
         <div class="row"><span>성향</span><span><span class="type-dive">돌진 ${formatNum(r.dive)}</span> / <span class="type-poke">포킹 ${formatNum(r.poke)}</span> / <span class="type-anti">받아치기 ${formatNum(r.anti)}</span></span></div>
         <div class="row"><span>조합</span><span class="${getTypeColorClass(getDominantProfile(r).type)}">${getCompLabel(r)}</span></div>
         <div class="row"><span>전략</span><span>${renderStrategySummary(strategyCtx, "red")}</span></div>
-        <div class="row"><span>월즈 보정</span><span>${worldsModeEnabled ? `+${formatNum(worldsRed)}` : '<span style="color:#7f95a3;">비활성</span>'}</span></div>
+        <div class="row"><span>실제 팀 보정</span><span>${worldsModeEnabled ? `+${formatNum(worldsRed)}` : '<span style="color:#7f95a3;">OFF</span>'}</span></div>
+        <div class="row"><span>실제 팀 성향</span><span>${worldsModeEnabled ? escapeHtml(redRealTeamStyleText) : '<span style="color:#7f95a3;">OFF</span>'}</span></div>
+        <div class="row row-wrap"><span>실제 팀 효과</span><span>${worldsModeEnabled ? escapeHtml(redRealTeamEffectText) : '<span style="color:#7f95a3;">OFF</span>'}</span></div>
         ${renderSynergyMeter(r, "red")}
         ${renderRadarChart(r, "red")}
         ${makeBars(r, { dive: "#ef5350", poke: "#ffd54f", anti: "#66bb6a" })}
@@ -3161,7 +4211,7 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null,
         const stratApplied = strategyCtx && strategyCtx.effect && strategyCtx.effect.team === team;
         const stratLabel = stratApplied ? (STRATEGY_CONFIGS[strategyCtx.effect.strategy]?.label || "전략") : "전략 없음";
         const worldBonus = worldsCtx ? (worldsCtx.bonus[team] || 0) : 0;
-        const worldTag = worldsModeEnabled ? `월즈 +${formatNum(worldBonus)}` : "월즈 OFF";
+        const worldTag = worldsModeEnabled ? `실제팀 +${formatNum(worldBonus)}` : "실제팀 OFF";
         const stratMeta = stratApplied
             ? `${stratLabel} | 적합 ${strategyCtx.effect.fit} / 부조화 ${strategyCtx.effect.mismatch} | ${worldTag}`
             : `${stratLabel} | ${worldTag}`;
@@ -3240,6 +4290,25 @@ function applyStepActionTemp(step, key, picksState, bansState) {
     return () => { bansState[step.t][step.id] = prev; };
 }
 
+function getRealTeamSignatureBonusForSide(teamSide, key) {
+    if (!worldsModeEnabled) return 0;
+    const teamId = getWorldsTeamIdBySide(teamSide);
+    const champ = CHAMP_DB[key];
+    const roster = getWorldsRosterByTeamId(teamId);
+    if (!teamId || !champ || !roster || !roster.players) return 0;
+    let any = false;
+    let pos = 0;
+    POSITIONS.forEach((p) => {
+        const player = getWorldsPlayerById(roster.players[p]);
+        if (!player) return;
+        if (!hasSignatureChampion(player, champ.name)) return;
+        any = true;
+        if ((champ.pos || []).includes(p)) pos += 1;
+    });
+    if (pos > 0) return 3.6 + pos * 0.6;
+    return any ? 1.4 : 0;
+}
+
 function getQuickPickScore(aiSide, key, picksState) {
     const champ = CHAMP_DB[key];
     if (!champ) return -Infinity;
@@ -3248,6 +4317,7 @@ function getQuickPickScore(aiSide, key, picksState) {
     if (aiSide === strategyTargetTeam) {
         score += getStrategyFitState(champ, selectedStrategyKey) * 1.8;
     }
+    score += getRealTeamSignatureBonusForSide(aiSide, key);
     const enemySide = aiSide === "blue" ? "red" : "blue";
     const enemyDominant = getDominantProfile(getTeamStats(enemySide, picksState));
     const beats = { Dive: "Poke", Poke: "Anti", Anti: "Dive" };
@@ -3265,7 +4335,8 @@ function getQuickBanThreatScore(aiSide, key, picksState) {
     const champ = CHAMP_DB[key];
     if (!champ) return -Infinity;
     const traitCount = getTraitsByChampionName(champ.name).length;
-    return champ.dmg * 1.25 + champ.tank * 0.65 + champ.cc * 1.6 + champ.profile.scale * 1.1 + champ.phase.mid * 0.3 + traitCount * 0.8;
+    const sigThreat = getRealTeamSignatureBonusForSide(enemySide, key);
+    return champ.dmg * 1.25 + champ.tank * 0.65 + champ.cc * 1.6 + champ.profile.scale * 1.1 + champ.phase.mid * 0.3 + traitCount * 0.8 + sigThreat * 1.2;
 }
 
 function simulateBestResponseAiPerspective(aiSide, responseStep, picksState, bansState) {
@@ -3411,6 +4482,7 @@ function refreshUI(team) {
         slot.classList.add("has-info");
         slot.querySelector('.name').innerText = CHAMP_DB[key].name;
     });
+    renderWorldsSlotHints();
 }
 
 function teamDisplayName(team) {
@@ -3485,71 +4557,57 @@ function getTeamPlaymaker(team) {
 function buildPhaseCommentary(res, finalWinner, projection) {
     const blueName = teamDisplayName("blue");
     const redName = teamDisplayName("red");
-    const blueEarlyCarry = getPhaseImpactChampion("blue", "early");
-    const redEarlyCarry = getPhaseImpactChampion("red", "early");
-    const blueMidCarry = getPhaseImpactChampion("blue", "mid");
-    const redMidCarry = getPhaseImpactChampion("red", "mid");
-    const blueLateCarry = getPhaseImpactChampion("blue", "late");
-    const redLateCarry = getPhaseImpactChampion("red", "late");
-    const bluePlaymaker = getTeamPlaymaker("blue");
-    const redPlaymaker = getTeamPlaymaker("red");
     const earlyFav = res.phases.earlyWin >= 50 ? "blue" : "red";
     const midFav = res.phases.midWin >= 50 ? "blue" : "red";
     const lateFav = res.phases.lateWin >= 50 ? "blue" : "red";
-    const bMain = getDominantProfile(res.b);
-    const rMain = getDominantProfile(res.r);
-    const blueType = TYPE_LABEL[bMain.type];
-    const redType = TYPE_LABEL[rMain.type];
-    const bluePenalty = -getDamageBalanceBonus(res.b);
-    const redPenalty = -getDamageBalanceBonus(res.r);
-    const goldKill = projection || buildGoldKillProjection(res);
     const winner = finalWinner || (res.bWin >= 50 ? "blue" : "red");
     const loser = winner === "blue" ? "red" : "blue";
     const winnerName = winner === "blue" ? blueName : redName;
     const loserName = loser === "blue" ? blueName : redName;
-    const winnerCarry = winner === "blue" ? blueLateCarry : redLateCarry;
+
+    const earlyCarryKey = earlyFav === "blue" ? getPhaseImpactChampion("blue", "early") : getPhaseImpactChampion("red", "early");
+    const midCarryKey = midFav === "blue" ? getPhaseImpactChampion("blue", "mid") : getPhaseImpactChampion("red", "mid");
+    const lateCarryKey = lateFav === "blue" ? getPhaseImpactChampion("blue", "late") : getPhaseImpactChampion("red", "late");
+
+    const earlyCarryChamp = CHAMP_DB[earlyCarryKey]?.name || earlyCarryKey;
+    const midCarryChamp = CHAMP_DB[midCarryKey]?.name || midCarryKey;
+    const lateCarryChamp = CHAMP_DB[lateCarryKey]?.name || lateCarryKey;
+
+    const earlyJngKey = getTeamChampByPos(earlyFav, picks, "JNG");
+    const earlyJngPlayer = earlyJngKey ? getWorldsPlayerForChampion(earlyFav, earlyJngKey, picks) : null;
+    const earlyJngLabel = earlyJngPlayer ? `${earlyJngPlayer.nick}(${CHAMP_DB[earlyJngKey]?.name || earlyJngKey})` : `${getTeamPlaymaker(earlyFav)}`;
+
+    const sim = projection || buildGoldKillProjection(res);
     const lines = [];
 
-    lines.push(
-        (earlyFav === "blue"
-            ? `${blueName} ${blueEarlyCarry}가 라인 주도권을 잡고 초반 교전을 이끕니다!`
-            : `${redName} ${redEarlyCarry}가 날카로운 각으로 초반 흐름을 끌어옵니다!`)
-    );
-    lines.push(
-        (earlyFav === "blue"
-            ? `${bluePlaymaker}의 합류 타이밍이 빠릅니다. ${blueName}이 맵 템포를 선점합니다.`
-            : `${redPlaymaker}의 로밍이 터지며 ${redName}이 시야 주도권을 잡습니다.`)
-    );
+    lines.push(`전용준: ${earlyJngLabel}가 바텀 각을 찢어버렸어요! 말이 안 되는 피지컬입니다!`);
+    lines.push(`이현우: ${earlyFav === "blue" ? blueName : redName}의 전매특허, 초반 스노우볼링이 굴러갑니다! ${earlyCarryChamp}가 전장을 휘젓고 있어요!`);
 
-    goldKill.points.forEach((p) => {
-        if (p.objectLine) lines.push(p.objectLine);
-        lines.push(p.line);
+    sim.points.forEach((p) => {
+        if (p.objectLine) lines.push(`전용준: ${p.objectLine}`);
+        lines.push(`이현우: ${p.minute}분 킬 스코어 ${sim.myTeamName} ${p.myKills} : ${p.enemyKills} ${sim.enemyTeamName}, 한타가 계속 열립니다!`);
     });
 
-    lines.push(
-        (midFav === "blue"
-            ? `${blueName} ${blueMidCarry} 중심의 ${blueType} 구도가 중반 한타를 지배합니다!`
-            : `${redName} ${redMidCarry} 중심의 ${redType} 설계가 중반 교전을 흔듭니다!`)
-    );
-    lines.push(
-        (lateFav === "blue"
-            ? `${blueLateCarry}가 결정 한타에서 화력을 폭발시키며 넥서스 압박을 시작합니다!`
-            : `${redLateCarry}가 후반 핵심 포지션을 장악하고 게임의 마침표를 준비합니다!`)
-    );
+    lines.push(`전용준: 중반에는 ${midCarryChamp} 중심의 구도가 열리면서 교전 템포가 확 올라갑니다!`);
+    lines.push(`이현우: ${lateCarryChamp}가 후반 핵심 전장을 장악합니다. ${winnerName} 쪽으로 힘이 급격히 기웁니다!`);
 
-    if (bluePenalty > 0) {
-        lines.push(blueName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.");
-    } else if (redPenalty > 0) {
-        lines.push(redName + "은(는) 데미지 비율이 치우쳐 아이템 대응에 막히며 피해 효율이 떨어집니다.");
-    }
-    if (earlyFav !== winner && lateFav === winner) {
-        lines.push(`${winnerName}이(가) 초반 열세를 버티고 후반 운영으로 경기를 뒤집습니다!`);
-    } else if (midFav !== winner && lateFav === winner) {
-        lines.push(`${winnerCarry}가 막판 교전에서 대역전 각을 만들며 흐름을 바꿉니다!`);
-    } else {
-        lines.push(`${winnerName} 쪽으로 경기의 무게추가 완전히 기웁니다.`);
-    }
-    lines.push(`최종 승자: ${winnerName}. ${loserName}은(는) 아쉽게 세트를 내줍니다.`);
+    const sigLine = (() => {
+        const assigned = getTeamAssignedMap(winner, picks);
+        for (const pos of POSITIONS) {
+            const key = assigned.byPos[pos];
+            if (!key) continue;
+            const player = getWorldsPlayerForChampion(winner, key, picks);
+            if (player && hasSignatureChampion(player, CHAMP_DB[key]?.name || key)) {
+                return `${player.nick} 선수의 시그니처 카드 ${CHAMP_DB[key]?.name || key}, 협곡을 지배합니다!`;
+            }
+        }
+        return "";
+    })();
+    if (sigLine) lines.push(`전용준: ${sigLine}`);
+
+    lines.push(`전용준: 넥서스가 파괴됩니다! ${winnerName}이(가) 세트를 가져갑니다!`);
+    lines.push(`이현우: ${loserName}은(는) 다음 밴픽에서 반드시 반격 플랜을 만들어야 합니다.`);
+
     return lines;
 }
 
@@ -3619,19 +4677,23 @@ function buildGoldKillProjection(res) {
     let enemyDragons = 0;
     let myBarons = 0;
     let enemyBarons = 0;
+
     const points = phaseWins.map((p) => {
         const edge = p.win - 50;
-        const swing = getGoldSwingByWinEdge(edge);
-        const snowball = cumulativeGold * (edge >= 0 ? 0.12 : -0.12);
-        cumulativeGold = Math.round(cumulativeGold + swing + snowball);
+        const swing = Math.round(edge * 140 + Math.sign(edge || 1) * Math.pow(Math.abs(edge), 1.35) * 18);
+        const snowball = Math.round(cumulativeGold * (edge >= 0 ? 0.08 : -0.08));
+        cumulativeGold = Math.round(Math.max(-14000, Math.min(14000, cumulativeGold + swing + snowball)));
 
-        const myPhasePower = (myStats[p.key] || 0) * 2 + myStats.cc * 2 + myStats.dmg * 0.8 + myStats.tank * 0.5;
-        const enemyPhasePower = (enemyStats[p.key] || 0) * 2 + enemyStats.cc * 2 + enemyStats.dmg * 0.8 + enemyStats.tank * 0.5;
+        const myPhasePower = (myStats[p.key] || 0) * 1.75 + myStats.cc * 1.8 + myStats.dmg * 0.7 + myStats.tank * 0.45;
+        const enemyPhasePower = (enemyStats[p.key] || 0) * 1.75 + enemyStats.cc * 1.8 + enemyStats.dmg * 0.7 + enemyStats.tank * 0.45;
         const combatDiff = Math.round(myPhasePower - enemyPhasePower);
-        const freq = Math.max(2, Math.round(2 + Math.abs(myPhasePower - enemyPhasePower) / 10 + Math.abs(edge) / 12));
-        const killEdge = Math.max(1, Math.round(Math.abs(edge) / 14));
-        const myGain = edge >= 0 ? (freq + killEdge) : Math.max(0, freq - killEdge);
-        const enemyGain = edge >= 0 ? Math.max(0, freq - killEdge) : (freq + killEdge);
+
+        const phaseFightBase = Math.max(1, Math.round(1 + Math.abs(myPhasePower - enemyPhasePower) / 20 + Math.abs(edge) / 24));
+        const killEdge = Math.max(0, Math.round(Math.abs(edge) / 26));
+        const myGainRaw = edge >= 0 ? (phaseFightBase + killEdge) : Math.max(0, phaseFightBase - killEdge);
+        const enemyGainRaw = edge >= 0 ? Math.max(0, phaseFightBase - killEdge) : (phaseFightBase + killEdge);
+        const myGain = Math.max(0, Math.min(7, myGainRaw));
+        const enemyGain = Math.max(0, Math.min(7, enemyGainRaw));
         myKills += myGain;
         enemyKills += enemyGain;
 
@@ -3639,20 +4701,18 @@ function buildGoldKillProjection(res) {
         const dominantName = teamDisplayName(dominantTeam);
         let objectLine = "";
         const absEdge = Math.abs(edge);
-        if (p.key === "early" && absEdge >= 4) {
+        if (p.key === "early" && absEdge >= 5) {
             if (dominantTeam === myTeam) myDragons += 1;
             else enemyDragons += 1;
-            const stack = dominantTeam === myTeam ? myDragons : enemyDragons;
-            objectLine = `${p.minute}분, ${dominantName}이(가) 첫 드래곤을 챙기며 스택 ${stack}개를 확보합니다!`;
-        } else if (p.key === "mid" && absEdge >= 5) {
+            objectLine = `${p.minute}분, ${dominantName}이(가) 첫 드래곤을 가져갑니다.`;
+        } else if (p.key === "mid" && absEdge >= 6) {
             if (dominantTeam === myTeam) myDragons += 1;
             else enemyDragons += 1;
-            const stack = dominantTeam === myTeam ? myDragons : enemyDragons;
-            objectLine = `${p.minute}분, ${dominantName}이(가) 용 교전 승리! 드래곤 스택 ${stack}개입니다.`;
-        } else if (p.key === "late" && absEdge >= 6) {
+            objectLine = `${p.minute}분, ${dominantName}이(가) 두 번째 드래곤까지 챙깁니다.`;
+        } else if (p.key === "late" && absEdge >= 7) {
             if (dominantTeam === myTeam) myBarons += 1;
             else enemyBarons += 1;
-            objectLine = `${p.minute}분, ${dominantName}이(가) 바론을 처치하고 공성 압박을 시작합니다!`;
+            objectLine = `${p.minute}분, ${dominantName}이(가) 바론을 확보합니다!`;
         }
         return {
             ...p,
@@ -3666,7 +4726,7 @@ function buildGoldKillProjection(res) {
             myBarons,
             enemyBarons,
             objectLine,
-            line: `${p.minute}분 킬 스코어 ${myKills}:${enemyKills}, ${dominantName}이(가) 교전 주도권을 확보합니다.`
+            line: `${p.minute}분 킬 스코어 ${myKills}:${enemyKills}, ${dominantName}이(가) 주도권을 쥡니다.`
         };
     });
 
@@ -3793,28 +4853,57 @@ function updateLiveBattlePanel(projection, progress) {
 }
 
 function renderGoldGraphSvg(points) {
-    const maxAbs = Math.max(3500, ...points.map((p) => Math.abs(p.goldDiff)));
-    const xPos = [20, 110, 200];
-    const yMap = (gold) => 68 - ((gold + maxAbs) / (2 * maxAbs)) * 56;
-    const polyline = points.map((p, idx) => `${xPos[idx]},${yMap(p.goldDiff).toFixed(1)}`).join(" ");
-    const dots = points.map((p, idx) => `<circle cx="${xPos[idx]}" cy="${yMap(p.goldDiff).toFixed(1)}" r="3.5" class="econ-dot"></circle>`).join("");
-    const labels = points.map((p, idx) => `<text x="${xPos[idx]}" y="80" text-anchor="middle" class="econ-label">${p.minute}m</text>`).join("");
-    return `<svg viewBox="0 0 220 86" class="econ-svg" role="img" aria-label="골드 그래프">
-        <line x1="18" y1="68" x2="202" y2="68" class="econ-axis"></line>
-        <line x1="18" y1="40" x2="202" y2="40" class="econ-mid"></line>
-        <polyline points="${polyline}" class="econ-line"></polyline>
-        ${dots}
-        ${labels}
-    </svg>`;
+    const maxAbs = Math.max(4000, ...points.map((p) => Math.abs(p.goldDiff)));
+    return `<div class="econ-gold-bars">${points.map((p) => {
+        const ratio = (p.goldDiff / maxAbs) * 50;
+        const width = Math.abs(ratio);
+        const left = ratio >= 0 ? 50 : (50 - width);
+        return `<div class="econ-gold-row"><span class="econ-gold-min">${p.minute}분</span><div class="econ-gold-track"><span class="econ-gold-mid"></span><span class="econ-gold-fill" style="left:${left.toFixed(1)}%; width:${Math.max(2, width).toFixed(1)}%;"></span></div><span class="econ-gold-val">${formatGoldDiff(p.goldDiff)}</span></div>`;
+    }).join("")}</div>`;
+}
+
+function buildCurrentMatchKdaRows(sim) {
+    const makeRows = (team, teamKills, enemyKills) => {
+        const assigned = getTeamAssignedMap(team, picks);
+        const keys = POSITIONS.map((pos) => assigned.byPos[pos] || null);
+        const champs = keys.map((k) => (k ? CHAMP_DB[k] : null));
+        const kills = challengeDistribute(teamKills, champs.map((c) => c ? (c.dmg + c.profile.scale + c.phase.mid * 0.35) : 1));
+        const deaths = challengeDistribute(enemyKills, champs.map((c) => c ? Math.max(1, 12 - c.tank - c.cc * 0.5) : 1));
+        const assists = challengeDistribute(Math.max(teamKills + 2, Math.round(teamKills * 1.6)), champs.map((c) => c ? (c.cc * 1.7 + c.tank + c.profile.scale + 1) : 1));
+        return POSITIONS.map((pos, idx) => {
+            const key = keys[idx];
+            const player = key ? getWorldsPlayerForChampion(team, key, picks) : null;
+            return {
+                pos,
+                player: player?.nick || "-",
+                champ: key ? (CHAMP_DB[key]?.name || key) : "-",
+                k: kills[idx] || 0,
+                d: deaths[idx] || 0,
+                a: assists[idx] || 0
+            };
+        });
+    };
+    return {
+        my: makeRows(sim.myTeam, sim.finalMyKills, sim.finalEnemyKills),
+        enemy: makeRows(sim.enemyTeam, sim.finalEnemyKills, sim.finalMyKills)
+    };
+}
+
+function renderCurrentKdaTable(rows, teamName) {
+    return `<table class="challenge-kda-table"><thead><tr><th colspan="4">${escapeHtml(teamName)} KDA</th></tr><tr><th>포지션</th><th>선수/챔피언</th><th>K/D/A</th><th>KDA</th></tr></thead><tbody>${rows.map((r) => {
+        const ratio = ((r.k + r.a) / Math.max(1, r.d)).toFixed(2);
+        return `<tr><td>${r.pos}</td><td>${escapeHtml(r.player)} · ${escapeHtml(r.champ)}</td><td>${r.k}/${r.d}/${r.a}</td><td>${ratio}</td></tr>`;
+    }).join("")}</tbody></table>`;
 }
 
 function renderGoldKillSection(res) {
     const sim = buildGoldKillProjection(res);
+    const kda = buildCurrentMatchKdaRows(sim);
     return `<div class="econ-wrap">
         <div class="econ-title">자금력 / 전투 결과</div>
         <div class="econ-grid">
             <div class="econ-card">
-                <div class="econ-sub">골드 그래프 (스노우볼 반영)</div>
+                <div class="econ-sub">골드 유불리 (가로 막대)</div>
                 ${renderGoldGraphSvg(sim.points)}
                 <div class="econ-meta">최종 골드 격차: <b>${formatGoldDiff(sim.finalGoldDiff)}</b></div>
             </div>
@@ -3825,6 +4914,10 @@ function renderGoldKillSection(res) {
                 </div>
                 <div class="econ-meta" style="margin-top:6px;">오브젝트: ${sim.myTeamName} 용 ${sim.finalMyDragons} / 바론 ${sim.finalMyBarons} · ${sim.enemyTeamName} 용 ${sim.finalEnemyDragons} / 바론 ${sim.finalEnemyBarons}</div>
             </div>
+        </div>
+        <div class="econ-grid" style="margin-top:8px;">
+            <div class="econ-card">${renderCurrentKdaTable(kda.my, sim.myTeamName)}</div>
+            <div class="econ-card">${renderCurrentKdaTable(kda.enemy, sim.enemyTeamName)}</div>
         </div>
     </div>`;
 }
@@ -3869,6 +4962,18 @@ function getTeamFactorBreakdown(team, res) {
     });
     if (best <= 0) factor = "RawPower";
     return { factor, value: best, factors };
+}
+
+function getWorldsPlayerForChampion(team, champKey, picksState = picks) {
+    if (!worldsModeEnabled || !champKey) return null;
+    const teamId = getWorldsTeamIdByTeam(team);
+    const roster = getWorldsRosterByTeamId(teamId);
+    if (!roster || !roster.players) return null;
+    const assigned = getTeamAssignedMap(team, picksState);
+    const pos = assigned?.byKey?.[champKey];
+    if (!pos) return null;
+    const playerId = roster.players[pos];
+    return getWorldsPlayerById(playerId) || null;
 }
 
 function pickMvpChampionKey(team, res, factor) {
@@ -3985,11 +5090,14 @@ function buildTeamMvp(team, res) {
     if (!key || !CHAMP_DB[key]) return null;
     const champ = CHAMP_DB[key];
     const meta = getMvpTitleAndReason(champ, breakdown.factor, team);
+    const player = getWorldsPlayerForChampion(team, key, picks);
     return {
         key,
         name: champ.name,
         title: meta.title,
-        reason: meta.reason
+        reason: meta.reason,
+        playerNick: player?.nick || "",
+        playerPhoto: player?.photo || ""
     };
 }
 
@@ -4004,10 +5112,10 @@ function getFinishPhaseSummary(res, winner) {
     const mid = blueWin ? res.phases.midWin : (100 - res.phases.midWin);
     const late = blueWin ? res.phases.lateWin : (100 - res.phases.lateWin);
 
-    if (early >= 66 && early >= mid + 6) {
+    if (early >= 60 && early >= mid + 3 && early >= late + 4) {
         return { phase: "초반", reason: "초반 우위 " + early.toFixed(1) + "%로 스노우볼을 굴려 빠르게 끝냈습니다." };
     }
-    if (mid >= 60 && mid >= late + 4) {
+    if (mid >= 57 && mid >= late + 2) {
         return { phase: "중반", reason: "중반 한타 우위 " + mid.toFixed(1) + "%를 바탕으로 오브젝트를 연달아 가져가며 마무리했습니다." };
     }
     return { phase: "후반", reason: "후반 운영/한타 우위(후반 " + late.toFixed(1) + "%)로 최종 승부를 결정했습니다." };
@@ -4024,24 +5132,24 @@ function buildResultBody(res, winner, loser, seriesEnded) {
     const strategyText = strategyEffect ? `${strategyTeamLabel} 전략(${strategyName}) 적합 ${formatNum(strategyEffect.fit)} / 부조화 ${formatNum(strategyEffect.mismatch)} / 보정 ${strategyEffect.winBonus >= 0 ? "+" : ""}${formatNum(strategyEffect.winBonus)}` : "전략 보정 없음";
     const worldsText = worldsModeEnabled && res.worldsCtx
         ? `${teamDisplayName("blue")} +${formatNum(res.worldsCtx.bonus.blue || 0)} / ${teamDisplayName("red")} +${formatNum(res.worldsCtx.bonus.red || 0)}`
-        : "비활성";
+        : "OFF";
     const winnerRole = winner === userTeam ? "user" : "ai";
     const loserRole = winnerRole === "user" ? "ai" : "user";
     return `
         <p style="color:var(--gold);font-weight:bold;">세트 스코어: ${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}</p>\n        <p style="font-size:13px;color:#ffd180;">종료 시점: <b>${finish.phase}</b> | ${finish.reason}</p>
         <p style="font-size:12px;color:#9ec4d9;">전략 적용: ${strategyText}</p>
-        <p style="font-size:12px;color:#9ec4d9;">월즈 보정: ${worldsText}</p>
+        <p style="font-size:12px;color:#9ec4d9;">실제 팀 보정: ${worldsText}</p>
         <p>🔵 블루팀: ${bComp} (CC ${formatNum(res.b.cc)} / 딜 ${formatNum(res.b.dmg)} / 탱 ${formatNum(res.b.tank)})</p>
         <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${formatNum(res.b.dive)} / 포킹 ${formatNum(res.b.poke)} / 받아치기 ${formatNum(res.b.anti)} | 시간대: 초 ${formatNum(res.b.early)} / 중 ${formatNum(res.b.mid)} / 후 ${formatNum(res.b.late)}</p>
         <p>🔴 레드팀: ${rComp} (CC ${formatNum(res.r.cc)} / 딜 ${formatNum(res.r.dmg)} / 탱 ${formatNum(res.r.tank)})</p>
         <p style="font-size:13px; color:#cfd8dc;">성향합: 돌진 ${formatNum(res.r.dive)} / 포킹 ${formatNum(res.r.poke)} / 받아치기 ${formatNum(res.r.anti)} | 시간대: 초 ${formatNum(res.r.early)} / 중 ${formatNum(res.r.mid)} / 후 ${formatNum(res.r.late)}</p>
         <div class="mvp-wrap single">
             <div class="mvp-card ${winner}">
-                <div class="mvp-title">${winnerTeamLabel} MVP</div>
+                <div class="mvp-title">${winnerTeamLabel} POG</div>
                 ${
                     winnerMvp
-                        ? `<div class="mvp-head"><img class="mvp-portrait" src="${getChampionImageUrl(winnerMvp.key)}" alt="${winnerMvp.name}" onerror="this.onerror=null;this.src='https://placehold.co/72x72/121c23/c8aa6e?text=${encodeURIComponent(winnerMvp.name)}';"><div class="mvp-name">${winnerMvp.name} (${winnerMvp.title})</div></div><div class="mvp-reason">${winnerMvp.reason}</div>`
-                        : `<div class="mvp-name">-</div><div class="mvp-reason">선수 데이터가 없습니다.</div>`
+                        ? `<div class="mvp-head"><img class="mvp-portrait mvp-player-photo" src="${winnerMvp.playerPhoto || getPlayerPhotoFallbackByNick(winnerMvp.playerNick || 'POG', 72)}" alt="${winnerMvp.playerNick || 'PLAYER'}" onerror="this.onerror=null;this.src='${getPlayerPhotoFallbackByNick('POG', 72)}';"><div class="mvp-head-meta"><div class="mvp-player-name">${winnerMvp.playerNick || '선수 미지정'}</div><div class="mvp-name">${winnerMvp.name} (${winnerMvp.title})</div></div><img class="mvp-portrait" src="${getChampionImageUrl(winnerMvp.key)}" alt="${winnerMvp.name}" onerror="this.onerror=null;this.src='https://placehold.co/72x72/121c23/c8aa6e?text=${encodeURIComponent(winnerMvp.name)}';"></div><div class="mvp-reason">${winnerMvp.reason}</div>`
+                        : `<div class="mvp-name">-</div><div class="mvp-reason">POG 데이터가 없습니다.</div>`
                 }
             </div>
         </div>
@@ -4156,8 +5264,12 @@ function startSimulationMatch() {
                 loserTeam: loserRole === "user" ? teamProfile.myTeamName : teamProfile.aiTeamName,
                 scoreText: `${teamProfile.myTeamName} ${seriesRoleWins.user} : ${seriesRoleWins.ai} ${teamProfile.aiTeamName}`,
                 strategyLabel: STRATEGY_CONFIGS[selectedStrategyKey]?.label || "-",
+                winnerSide: winner,
+                loserSide: loser,
                 pickKeys: [...seriesDraftStats.picks],
-                banKeys: [...seriesDraftStats.bans]
+                banKeys: [...seriesDraftStats.bans],
+                bluePickKeys: [...(picks.blue || []).filter(Boolean)],
+                redPickKeys: [...(picks.red || []).filter(Boolean)]
             });
         }
 

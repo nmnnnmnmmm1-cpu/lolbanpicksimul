@@ -125,6 +125,7 @@ var CHAMP_DB = {
     "Ezreal": { name: "이즈리얼", pos: ["ADC"], cc: 0, dmg: 10, tank: 2, profile: { type: "Poke", scale: 3 }, dmgType: "Hybrid", phase: { early: 9, mid: 8, late: 2 } },
     "Illaoi": { name: "일라오이", pos: ["TOP"], cc: 1, dmg: 8, tank: 9, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 2, mid: 10, late: 2 } },
     "JarvanIV": { name: "자르반 4세", pos: ["JNG"], cc: 2, dmg: 4, tank: 8, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 8, mid: 4, late: 4 } },
+    "Jahen": { name: "자헨", pos: ["TOP"], cc: 2, dmg: 6, tank: 6, profile: { type: "Dive", scale: 2 }, dmgType: "AD", phase: { early: 3, mid: 5, late: 8 } },
     "Xayah": { name: "자야", pos: ["ADC"], cc: 1, dmg: 8, tank: 3, profile: { type: "Anti", scale: 2 }, dmgType: "AD", phase: { early: 5, mid: 5, late: 10 } },
     "Zyra": { name: "자이라", pos: ["SPT"], cc: 3, dmg: 6, tank: 3, profile: { type: "Anti", scale: 3 }, dmgType: "AP", phase: { early: 6, mid: 4, late: 3 } },
     "Zac": { name: "자크", pos: ["JNG", "TOP"], cc: 3, dmg: 1, tank: 9, profile: { type: "Dive", scale: 2 }, dmgType: "AP", phase: { early: 5, mid: 5, late: 5 } },
