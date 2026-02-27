@@ -4,7 +4,7 @@
     "teamId": "geng",
     "nick": "Kiin",
     "role": "TOP",
-    "photo": "assets/players/geng_kiin.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/65/GEN_Kiin_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "크산테",
       "잭스",
@@ -16,7 +16,7 @@
     "teamId": "geng",
     "nick": "Canyon",
     "role": "JNG",
-    "photo": "assets/players/geng_canyon.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/55/GEN_Canyon_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "니달리",
       "리 신",
@@ -28,7 +28,7 @@
     "teamId": "geng",
     "nick": "Chovy",
     "role": "MID",
-    "photo": "assets/players/geng_chovy.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/b3/GEN_Chovy_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "요네",
@@ -40,7 +40,7 @@
     "teamId": "geng",
     "nick": "Ruler",
     "role": "ADC",
-    "photo": "assets/players/geng_ruler.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e3/GEN_Ruler_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "자야",
       "카이사",
@@ -52,7 +52,7 @@
     "teamId": "geng",
     "nick": "Duro",
     "role": "SPT",
-    "photo": "assets/players/geng_duro.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/75/GEN_Duro_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "렐",
       "레오나",
@@ -64,7 +64,7 @@
     "teamId": "t1",
     "nick": "Doran",
     "role": "TOP",
-    "photo": "assets/players/t1_doran.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/de/T1_Doran_2026_LCK_Cup.png/revision/latest",
     "signatureChamps": [
       "그라가스",
       "잭스",
@@ -76,7 +76,7 @@
     "teamId": "t1",
     "nick": "Oner",
     "role": "JNG",
-    "photo": "assets/players/t1_oner.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d2/T1_Oner_2026_LCK_Cup.png/revision/latest",
     "signatureChamps": [
       "리 신",
       "신 짜오",
@@ -88,7 +88,7 @@
     "teamId": "t1",
     "nick": "Faker",
     "role": "MID",
-    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/5a/T1_Faker_2026_LCK_Cup.png/revision/latest/scale-to-width-down/220?cb=20260122163312",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/5a/T1_Faker_2026_LCK_Cup.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "오리아나",
@@ -100,7 +100,7 @@
     "teamId": "t1",
     "nick": "Peyz",
     "role": "ADC",
-    "photo": "assets/players/t1_peyz.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e9/T1_Peyz_2026_LCK_Cup.png/revision/latest",
     "signatureChamps": [
       "칼리스타",
       "아펠리오스",
@@ -112,7 +112,7 @@
     "teamId": "t1",
     "nick": "Keria",
     "role": "SPT",
-    "photo": "assets/players/t1_keria.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/da/T1_Keria_2026_LCK_Cup.png/revision/latest",
     "signatureChamps": [
       "바드",
       "쓰레쉬",
@@ -124,7 +124,7 @@
     "teamId": "hle",
     "nick": "Zeus",
     "role": "TOP",
-    "photo": "assets/players/hle_zeus.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/cf/HLE_Zeus_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "제이스",
       "요네",
@@ -136,7 +136,7 @@
     "teamId": "hle",
     "nick": "Kanavi",
     "role": "JNG",
-    "photo": "assets/players/hle_kanavi.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/1/14/HLE_Kanavi_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "오공",
       "벨베스",
@@ -148,7 +148,7 @@
     "teamId": "hle",
     "nick": "Zeka",
     "role": "MID",
-    "photo": "assets/players/hle_zeka.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/36/HLE_Zeka_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아칼리",
       "사일러스",
@@ -160,7 +160,7 @@
     "teamId": "hle",
     "nick": "Gumayusi",
     "role": "ADC",
-    "photo": "assets/players/hle_gumayusi.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/0/0e/HLE_Gumayusi_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "루시안",
       "바루스",
@@ -172,7 +172,7 @@
     "teamId": "hle",
     "nick": "Delight",
     "role": "SPT",
-    "photo": "assets/players/hle_delight.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/7b/HLE_Delight_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "라칸",
       "알리스타",
@@ -184,7 +184,7 @@
     "teamId": "dk",
     "nick": "Siwoo",
     "role": "TOP",
-    "photo": "assets/players/dk_siwoo.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/3e/DK_Siwoo_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "제이스",
       "그웬",
@@ -196,7 +196,7 @@
     "teamId": "dk",
     "nick": "Lucid",
     "role": "JNG",
-    "photo": "assets/players/dk_lucid.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d4/DK_Lucid_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "비에고",
       "리 신",
@@ -208,7 +208,7 @@
     "teamId": "dk",
     "nick": "ShowMaker",
     "role": "MID",
-    "photo": "assets/players/dk_showmaker.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e7/DK_ShowMaker_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "르블랑",
       "신드라",
@@ -220,7 +220,7 @@
     "teamId": "dk",
     "nick": "Smash",
     "role": "ADC",
-    "photo": "assets/players/dk_smash.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/77/DK_Smash_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "카이사",
       "이즈리얼",
@@ -232,7 +232,7 @@
     "teamId": "dk",
     "nick": "Career",
     "role": "SPT",
-    "photo": "assets/players/dk_career.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/f/f3/DK_Career_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "렐",
       "노틸러스",
@@ -244,7 +244,7 @@
     "teamId": "kt",
     "nick": "PerfecT",
     "role": "TOP",
-    "photo": "assets/players/kt_perfect.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/9/93/KT_PerfecT_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "크산테",
       "나르",
@@ -256,7 +256,7 @@
     "teamId": "kt",
     "nick": "Cuzz",
     "role": "JNG",
-    "photo": "assets/players/kt_cuzz.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/1/15/KT_Cuzz_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "뽀삐",
       "세주아니",
@@ -268,7 +268,7 @@
     "teamId": "kt",
     "nick": "Bdd",
     "role": "MID",
-    "photo": "assets/players/kt_bdd.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d8/KT_Bdd_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "탈리야",
@@ -280,7 +280,7 @@
     "teamId": "kt",
     "nick": "Aiming",
     "role": "ADC",
-    "photo": "assets/players/kt_aiming.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/9/99/KT_Aiming_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "제리",
       "카이사",
@@ -292,7 +292,7 @@
     "teamId": "kt",
     "nick": "Way",
     "role": "SPT",
-    "photo": "assets/players/kt_way.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/c4/KT.C_Way_2025_Split_3.png/revision/latest",
     "signatureChamps": [
       "레오나",
       "노틸러스",
@@ -304,7 +304,7 @@
     "teamId": "ns",
     "nick": "Kingen",
     "role": "TOP",
-    "photo": "assets/players/ns_kingen.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/b1/NS_Kingen_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아트록스",
       "오른",
@@ -316,7 +316,7 @@
     "teamId": "ns",
     "nick": "Sponge",
     "role": "JNG",
-    "photo": "assets/players/ns_sponge.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/a/ad/NS_Sponge_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "리 신",
       "비에고",
@@ -328,7 +328,7 @@
     "teamId": "ns",
     "nick": "Scout",
     "role": "MID",
-    "photo": "assets/players/ns_scout.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/8/8c/NS_Scout_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "오리아나",
@@ -340,7 +340,7 @@
     "teamId": "ns",
     "nick": "Taeyoon",
     "role": "ADC",
-    "photo": "assets/players/ns_taeyoon.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/cc/NS_Taeyoon_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "징크스",
       "아펠리오스",
@@ -352,7 +352,7 @@
     "teamId": "ns",
     "nick": "Lehends",
     "role": "SPT",
-    "photo": "assets/players/ns_lehends.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/da/NS_Lehends_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "신지드",
       "라칸",
@@ -364,7 +364,7 @@
     "teamId": "dnf",
     "nick": "DuDu",
     "role": "TOP",
-    "photo": "assets/players/dnf_dudu.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e5/DNS_DuDu_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "크산테",
       "잭스",
@@ -376,7 +376,7 @@
     "teamId": "dnf",
     "nick": "Pyosik",
     "role": "JNG",
-    "photo": "assets/players/dnf_pyosik.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/4/4c/DNS_Pyosik_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "킨드레드",
       "리 신",
@@ -388,7 +388,7 @@
     "teamId": "dnf",
     "nick": "Clozer",
     "role": "MID",
-    "photo": "assets/players/dnf_clozer.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/c7/DNS_Clozer_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "이렐리아",
       "아칼리",
@@ -400,7 +400,7 @@
     "teamId": "dnf",
     "nick": "deokdam",
     "role": "ADC",
-    "photo": "assets/players/dnf_deokdam.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/f/fb/DNS_deokdam_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아펠리오스",
       "이즈리얼",
@@ -412,7 +412,7 @@
     "teamId": "dnf",
     "nick": "Life",
     "role": "SPT",
-    "photo": "assets/players/dnf_life.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/6a/DNS_Life_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "세트",
       "갈리오",
@@ -424,7 +424,7 @@
     "teamId": "bfx",
     "nick": "Clear",
     "role": "TOP",
-    "photo": "assets/players/bfx_clear.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/8/83/BFX_Clear_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "럼블",
       "크산테",
@@ -436,7 +436,7 @@
     "teamId": "bfx",
     "nick": "Raptor",
     "role": "JNG",
-    "photo": "assets/players/bfx_raptor.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/9/9f/BFX_Raptor_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "마오카이",
       "뽀삐",
@@ -448,7 +448,7 @@
     "teamId": "bfx",
     "nick": "VicLa",
     "role": "MID",
-    "photo": "assets/players/bfx_vicla.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/3f/BFX_VicLa_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "사일러스",
       "요네",
@@ -460,7 +460,7 @@
     "teamId": "bfx",
     "nick": "Diable",
     "role": "ADC",
-    "photo": "assets/players/bfx_diable.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/6b/BFX_Diable_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "루시안",
       "카이사",
@@ -472,7 +472,7 @@
     "teamId": "bfx",
     "nick": "Kellin",
     "role": "SPT",
-    "photo": "assets/players/bfx_kellin.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/bc/BFX_Kellin_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "나미",
       "밀리오",
@@ -484,7 +484,7 @@
     "teamId": "drx",
     "nick": "Rich",
     "role": "TOP",
-    "photo": "assets/players/drx_rich.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/0/02/DRX_Rich_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아트록스",
       "그웬",
@@ -496,7 +496,7 @@
     "teamId": "drx",
     "nick": "Vincenzo",
     "role": "JNG",
-    "photo": "assets/players/drx_vincenzo.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/9/96/DRX_Vincenzo_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "리 신",
       "세주아니",
@@ -508,7 +508,7 @@
     "teamId": "drx",
     "nick": "Ucal",
     "role": "MID",
-    "photo": "assets/players/drx_ucal.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/ee/DRX_Ucal_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "야스오",
       "탈리야",
@@ -520,7 +520,7 @@
     "teamId": "drx",
     "nick": "Jiwoo",
     "role": "ADC",
-    "photo": "assets/players/drx_jiwoo.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d0/DRX_Jiwoo_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "닐라",
       "카이사",
@@ -532,7 +532,7 @@
     "teamId": "drx",
     "nick": "Andil",
     "role": "SPT",
-    "photo": "assets/players/drx_andil.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/9/92/DRX_Andil_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "렐",
       "노틸러스",
@@ -544,7 +544,7 @@
     "teamId": "bro",
     "nick": "Casting",
     "role": "TOP",
-    "photo": "assets/players/bro_casting.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/f/f5/BRO_Casting_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "잭스",
       "나르",
@@ -556,7 +556,7 @@
     "teamId": "bro",
     "nick": "GIDEON",
     "role": "JNG",
-    "photo": "assets/players/bro_gideon.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d6/BRO_GIDEON_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "킨드레드",
       "니달리",
@@ -568,7 +568,7 @@
     "teamId": "bro",
     "nick": "Fisher",
     "role": "MID",
-    "photo": "assets/players/bro_fisher.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/cc/BRO_Fisher_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "아칼리",
@@ -580,7 +580,7 @@
     "teamId": "bro",
     "nick": "Teddy",
     "role": "ADC",
-    "photo": "assets/players/bro_teddy.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/bc/BRO_Teddy_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "이즈리얼",
       "진",
@@ -592,7 +592,7 @@
     "teamId": "bro",
     "nick": "Namgung",
     "role": "SPT",
-    "photo": "assets/players/bro_namgung.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d8/BRO_Namgung_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "브라움",
       "렐",
@@ -604,7 +604,7 @@
     "teamId": "blg",
     "nick": "Bin",
     "role": "TOP",
-    "photo": "assets/players/blg_bin.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/1/18/BLG_Bin_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "잭스",
       "카밀",
@@ -616,7 +616,7 @@
     "teamId": "blg",
     "nick": "Xun",
     "role": "JNG",
-    "photo": "assets/players/blg_xun.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/7c/BLG_Xun_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "킨드레드",
       "니달리",
@@ -628,7 +628,7 @@
     "teamId": "blg",
     "nick": "Knight",
     "role": "MID",
-    "photo": "assets/players/blg_knight.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/ec/BLG_Knight_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "신드라",
       "아리",
@@ -640,7 +640,7 @@
     "teamId": "blg",
     "nick": "Viper",
     "role": "ADC",
-    "photo": "assets/players/blg_viper.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/3b/BLG_Viper_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아펠리오스",
       "루시안",
@@ -652,7 +652,7 @@
     "teamId": "blg",
     "nick": "ON",
     "role": "SPT",
-    "photo": "assets/players/blg_on.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e8/BLG_ON_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "라칸",
       "블리츠크랭크",
@@ -664,7 +664,7 @@
     "teamId": "tes",
     "nick": "369",
     "role": "TOP",
-    "photo": "assets/players/tes_369.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/6f/TES_369_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "크산테",
       "잭스",
@@ -676,7 +676,7 @@
     "teamId": "tes",
     "nick": "naiyou",
     "role": "JNG",
-    "photo": "assets/players/tes_naiyou.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/cf/TES_naiyou_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "리 신",
       "비에고",
@@ -688,7 +688,7 @@
     "teamId": "tes",
     "nick": "Creme",
     "role": "MID",
-    "photo": "assets/players/tes_creme.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/4/49/TES_Creme_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아칼리",
       "트리스타나",
@@ -700,7 +700,7 @@
     "teamId": "tes",
     "nick": "JackeyLove",
     "role": "ADC",
-    "photo": "assets/players/tes_jackeylove.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/1/1f/TES_JackeyLove_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "드레이븐",
       "바루스",
@@ -712,7 +712,7 @@
     "teamId": "tes",
     "nick": "Hang",
     "role": "SPT",
-    "photo": "assets/players/tes_hang.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/f/f4/TES_Hang_2025_Worlds.png/revision/latest",
     "signatureChamps": [
       "노틸러스",
       "라칸",
@@ -724,7 +724,7 @@
     "teamId": "wbg",
     "nick": "zika",
     "role": "TOP",
-    "photo": "assets/players/wbg_zika.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/52/WBG_Zika_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "잭스",
       "크산테",
@@ -736,7 +736,7 @@
     "teamId": "wbg",
     "nick": "jiejie",
     "role": "JNG",
-    "photo": "assets/players/wbg_jiejie.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/58/WBG_Jiejie_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "마오카이",
       "세주아니",
@@ -748,7 +748,7 @@
     "teamId": "wbg",
     "nick": "Xiaohu",
     "role": "MID",
-    "photo": "assets/players/wbg_xiaohu.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/b0/WBG_Xiaohu_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "오리아나",
@@ -760,7 +760,7 @@
     "teamId": "wbg",
     "nick": "Elk",
     "role": "ADC",
-    "photo": "assets/players/wbg_elk.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/5d/WBG_Elk_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "징크스",
       "제리",
@@ -772,7 +772,7 @@
     "teamId": "wbg",
     "nick": "erha",
     "role": "SPT",
-    "photo": "assets/players/wbg_erha.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/2/22/WBG_Erha_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "렐",
       "레오나",
@@ -784,7 +784,7 @@
     "teamId": "jdg",
     "nick": "Xiaoxu",
     "role": "TOP",
-    "photo": "assets/players/jdg_xiaoxu.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/4/4b/JDG_Xiaoxu_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "잭스",
       "그웬",
@@ -796,7 +796,7 @@
     "teamId": "jdg",
     "nick": "Junjia",
     "role": "JNG",
-    "photo": "assets/players/jdg_junjia.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/54/JDG_JunJia_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "세주아니",
       "마오카이",
@@ -808,7 +808,7 @@
     "teamId": "jdg",
     "nick": "HongQ",
     "role": "MID",
-    "photo": "assets/players/jdg_hongq.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/2/2d/JDG_HongQ_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "오리아나",
@@ -820,7 +820,7 @@
     "teamId": "jdg",
     "nick": "GALA",
     "role": "ADC",
-    "photo": "assets/players/jdg_gala.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/1/16/JDG_GALA_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "카이사",
       "자야",
@@ -832,7 +832,7 @@
     "teamId": "jdg",
     "nick": "Vampire",
     "role": "SPT",
-    "photo": "assets/players/jdg_vampire.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d0/JDG_Vampire_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "라칸",
       "노틸러스",
@@ -844,7 +844,7 @@
     "teamId": "g2",
     "nick": "BrokenBlade",
     "role": "TOP",
-    "photo": "assets/players/g2_brokenblade.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/53/G2_BrokenBlade_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "야스오",
       "자크",
@@ -856,7 +856,7 @@
     "teamId": "g2",
     "nick": "SkewMond",
     "role": "JNG",
-    "photo": "assets/players/g2_skewmond.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/0/00/G2_SkewMond_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아이번",
       "리 신",
@@ -868,7 +868,7 @@
     "teamId": "g2",
     "nick": "Caps",
     "role": "MID",
-    "photo": "assets/players/g2_caps.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/6a/G2_Caps_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "사일러스",
       "르블랑",
@@ -880,7 +880,7 @@
     "teamId": "g2",
     "nick": "Hans Sama",
     "role": "ADC",
-    "photo": "assets/players/g2_hanssama.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/d/d9/G2_Hans_Sama_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "드레이븐",
       "칼리스타",
@@ -892,7 +892,7 @@
     "teamId": "g2",
     "nick": "Labrov",
     "role": "SPT",
-    "photo": "assets/players/g2_labrov.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/62/G2_Labrov_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "라칸",
       "블리츠크랭크",
@@ -904,7 +904,7 @@
     "teamId": "fnc",
     "nick": "Empyros",
     "role": "TOP",
-    "photo": "assets/players/fnc_empyros.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/0/02/FNC_Empyros_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "잭스",
       "그웬",
@@ -916,7 +916,7 @@
     "teamId": "fnc",
     "nick": "Razork",
     "role": "JNG",
-    "photo": "assets/players/fnc_razork.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/5/5a/FNC_Razork_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "뽀삐",
       "신 짜오",
@@ -928,7 +928,7 @@
     "teamId": "fnc",
     "nick": "Vladi",
     "role": "MID",
-    "photo": "assets/players/fnc_vladi.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/1/16/FNC_Vladi_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아칼리",
       "요네",
@@ -940,7 +940,7 @@
     "teamId": "fnc",
     "nick": "Upset",
     "role": "ADC",
-    "photo": "assets/players/fnc_upset.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/a/a8/FNC_Upset_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "이즈리얼",
       "제리",
@@ -952,7 +952,7 @@
     "teamId": "fnc",
     "nick": "Lospa",
     "role": "SPT",
-    "photo": "assets/players/fnc_lospa.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/8/8c/FNC_Lospa_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "렐",
       "레오나",
@@ -964,7 +964,7 @@
     "teamId": "kc",
     "nick": "Canna",
     "role": "TOP",
-    "photo": "assets/players/kc_canna.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/61/KC_Canna_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "제이스",
       "나르",
@@ -976,7 +976,7 @@
     "teamId": "kc",
     "nick": "Yike",
     "role": "JNG",
-    "photo": "assets/players/kc_yike.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/3f/KC_Yike_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "벨베스",
       "니달리",
@@ -988,7 +988,7 @@
     "teamId": "kc",
     "nick": "Kyeahoo",
     "role": "MID",
-    "photo": "assets/players/kc_kyeahoo.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/b6/KC_kyeahoo_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "트리스타나",
@@ -1000,7 +1000,7 @@
     "teamId": "kc",
     "nick": "Caliste",
     "role": "ADC",
-    "photo": "assets/players/kc_caliste.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/b0/KC_Caliste_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "칼리스타",
       "카이사",
@@ -1012,7 +1012,7 @@
     "teamId": "kc",
     "nick": "Busio",
     "role": "SPT",
-    "photo": "assets/players/kc_busio.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/a/a3/KC_Busio_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "라칸",
       "파이크",
@@ -1024,7 +1024,7 @@
     "teamId": "c9",
     "nick": "Thanatos",
     "role": "TOP",
-    "photo": "assets/players/c9_thanatos.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/65/C9_Thanatos_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "크산테",
       "잭스",
@@ -1036,7 +1036,7 @@
     "teamId": "c9",
     "nick": "Blaber",
     "role": "JNG",
-    "photo": "assets/players/c9_blaber.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/4/4f/C9_Blaber_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "킨드레드",
       "올라프",
@@ -1048,7 +1048,7 @@
     "teamId": "c9",
     "nick": "APA",
     "role": "MID",
-    "photo": "assets/players/c9_apa.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/37/C9_APA_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "직스",
       "아우렐리온 솔",
@@ -1060,7 +1060,7 @@
     "teamId": "c9",
     "nick": "Zven",
     "role": "ADC",
-    "photo": "assets/players/c9_zven.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/61/C9_Zven_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "바루스",
       "이즈리얼",
@@ -1072,7 +1072,7 @@
     "teamId": "c9",
     "nick": "Vulcan",
     "role": "SPT",
-    "photo": "assets/players/c9_vulcan.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/a/a1/C9_Vulcan_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "알리스타",
       "렐",
@@ -1084,7 +1084,7 @@
     "teamId": "tl",
     "nick": "Morgan",
     "role": "TOP",
-    "photo": "assets/players/tl_morgan.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/3a/TL_Morgan_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "레넥톤",
       "오른",
@@ -1096,7 +1096,7 @@
     "teamId": "tl",
     "nick": "Josedeodo",
     "role": "JNG",
-    "photo": "assets/players/tl_josedeodo.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/f/fb/TL_Josedeodo_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "리 신",
       "신 짜오",
@@ -1108,7 +1108,7 @@
     "teamId": "tl",
     "nick": "Quid",
     "role": "MID",
-    "photo": "assets/players/tl_quid.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/c9/TL_Quid_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "아지르",
       "탈리야",
@@ -1120,7 +1120,7 @@
     "teamId": "tl",
     "nick": "Yeon",
     "role": "ADC",
-    "photo": "assets/players/tl_yeon.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/ef/TL_Yeon_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "이즈리얼",
       "바루스",
@@ -1132,7 +1132,7 @@
     "teamId": "tl",
     "nick": "CoreJJ",
     "role": "SPT",
-    "photo": "assets/players/tl_corejj.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/8/80/TL_CoreJJ_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "라칸",
       "렐",
@@ -1144,7 +1144,7 @@
     "teamId": "fly",
     "nick": "Gakgos",
     "role": "TOP",
-    "photo": "assets/players/fly_gakgos.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/f/f9/FLY_Gakgos_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "오른",
       "레넥톤",
@@ -1156,7 +1156,7 @@
     "teamId": "fly",
     "nick": "Gryffinn",
     "role": "JNG",
-    "photo": "assets/players/fly_gryffinn.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/a/a4/FLY_Gryffinn_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "리 신",
       "오공",
@@ -1168,7 +1168,7 @@
     "teamId": "fly",
     "nick": "Quad",
     "role": "MID",
-    "photo": "assets/players/fly_quad.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/bb/FLY_Quad_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "코르키",
       "오리아나",
@@ -1180,7 +1180,7 @@
     "teamId": "fly",
     "nick": "Massu",
     "role": "ADC",
-    "photo": "assets/players/fly_massu.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/bc/FLY_Massu_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "바루스",
       "이즈리얼",
@@ -1192,7 +1192,7 @@
     "teamId": "fly",
     "nick": "Cryogen",
     "role": "SPT",
-    "photo": "assets/players/fly_cryogen.webp",
+    "photo": "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/9/9e/FLY_Cryogen_2026_Split_1.png/revision/latest",
     "signatureChamps": [
       "렐",
       "노틸러스",

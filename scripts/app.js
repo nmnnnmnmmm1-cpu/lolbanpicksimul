@@ -4,8 +4,8 @@ const CHAMP_IMG_KEY_MAP = {
     Ksante: "KSante"
 };
 const CUSTOM_CHAMP_IMG_MAP = {
-    Yunara: "assets/champions/yunara.svg",
-    Jahen: "assets/champions/jahen.svg"
+    Yunara: "https://i.namu.wiki/i/ZQDhyfCrBAAUO5z3uzf3hEVFgm91ZgpSgKIvrPZ_e8b1onFSIBhTYSf6dh_7jNzZ29GD7REwGlBmCa_jsKInLA.webp",
+    Jahen: "https://i.namu.wiki/i/-t-BQEioe2UV_OlqmYLkBScLVwk0Ilg-aoluyjYsSWup9rEN5DF4Vq70GoAgHJPC0FoMcw1REcmM_iCRCmyQ0Q.webp"
 };
 const TYPE_LABEL = {
     Dive: "돌진",
@@ -816,7 +816,7 @@ async function loadWorldsData() {
     try {
         const [teams, players, rosters] = await Promise.all([
             loadJson("data/teams.json?v=20260224-9"),
-            loadJson("data/players.json?v=20260224-9"),
+            loadJson("data/players.json?v=20260228-01"),
             loadJson("data/worlds_roster.json?v=20260224-9")
         ]);
         worldsTeams = Array.isArray(teams) ? teams : [];

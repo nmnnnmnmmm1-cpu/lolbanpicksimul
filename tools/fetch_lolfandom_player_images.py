@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import re
 import ssl
@@ -21,7 +22,6 @@ TITLE_ALIAS_BY_NICK = {
     "DuDu": "Dudu",
     "Junjia": "JunJia",
 }
-
 
 # Force a specific LOL Fandom page title per player id when needed.
 # Example: "t1_faker": "Faker (Lee Sang-hyeok)"
@@ -83,6 +83,10 @@ def is_bad_image(url: str) -> bool:
         "favicon",
         "social-default-image",
         "site-logo",
+        "icon",
+        "wordmark",
+        "twitter",
+        "facebook",
     ]
     return any(tok in low for tok in bad_tokens)
 
@@ -151,21 +155,53 @@ def is_player_infobox(block: str) -> bool:
     return hit >= 2
 
 
+def score_image_url(url: str) -> tuple:
+    u = (url or "").lower()
+    years = [int(y) for y in re.findall(r"20\d{2}", u)]
+    year_score = max(years) if years else 0
+    bonus = 0
+    if any(t in u for t in ["2026", "2025", "2024"]):
+        bonus += 30
+    if any(t in u for t in ["lck", "lec", "lpl", "cup", "split", "world", "msi"]):
+        bonus += 5
+    if any(t in u for t in ["icon", "logo", "flag", "emote", "wordmark"]):
+        bonus -= 200
+    return (year_score, bonus, len(url))
+
+
 def extract_infobox_image(page_html: str) -> str:
     block = get_infobox_block(page_html)
     if not block:
         return ""
+
+    candidates = []
     for attr in ["data-src", "srcset", "src"]:
-        mm = re.search(rf"{attr}\\s*=\\s*\"([^\"]+)\"", block, flags=re.IGNORECASE)
-        if not mm:
+        for mm in re.finditer(rf"{attr}\s*=\s*\"([^\"]+)\"", block, flags=re.IGNORECASE):
+            raw = html.unescape(mm.group(1)).strip()
+            if attr == "srcset":
+                for part in raw.split(","):
+                    token = part.strip().split(" ")[0].strip()
+                    src = clean_image_url(token)
+                    if src and not is_bad_image(src):
+                        candidates.append(src)
+            else:
+                src = clean_image_url(raw)
+                if src and not is_bad_image(src):
+                    candidates.append(src)
+
+    uniq = []
+    seen = set()
+    for c in candidates:
+        if c in seen:
             continue
-        raw = html.unescape(mm.group(1)).strip()
-        if attr == "srcset":
-            raw = raw.split(",")[0].strip().split(" ")[0].strip()
-        src = clean_image_url(raw)
-        if src and not is_bad_image(src):
-            return src
-    return ""
+        seen.add(c)
+        uniq.append(c)
+
+    if not uniq:
+        return ""
+
+    uniq.sort(key=score_image_url, reverse=True)
+    return uniq[0]
 
 
 def search_titles(nick: str, limit: int = 10):
@@ -261,13 +297,19 @@ def resolve_player_image(pid: str, nick: str) -> str:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Fetch LOL Fandom player images and update players.json")
+    parser.add_argument("--remote-url", action="store_true", help="Store remote fandom image URL directly in players.json")
+    parser.add_argument("--sleep", type=float, default=0.05, help="Delay between players (seconds)")
+    args = parser.parse_args()
+
     if not PLAYERS_JSON.exists():
         raise SystemExit(f"players.json not found: {PLAYERS_JSON}")
 
     with PLAYERS_JSON.open("r", encoding="utf-8") as f:
         players = json.load(f)
 
-    ASSET_DIR.mkdir(parents=True, exist_ok=True)
+    if not args.remote_url:
+        ASSET_DIR.mkdir(parents=True, exist_ok=True)
 
     total = len(players)
     ok = 0
@@ -286,36 +328,41 @@ def main():
             if not image_url:
                 fail += 1
                 print(f"[FAIL] {nick} ({pid}) - image not found")
-                time.sleep(0.06)
+                time.sleep(args.sleep)
                 continue
 
-            img_bytes, ctype = fetch_bytes(image_url)
-            ext = ext_from(ctype, image_url)
-            out_path = ASSET_DIR / f"{pid}{ext}"
-            with out_path.open("wb") as f:
-                f.write(img_bytes)
+            if args.remote_url:
+                p["photo"] = image_url
+                ok += 1
+                print(f"[OK] {nick} -> {image_url}")
+            else:
+                img_bytes, ctype = fetch_bytes(image_url)
+                ext = ext_from(ctype, image_url)
+                out_path = ASSET_DIR / f"{pid}{ext}"
+                with out_path.open("wb") as f:
+                    f.write(img_bytes)
 
-            for e in [".png", ".jpg", ".webp"]:
-                other = ASSET_DIR / f"{pid}{e}"
-                if other != out_path and other.exists():
-                    other.unlink()
+                for e in [".png", ".jpg", ".webp"]:
+                    other = ASSET_DIR / f"{pid}{e}"
+                    if other != out_path and other.exists():
+                        other.unlink()
 
-            rel = out_path.relative_to(ROOT).as_posix()
-            p["photo"] = rel
-            ok += 1
-            print(f"[OK] {nick} -> {rel}")
+                rel = out_path.relative_to(ROOT).as_posix()
+                p["photo"] = rel
+                ok += 1
+                print(f"[OK] {nick} -> {rel}")
         except Exception as e:
             fail += 1
             print(f"[ERR] {nick} ({pid}) - {e}")
 
-        time.sleep(0.05)
+        time.sleep(args.sleep)
 
     with PLAYERS_JSON.open("w", encoding="utf-8") as f:
         json.dump(players, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
     print("\n=== SUMMARY ===")
-    print(f"total: {total}, ok: {ok}, fail: {fail}")
+    print(f"total: {total}, ok: {ok}, fail: {fail}, mode={'remote-url' if args.remote_url else 'download'}")
 
 
 if __name__ == "__main__":
