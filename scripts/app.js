@@ -124,6 +124,35 @@ function getTraitsByChampionName(champName) {
     return normalizedKey ? TRAIT_DB[normalizedKey] : [];
 }
 
+function conditionMentionsChampion(conditionText, champName) {
+    const raw = String(conditionText || "");
+    const target = String(champName || "");
+    if (!raw || !target) return false;
+    if (raw.includes(target)) return true;
+    const normalize = (v) => String(v || "").toLowerCase().replace(/\s+/g, "");
+    return normalize(raw).includes(normalize(target));
+}
+
+function getLinkedTraitsByChampionName(champName) {
+    const target = String(champName || "");
+    if (!target || !TRAIT_DB || typeof TRAIT_DB !== "object") return [];
+    const out = [];
+    const targetNorm = normalizeNameToken(target);
+    Object.entries(TRAIT_DB).forEach(([ownerName, list]) => {
+        if (normalizeNameToken(ownerName) === targetNorm) return;
+        (Array.isArray(list) ? list : []).forEach((trait) => {
+            if (!trait || !conditionMentionsChampion(trait.condition, target)) return;
+            out.push({
+                champName: ownerName,
+                name: trait.name || "연계 특성",
+                condition: trait.condition || "발동 조건 충족",
+                effect: trait.effect || "효과 데이터 없음"
+            });
+        });
+    });
+    return out;
+}
+
 function getTraitRule(champName, traitName) {
     const level = TRAIT_DIFFICULTY_MAP[`${champName}|${traitName}`] || "medium";
     const rule = TRAIT_RULE_TABLE[level] || TRAIT_RULE_TABLE.medium;
@@ -921,7 +950,6 @@ function renderWorldsSlotHints() {
             chipEl.classList.remove("off");
         });
     });
-    renderWorldsSlotHints();
 }
 
 function formatTimeLabel(ts) {
@@ -2096,12 +2124,6 @@ async function runAiBalanceSimulation(rounds = 20) {
 
 
 function openHome(showTutorialOnHome = true) {
-    renderHomeStats();
-    renderHomeHistory();
-    applyTeamNameInputs();
-    applyRemoteConfigInputs();
-    updateWorldsChallengeButtonState();
-    shouldResetOnStrategyConfirm = true;
     setDisplayById("home-page", "flex");
     setDisplayById("game-shell", "none");
     setDisplayById("side-select-modal", "none");
@@ -2113,10 +2135,20 @@ function openHome(showTutorialOnHome = true) {
     setDisplayById("worlds-challenge-live-modal", "none");
     setDisplayById("champ-stats-modal", "none");
     setDisplayById("ai-balance-modal", "none");
-    applyWorldsTeamColors();
-    refreshRemoteHistory();
-    if (showTutorialOnHome) {
-        openTutorial();
+    shouldResetOnStrategyConfirm = true;
+    try {
+        renderHomeStats();
+        renderHomeHistory();
+        applyTeamNameInputs();
+        applyRemoteConfigInputs();
+        updateWorldsChallengeButtonState();
+        applyWorldsTeamColors();
+        refreshRemoteHistory();
+        if (showTutorialOnHome) {
+            openTutorial();
+        }
+    } catch (err) {
+        console.error("[HOME] 홈 화면 렌더 중 오류", err);
     }
 }
 
@@ -2343,7 +2375,8 @@ function renderTraitBlock(opts) {
 
 function renderChampionTraitInfo(champName) {
     const traits = getTraitsByChampionName(champName);
-    if (traits.length === 0) {
+    const linkedTraits = getLinkedTraitsByChampionName(champName);
+    if (traits.length === 0 && linkedTraits.length === 0) {
         return `
         <div class="tip-trait-box">
             <div class="tip-trait-title">고유 특성</div>
@@ -2351,17 +2384,37 @@ function renderChampionTraitInfo(champName) {
         </div>
         `;
     }
-    return `
-    <div class="tip-trait-box">
-        <div class="tip-trait-title">고유 특성</div>
-        ${traits.map((t) => renderTraitBlock({
+
+    const ownHtml = traits.length > 0
+        ? `${traits.map((t) => renderTraitBlock({
             champName,
             traitName: t.name,
             condition: t.condition,
             effect: t.effect,
             wrapperClass: "tip-trait-item",
             showOwner: false
-        })).join("")}
+        })).join("")}`
+        : '<div class="tip-trait-empty">이 챔피언의 고유 특성은 없습니다.</div>';
+
+    const linkedHtml = linkedTraits.length > 0
+        ? `
+            <div class="tip-trait-subtitle">연계 발동 특성</div>
+            ${linkedTraits.map((t) => renderTraitBlock({
+                champName: t.champName,
+                traitName: t.name,
+                condition: t.condition,
+                effect: t.effect,
+                wrapperClass: "tip-trait-item tip-trait-related",
+                showOwner: true
+            })).join("")}
+        `
+        : '';
+
+    return `
+    <div class="tip-trait-box">
+        <div class="tip-trait-title">고유 특성</div>
+        ${ownHtml}
+        ${linkedHtml}
     </div>
     `;
 }
@@ -4046,9 +4099,16 @@ function evaluateWorldsContext(picksState, sourceStats) {
 
 function getCorePenalty(stats) {
     let penalty = 0;
-    if (stats.dmg < 20) penalty -= 16 + (20 - stats.dmg) * 1.3;
-    if (stats.tank < 20) penalty -= 16 + (20 - stats.tank) * 1.2;
-    if (stats.cc <= 5) penalty -= 14 + (5 - stats.cc) * 2.0;
+
+    // 딜링 미달: 25점 기준 (강력한 딜러진 요구)
+    if (stats.dmg < 25) penalty -= 16 + (25 - stats.dmg) * 1.5;
+
+    // 탱킹 미달: 20점 기준 (최소한의 앞라인 요구 - 브루저 조합 허용)
+    if (stats.tank < 20) penalty -= 16 + (20 - stats.tank) * 1.5;
+
+    // CC 미달: 7점 기준 (하드 CC기 필수)
+    if (stats.cc <= 7) penalty -= 14 + (7 - stats.cc) * 2.5;
+
     return penalty;
 }
 
@@ -4115,14 +4175,32 @@ function getWinRateDetails(b, r) {
     const blueTeamScore = b.dmg + b.tank + b.cc * 3;
     const redTeamScore = r.dmg + r.tank + r.cc * 3;
     const powerEdge = blueTeamScore - redTeamScore;
+    const corePenaltyBlue = getCorePenalty(b);
+    const corePenaltyRed = getCorePenalty(r);
+    const corePenaltyEdge = corePenaltyBlue - corePenaltyRed;
     const dmgBalanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
     const bMain = getDominantProfile(b);
     const rMain = getDominantProfile(r);
     const archetypeEdge = getArchetypeCounterBonus(bMain.type, bMain.value, rMain.type, rMain.value);
     const scalingEdge = getScalingEdge(b, r);
     const volatilityEdge = getVolatilityEdge(powerEdge, archetypeEdge, scalingEdge);
-    const blueWin = clampPercent(calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge) + scalingEdge + volatilityEdge);
-    return { blueWin, powerEdge, dmgBalanceEdge, archetypeEdge, scalingEdge, volatilityEdge };
+    const blueWin = clampPercent(
+        calcWinRateFromEdges(powerEdge, dmgBalanceEdge, archetypeEdge)
+        + corePenaltyEdge
+        + scalingEdge
+        + volatilityEdge
+    );
+    return {
+        blueWin,
+        powerEdge,
+        corePenaltyBlue,
+        corePenaltyRed,
+        corePenaltyEdge,
+        dmgBalanceEdge,
+        archetypeEdge,
+        scalingEdge,
+        volatilityEdge
+    };
 }
 
 function getPhaseProjection(b, r, overallWin) {
@@ -4130,15 +4208,17 @@ function getPhaseProjection(b, r, overallWin) {
     const rMain = getDominantProfile(r);
     const dmgBalanceEdge = getDamageBalanceBonus(b) - getDamageBalanceBonus(r);
     const archetypeEdge = getArchetypeCounterBonus(bMain.type, bMain.value, rMain.type, rMain.value);
+    const corePenaltyEdge = getCorePenalty(b) - getCorePenalty(r);
 
     // Step 2/3/4를 Early/Mid/Late에 각각 적용
     const earlyPowerEdge = (b.early * 2 + b.cc * 3) - (r.early * 2 + r.cc * 3);
     const midPowerEdge = (b.mid * 2 + b.cc * 3) - (r.mid * 2 + r.cc * 3);
     const latePowerEdge = (b.late * 2 + b.cc * 3) - (r.late * 2 + r.cc * 3);
 
-    const earlyWinRaw = calcWinRateFromEdges(earlyPowerEdge, dmgBalanceEdge, archetypeEdge);
-    const midWinRaw = calcWinRateFromEdges(midPowerEdge, dmgBalanceEdge, archetypeEdge);
-    const lateWinRaw = calcWinRateFromEdges(latePowerEdge, dmgBalanceEdge, archetypeEdge);
+    const phaseCoreEdge = corePenaltyEdge * 0.6;
+    const earlyWinRaw = calcWinRateFromEdges(earlyPowerEdge, dmgBalanceEdge, archetypeEdge) + phaseCoreEdge;
+    const midWinRaw = calcWinRateFromEdges(midPowerEdge, dmgBalanceEdge, archetypeEdge) + phaseCoreEdge;
+    const lateWinRaw = calcWinRateFromEdges(latePowerEdge, dmgBalanceEdge, archetypeEdge) + phaseCoreEdge;
 
     // 전체 기대승률과 완전히 분리되지 않도록 약하게 섞음
     const earlyWin = clampPercent(earlyWinRaw * 0.75 + overallWin * 0.25);

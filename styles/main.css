@@ -1883,6 +1883,13 @@ body {
     font-weight: 700;
     margin-bottom: 4px;
 }
+.tip-trait-subtitle {
+    margin-top: 7px;
+    margin-bottom: 4px;
+    font-size: 10px;
+    color: #9fc1d8;
+    font-weight: 700;
+}
 .tip-trait-item {
     display: flex;
     flex-direction: column;
@@ -1891,6 +1898,7 @@ body {
     border-bottom: 1px dashed #2a3b46;
 }
 .tip-trait-item .trait-owner { display: none !important; }
+.tip-trait-item.tip-trait-related .trait-owner { display: inline !important; color:#a9bfd0; font-size:10px; }
 .tip-trait-item:last-child { border-bottom: 0; }
 .tip-trait-empty { font-size: 10px; color: #7f95a3; }
 .cc-pips { display:inline-flex; gap:4px; align-items:center; }
