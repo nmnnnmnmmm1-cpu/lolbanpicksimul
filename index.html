@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>LoL Pro Draft Simulator v0.2 (beta)</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles/main.css?v=20260227-16">
+    <link rel="stylesheet" href="styles/main.css?v=20260227-17">
 </head>
 <body>
 
@@ -220,6 +220,15 @@
         <div id="player-info-body" class="player-info-body"></div>
     </div>
 </div>
+<div id="graph-help-modal">
+    <div class="graph-help-card">
+        <div class="graph-help-title">그래프 설명</div>
+        <div id="graph-help-body" class="graph-help-body"></div>
+        <div class="graph-help-actions">
+            <button type="button" class="tutorial-btn" onclick="closeGraphHelp()">닫기</button>
+        </div>
+    </div>
+</div>
 <div id="side-select-modal">
     <div class="side-select-card">
         <h2 class="side-title" id="side-title">모드 선택됨</h2>
@@ -368,6 +377,6 @@
 
 <script src="data/champions.js?v=20260227-11"></script>
 <script src="data/traits.js?v=20260227-11"></script>
-<script src="scripts/app.js?v=20260227-16"></script>
+<script src="scripts/app.js?v=20260227-17"></script>
 </body>
 </html>

@@ -371,9 +371,11 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    width: 78px;
-    min-width: 78px;
+    width: 92px;
+    min-width: 92px;
     cursor: pointer;
+    position: relative;
+    z-index: 3;
 }
 
 .player-chip.off {
@@ -385,8 +387,8 @@ body {
 }
 
 .player-photo {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     object-fit: cover;
     border: 1px solid #4a6272;
@@ -401,7 +403,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 76px;
+    max-width: 90px;
     text-align: center;
 }
 
@@ -424,22 +426,22 @@ body {
     align-items: center;
     gap: 4px;
     min-width: 0;
-    width: 86px;
-    min-width: 86px;
+    width: 102px;
+    min-width: 102px;
 }
 
 .slot.worlds-mode-slot .player-photo {
-    width: 44px;
-    height: 44px;
-    border-radius: 9px;
+    width: 58px;
+    height: 58px;
+    border-radius: 10px;
     border-color: #5d7c8f;
 }
 
 .slot.worlds-mode-slot .player-nick {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
     color: #e6f0f6;
-    max-width: 84px;
+    max-width: 98px;
 }
 
 .slot.worlds-mode-slot .champ-img {
@@ -473,11 +475,23 @@ body {
 
 .pos-indicator {
     position: absolute;
-    top: 5px;
-    left: 10px;
+    top: -10px;
     font-size: 10px;
     color: var(--gold);
     font-weight: bold;
+    border: 1px solid #5a4930;
+    border-radius: 999px;
+    background: #1a1711;
+    padding: 1px 7px;
+    z-index: 4;
+}
+.pos-indicator-blue {
+    right: -8px;
+    left: auto;
+}
+.pos-indicator-red {
+    left: -8px;
+    right: auto;
 }
 
 .champ-img {
@@ -772,7 +786,7 @@ body {
 .synergy-wrap.blue .synergy-fill { background: linear-gradient(90deg, #2ab2ff, #6ad5ff); }
 .synergy-wrap.red .synergy-fill { background: linear-gradient(90deg, #ff6a5b, #ff9f80); }
 
-.radar-wrap { margin-top: 8px; border: 1px solid #2e414f; border-radius: 8px; background: #0e171f; padding: 6px; }
+.radar-wrap { margin-top: 8px; border: 1px solid #2e414f; border-radius: 8px; background: #0e171f; padding: 6px; position: relative; }
 .radar-svg { width: 100%; height: 190px; }
 .radar-meta {
     display: flex;
@@ -802,6 +816,7 @@ body {
     border-radius: 8px;
     background: #0f171e;
     padding: 6px;
+    position: relative;
 }
 .team-power-title {
     font-size: 11px;
@@ -816,6 +831,30 @@ body {
 .team-power-value { fill: #edf5fa; font-size: 10px; }
 .team-power-wrap.blue .team-power-line { stroke: #53c4ff; }
 .team-power-wrap.red .team-power-line { stroke: #ff8f7f; }
+
+.graph-help-btn {
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #486072;
+    background: #13222d;
+    color: #d6e4ee;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 2;
+}
+.graph-help-btn:hover {
+    border-color: #c8aa6e;
+    color: #ffe8b0;
+}
 
 .team-summary {
     margin-top: 8px;
@@ -884,7 +923,8 @@ body {
 #strategy-modal,
 #worlds-modal,
 #champ-stats-modal,
-#player-info-modal {
+#player-info-modal,
+#graph-help-modal {
     position: fixed;
     inset: 0;
     display: none;
@@ -902,6 +942,7 @@ body {
 #worlds-challenge-live-modal { z-index: 3310; }
 #champ-stats-modal { z-index: 3380; }
 #player-info-modal { z-index: 3390; }
+#graph-help-modal { z-index: 3395; }
 
 .home-card {
     width: min(760px, 92vw);
@@ -1336,6 +1377,30 @@ body {
     font-size: 11px;
     color: #f5a7a7;
     font-weight: 700;
+}
+
+.graph-help-card {
+    width: min(420px, 90vw);
+    background: linear-gradient(180deg, #14202a, #0d151c);
+    border: 1px solid #3d5363;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+}
+.graph-help-title {
+    color: #ffe6a8;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.graph-help-body {
+    color: #d3e1ea;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.graph-help-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .tutorial-title { margin: 0 0 8px; color: var(--gold); font-size: 22px; }
@@ -2025,9 +2090,9 @@ body {
         font-size: 12px;
         font-weight: 700;
     }
-    .player-chip { width: 60px; min-width: 60px; gap: 2px; }
-    .player-photo { width: 24px; height: 24px; border-radius: 7px; }
-    .player-nick { font-size: 9px; max-width: 58px; }
+    .player-chip { width: 72px; min-width: 72px; gap: 2px; }
+    .player-photo { width: 30px; height: 30px; border-radius: 8px; }
+    .player-nick { font-size: 10px; max-width: 70px; }
     .player-note {
         font-size: 8px;
         max-width: 120px;

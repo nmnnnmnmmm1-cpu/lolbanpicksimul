@@ -992,7 +992,8 @@ function getWorldsStyleBonusLine(style) {
 }
 
 function getPlayerBonusSummary(team, pos) {
-    const teamId = getWorldsTeamIdByTeam(team);
+    const teamId = getWorldsTeamIdByTeam(team) || getWorldsTeamIdBySideForUi(team);
+    if (!teamId) return null;
     const roster = getWorldsRosterByTeamId(teamId);
     const worldsTeam = getWorldsTeamById(teamId);
     if (!roster || !roster.players || !worldsTeam) return null;
@@ -1028,13 +1029,17 @@ function renderPlayerSignaturePortraits(player) {
 }
 
 function openPlayerInfoModal(team, pos) {
-    if (!worldsModeEnabled) return;
     const modal = document.getElementById("player-info-modal");
     const title = document.getElementById("player-info-title");
     const body = document.getElementById("player-info-body");
     if (!modal || !title || !body) return;
     const summary = getPlayerBonusSummary(team, pos);
-    if (!summary) return;
+    if (!summary) {
+        title.innerText = `${teamDisplayName(team)} · ${pos}`;
+        body.innerHTML = `<div class="player-info-signatures-empty">선수 상세 정보를 불러올 수 없습니다. (실제 팀 모드/로스터 설정 확인)</div>`;
+        modal.style.display = "flex";
+        return;
+    }
     const { player, champ, style, styleState, signatureOn } = summary;
     const teamLabel = teamDisplayName(team);
     const styleLabel = STRATEGY_CONFIGS[style]?.label || "일반적";
@@ -2483,6 +2488,28 @@ function openTutorial() {
     document.getElementById("tutorial-modal").style.display = "flex";
 }
 
+function getGraphHelpText(type) {
+    if (type === "radar") {
+        return "삼각 그래프는 팀의 조합 성향(돌진/포킹/받아치기) 강도를 보여줍니다. 면적이 넓고 특정 축이 길수록 해당 성향이 강합니다.";
+    }
+    if (type === "powercurve") {
+        return "파워커브는 팀의 시간대별 전투력 합(초/중/후)을 보여줍니다. 선이 높은 구간이 해당 팀의 주도권 타이밍입니다.";
+    }
+    return "그래프 설명을 불러오지 못했습니다.";
+}
+
+function openGraphHelp(type) {
+    const modal = document.getElementById("graph-help-modal");
+    const body = document.getElementById("graph-help-body");
+    if (!modal || !body) return;
+    body.innerText = getGraphHelpText(type);
+    modal.style.display = "flex";
+}
+
+function closeGraphHelp() {
+    setDisplayById("graph-help-modal", "none");
+}
+
 function renderTutorialStep() {
     const body = document.getElementById("tutorial-step-body");
     const idx = document.getElementById("tutorial-step-index");
@@ -2818,6 +2845,7 @@ function renderRadarChart(stats, teamClass) {
             <span class="radar-meta-type ${typeClass}">${TYPE_LABEL[dominant.type]} 조합</span>
             <span class="radar-meta-score">${formatNum(dominant.value)}/15</span>
         </div>
+        <button type="button" class="graph-help-btn" onclick="openGraphHelp('radar')">?</button>
         <svg viewBox="0 0 220 200" class="radar-svg" role="img" aria-label="팀 조합 삼각 차트">
             ${rings}
             ${axes}
@@ -2835,6 +2863,7 @@ function renderTeamPowerCurve(stats, teamClass) {
     const points = `${x[0]},${y(values[0])} ${x[1]},${y(values[1])} ${x[2]},${y(values[2])}`;
     return `<div class="team-power-wrap ${teamClass}">
         <div class="team-power-title">파워커브</div>
+        <button type="button" class="graph-help-btn" onclick="openGraphHelp('powercurve')">?</button>
         <svg viewBox="0 0 220 86" class="team-power-svg" role="img" aria-label="팀 초중후 파워커브">
             <line x1="24" y1="72" x2="196" y2="72" class="team-power-axis"/>
             <line x1="24" y1="16" x2="24" y2="72" class="team-power-axis"/>
@@ -3300,8 +3329,8 @@ function chooseSide(side) {
 }
 
 async function init() {
-    ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal", "player-info-modal"].forEach(hoistModalToBody);
-    ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal", "player-info-modal", "strategy-modal", "side-select-modal", "result-modal"].forEach((id) => setDisplayById(id, "none"));
+    ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal", "player-info-modal", "graph-help-modal"].forEach(hoistModalToBody);
+    ["tutorial-modal", "champ-stats-modal", "worlds-modal", "worlds-challenge-modal", "worlds-challenge-live-modal", "ai-balance-modal", "player-info-modal", "graph-help-modal", "strategy-modal", "side-select-modal", "result-modal"].forEach((id) => setDisplayById(id, "none"));
     bindHomeActionButtons();
     const bBans = document.getElementById('b-bans');
     const rBans = document.getElementById('r-bans');
@@ -3317,8 +3346,8 @@ async function init() {
     POSITIONS.forEach((pos, i) => {
         bBans.innerHTML += `<div class="ban-slot" id="b-ban-${i}"></div>`;
         rBans.innerHTML += `<div class="ban-slot" id="r-ban-${i}"></div>`;
-        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}" data-team="blue" data-pos="${pos}"><span class="pos-indicator">${pos}</span><div class="player-chip off worlds-slot-player"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
-        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" data-team="red" data-pos="${pos}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="player-chip off worlds-slot-player"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
+        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}" data-team="blue" data-pos="${pos}"><span class="pos-indicator pos-indicator-blue">${pos}</span><div class="player-chip off worlds-slot-player" data-team="blue" data-pos="${pos}" onclick="event.stopPropagation();openPlayerInfoModal('blue','${pos}')"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
+        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" data-team="red" data-pos="${pos}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator pos-indicator-red">${pos}</span><div class="player-chip off worlds-slot-player" data-team="red" data-pos="${pos}" onclick="event.stopPropagation();openPlayerInfoModal('red','${pos}')"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
 
         const bBan = document.getElementById(`b-ban-${i}`);
         const rBan = document.getElementById(`r-ban-${i}`);
@@ -3344,11 +3373,11 @@ async function init() {
         });
         if (bChip) bChip.addEventListener("click", (e) => {
             e.stopPropagation();
-            openPlayerInfoModal("blue", POSITIONS[i]);
+            openPlayerInfoModal("blue", pos);
         });
         if (rChip) rChip.addEventListener("click", (e) => {
             e.stopPropagation();
-            openPlayerInfoModal("red", POSITIONS[i]);
+            openPlayerInfoModal("red", pos);
         });
     });
     bindChampionInfoInteractions();
@@ -3401,6 +3430,12 @@ async function init() {
     if (playerInfoModal) {
         playerInfoModal.addEventListener('click', (e) => {
             if (e.target === playerInfoModal) closePlayerInfoModal();
+        });
+    }
+    const graphHelpModal = document.getElementById('graph-help-modal');
+    if (graphHelpModal) {
+        graphHelpModal.addEventListener('click', (e) => {
+            if (e.target === graphHelpModal) closeGraphHelp();
         });
     }
     const strategyModal = document.getElementById('strategy-modal');
@@ -3774,9 +3809,9 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
         const worldsText = worldsModeEnabled ? `실제팀 +${formatNum(team === "blue" ? worldsBlue : worldsRed)}` : "실제팀 OFF";
         return `
             <div class="summary-kpi-row">
-                <span class="summary-kpi-chip">CC ${formatNum(stats.cc)}</span>
-                <span class="summary-kpi-chip">딜 ${formatNum(stats.dmg)}</span>
-                <span class="summary-kpi-chip">탱 ${formatNum(stats.tank)}</span>
+                <span class="summary-kpi-chip" title="팀의 군중제어 총합입니다. 낮으면 교전 개시가 어려워집니다.">CC ${formatNum(stats.cc)}</span>
+                <span class="summary-kpi-chip" title="팀의 총 화력입니다. 전투 마무리 속도에 영향을 줍니다.">딜 ${formatNum(stats.dmg)}</span>
+                <span class="summary-kpi-chip" title="팀의 전선 유지력입니다. 한타 지속 능력에 영향을 줍니다.">탱 ${formatNum(stats.tank)}</span>
                 <span class="summary-kpi-chip"><span class="dmg-ad">AD ${adPct}%</span> · <span class="dmg-ap">AP ${apPct}%</span></span>
             </div>
             <div class="summary-aux-line">
