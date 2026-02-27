@@ -329,6 +329,7 @@ const WORLDS_CHALLENGE_STAGES = [
 ];
 let homeActionBound = false;
 let seriesDraftStats = { picks: [], bans: [] };
+let seriesSetStats = [];
 let worldsChallengeState = {
     selectionRandom: true,
     userTeamId: "",
@@ -338,6 +339,14 @@ let worldsChallengeState = {
     rounds: [],
     logs: [],
     running: false
+};
+let challengeManualSession = {
+    active: false,
+    stageRule: null,
+    stageLabel: "",
+    match: null,
+    games: [],
+    resolve: null
 };
 let aiBalanceSimRunning = false;
 const MODE_CONFIGS = {
@@ -405,6 +414,10 @@ const TUTORIAL_STEPS = [
     {
         title: "5. 파워 커브",
         body: "챔피언마다 전성기(초/중/후반)가 다릅니다.\n\n초반 격차가 크면 스노우볼로 빠르게 끝날 수 있고,\n후반 밸류가 높으면 역전 각이 만들어질 수 있습니다."
+    },
+    {
+        title: "6. 실제 팀 모드",
+        body: "실제 팀 모드에서는 팀 선호 성향과 선수 시그니처 픽 보정이 적용됩니다.\n\n- 돌진 선호 팀: 돌진 챔피언당 돌진 스탯 +0.5\n- 선수 시그니처 챔피언 픽: 주력 시간대 +1.6, 딜링 +1.1"
     },
     {
         title: "마무리",
@@ -658,6 +671,7 @@ function normalizeHistoryEntry(entry, source = "local") {
         banKeys: Array.isArray(payload.banKeys) ? payload.banKeys : [],
         bluePickKeys: Array.isArray(payload.bluePickKeys) ? payload.bluePickKeys : [],
         redPickKeys: Array.isArray(payload.redPickKeys) ? payload.redPickKeys : [],
+        setResults: Array.isArray(payload.setResults) ? payload.setResults : [],
         localMatchId: payload.localMatchId || "",
         remoteId: payload.remoteId || "",
         source
@@ -723,6 +737,7 @@ async function refreshRemoteHistory() {
                 banKeys: payload.banKeys || [],
                 bluePickKeys: payload.bluePickKeys || [],
                 redPickKeys: payload.redPickKeys || [],
+                setResults: payload.setResults || [],
                 localMatchId: payload.localMatchId || "",
                 remoteId: row.id || ""
             }, "remote");
@@ -754,7 +769,8 @@ async function uploadRemoteMatchHistory(entry) {
             pickKeys: Array.isArray(entry.pickKeys) ? entry.pickKeys : [],
             banKeys: Array.isArray(entry.banKeys) ? entry.banKeys : [],
             bluePickKeys: Array.isArray(entry.bluePickKeys) ? entry.bluePickKeys : [],
-            redPickKeys: Array.isArray(entry.redPickKeys) ? entry.redPickKeys : []
+            redPickKeys: Array.isArray(entry.redPickKeys) ? entry.redPickKeys : [],
+            setResults: Array.isArray(entry.setResults) ? entry.setResults : []
         };
         const body = {
             player_name: teamProfile.myTeamName || "MY TEAM",
@@ -929,6 +945,7 @@ function renderWorldsSlotHints() {
             if (!worldsModeEnabled || !roster || !roster.players) {
                 noteEl.innerText = "";
                 chipEl.classList.add("off");
+                slot.classList.remove("worlds-mode-slot");
                 return;
             }
             const playerId = roster.players[pos];
@@ -936,6 +953,7 @@ function renderWorldsSlotHints() {
             if (!player) {
                 noteEl.innerText = "";
                 chipEl.classList.add("off");
+                slot.classList.remove("worlds-mode-slot");
                 return;
             }
             const champs = (player.signatureChamps || []).slice(0, 3).join(", ");
@@ -948,6 +966,7 @@ function renderWorldsSlotHints() {
             };
             noteEl.innerText = champs ? `주챔: ${champs}` : "";
             chipEl.classList.remove("off");
+            slot.classList.add("worlds-mode-slot");
         });
     });
 }
@@ -1080,24 +1099,37 @@ function getChampionUsageRows(rows = null) {
             statsMap[k].total += 1;
         });
 
+        const applySetResult = (winnerSide, bluePicks, redPicks) => {
+            if (!winnerSide || (bluePicks.length === 0 && redPicks.length === 0)) return;
+            bluePicks.forEach((k) => {
+                if (!statsMap[k]) return;
+                statsMap[k].games += 1;
+                if (winnerSide === "blue") statsMap[k].wins += 1;
+                else statsMap[k].losses += 1;
+            });
+            redPicks.forEach((k) => {
+                if (!statsMap[k]) return;
+                statsMap[k].games += 1;
+                if (winnerSide === "red") statsMap[k].wins += 1;
+                else statsMap[k].losses += 1;
+            });
+        };
+
+        const setResults = Array.isArray(entry.setResults) ? entry.setResults : [];
+        if (setResults.length > 0) {
+            setResults.forEach((setItem) => {
+                const ws = setItem && (setItem.winnerSide === "blue" || setItem.winnerSide === "red") ? setItem.winnerSide : "";
+                const bP = Array.isArray(setItem?.bluePickKeys) ? setItem.bluePickKeys.filter(Boolean) : [];
+                const rP = Array.isArray(setItem?.redPickKeys) ? setItem.redPickKeys.filter(Boolean) : [];
+                applySetResult(ws, bP, rP);
+            });
+            return;
+        }
+
         const bluePicks = Array.isArray(entry.bluePickKeys) ? entry.bluePickKeys.filter(Boolean) : [];
         const redPicks = Array.isArray(entry.redPickKeys) ? entry.redPickKeys.filter(Boolean) : [];
         const winnerSide = entry.winnerSide === "blue" || entry.winnerSide === "red" ? entry.winnerSide : "";
-
-        if (!winnerSide || (bluePicks.length === 0 && redPicks.length === 0)) return;
-
-        bluePicks.forEach((k) => {
-            if (!statsMap[k]) return;
-            statsMap[k].games += 1;
-            if (winnerSide === "blue") statsMap[k].wins += 1;
-            else statsMap[k].losses += 1;
-        });
-        redPicks.forEach((k) => {
-            if (!statsMap[k]) return;
-            statsMap[k].games += 1;
-            if (winnerSide === "red") statsMap[k].wins += 1;
-            else statsMap[k].losses += 1;
-        });
+        applySetResult(winnerSide, bluePicks, redPicks);
     });
 
     Object.values(statsMap).forEach((row) => {
@@ -1588,6 +1620,131 @@ function getChallengeWinTarget(bestOf) {
     return Math.floor(bestOf / 2) + 1;
 }
 
+function getChallengeModeKeyByBestOf(bestOf) {
+    if (bestOf <= 1) return "single";
+    if (bestOf === 3) return "bo3";
+    return "bo5";
+}
+
+function isUserChallengeMatch(match) {
+    const userId = worldsChallengeState.userTeamId;
+    return !!(userId && match && (match.blueTeamId === userId || match.redTeamId === userId));
+}
+
+function buildManualChallengeGameResult(res, winnerSide) {
+    const blueTeamId = getWorldsTeamIdByTeam("blue") || worldsConfig.myTeamId;
+    const redTeamId = getWorldsTeamIdByTeam("red") || worldsConfig.enemyTeamId;
+    const finish = getFinishPhaseSummary(res, winnerSide);
+    const edge = res.bWin - 50;
+    const blueKills = Math.max(4, Math.min(20, Math.round(9 + edge / 6)));
+    const redKills = Math.max(3, Math.min(18, Math.round(9 - edge / 7)));
+    const blueGoldDiff = Math.round(edge * 210 + (res.phases.earlyWin - 50) * 90 + (res.phases.midWin - 50) * 70);
+    const picksState = {
+        blue: [...(picks.blue || [])],
+        red: [...(picks.red || [])]
+    };
+    const bansState = {
+        blue: [...(bans.blue || [])],
+        red: [...(bans.red || [])]
+    };
+    return {
+        blueTeamId,
+        redTeamId,
+        picksState,
+        bansState,
+        res,
+        winnerSide,
+        winnerTeamId: winnerSide === "blue" ? blueTeamId : redTeamId,
+        finish,
+        blueKills,
+        redKills,
+        blueGoldDiff,
+        kda: buildChallengeKdaRows(picksState, blueKills, redKills, blueTeamId, redTeamId)
+    };
+}
+
+function beginManualChallengeSeries(match, stageRule, stageLabel, matchNo) {
+    return new Promise((resolve) => {
+        const userTeamId = worldsChallengeState.userTeamId;
+        const enemyTeamId = match.blueTeamId === userTeamId ? match.redTeamId : match.blueTeamId;
+        const userOnBlue = match.blueTeamId === userTeamId;
+        const myTeamObj = getWorldsTeamById(userTeamId);
+        const enemyTeamObj = getWorldsTeamById(enemyTeamId);
+
+        challengeManualSession.active = true;
+        challengeManualSession.stageRule = stageRule;
+        challengeManualSession.stageLabel = stageLabel;
+        challengeManualSession.match = match;
+        challengeManualSession.games = [];
+        challengeManualSession.resolve = resolve;
+
+        selectedModeKey = getChallengeModeKeyByBestOf(stageRule.bestOf);
+        maxGames = stageRule.bestOf;
+        winTarget = getChallengeWinTarget(stageRule.bestOf);
+        hardFearless = !!stageRule.fearless;
+
+        worldsModeEnabled = true;
+        worldsConfig.myTeamId = userTeamId;
+        worldsConfig.enemyTeamId = enemyTeamId;
+        teamProfile.myTeamName = myTeamObj?.name || challengeTeamNameById(userTeamId);
+        teamProfile.aiTeamName = enemyTeamObj?.name || challengeTeamNameById(enemyTeamId);
+
+        userTeam = userOnBlue ? "blue" : "red";
+        aiTeam = userOnBlue ? "red" : "blue";
+
+        setDisplayById("home-page", "none");
+        setDisplayById("worlds-challenge-live-modal", "none");
+        setDisplayById("worlds-challenge-modal", "none");
+        setDisplayById("game-shell", "flex");
+        setDisplayById("side-select-modal", "none");
+        setDisplayById("strategy-modal", "none");
+        setDisplayById("tutorial-modal", "none");
+        setDisplayById("result-modal", "none");
+
+        worldsChallengeState.logs.push(`<div class="challenge-log-entry"><div class="challenge-log-title">${stageLabel} Match ${matchNo}</div><div class="challenge-log-line">🎮 ${escapeHtml(teamProfile.myTeamName)} 경기입니다. 직접 밴픽을 진행하세요.</div></div>`);
+        renderWorldsChallengeLive();
+
+        applyWorldsTeamColors();
+        renderWorldsSlotHints();
+        shouldResetOnStrategyConfirm = false;
+        resetSeries();
+    });
+}
+
+function consumeManualChallengeSeriesResult() {
+    if (!challengeManualSession.active || !challengeManualSession.match || !challengeManualSession.stageRule) return null;
+    const stageRule = challengeManualSession.stageRule;
+    const match = challengeManualSession.match;
+    const games = [...challengeManualSession.games];
+    const scoreBlue = games.filter((g) => g.winnerTeamId === match.blueTeamId).length;
+    const scoreRed = games.filter((g) => g.winnerTeamId === match.redTeamId).length;
+    const winnerTeamId = scoreBlue >= scoreRed ? match.blueTeamId : match.redTeamId;
+    const winnerSide = winnerTeamId === match.blueTeamId ? "blue" : "red";
+
+    const series = {
+        ...match,
+        bestOf: stageRule.bestOf,
+        fearless: stageRule.fearless,
+        score: { blue: scoreBlue, red: scoreRed },
+        scoreText: `${scoreBlue}:${scoreRed}`,
+        winnerSide,
+        winnerTeamId,
+        winnerName: challengeTeamNameById(winnerTeamId),
+        games
+    };
+
+    const resolve = challengeManualSession.resolve;
+    challengeManualSession.active = false;
+    challengeManualSession.stageRule = null;
+    challengeManualSession.stageLabel = "";
+    challengeManualSession.match = null;
+    challengeManualSession.games = [];
+    challengeManualSession.resolve = null;
+
+    if (typeof resolve === "function") resolve(series);
+    return series;
+}
+
 function getChallengeCandidates(step, picksState, bansState, teamLocks) {
     const taken = new Set();
     ["blue", "red"].forEach((t) => {
@@ -1947,7 +2104,18 @@ async function runWorldsChallengeTournament(participants) {
         for (let i = 0; i < matches.length; i++) {
             if (!worldsChallengeState.running) return;
             const m = matches[i];
-            const series = simulateChallengeSeries(m, stageRule);
+            let series = null;
+
+            if (isUserChallengeMatch(m)) {
+                series = await beginManualChallengeSeries(m, stageRule, stageLabel, i + 1);
+                if (!worldsChallengeState.running) return;
+                setDisplayById("game-shell", "none");
+                setDisplayById("worlds-challenge-live-modal", "flex");
+            } else {
+                series = simulateChallengeSeries(m, stageRule);
+            }
+
+            if (!series) return;
             winners.push(series.winnerTeamId);
             roundRecord.matches.push({
                 blueName: challengeTeamNameById(series.blueTeamId),
@@ -2654,18 +2822,12 @@ function canPickForTeam(team, key) {
 }
 
 function getWorldsStyleEffectText(style) {
-    if (style === "Dive" || style === "Poke" || style === "Anti") {
-        return "적합 1명당 유형 +1.2 / 딜 +0.5 / 탱 +0.3 / 중반 +0.6, 부조화 시 딜 -0.5";
-    }
-    if (style === "Early") {
-        return "적합 1명당 초반 +2.0 / 중반 +0.6 / 딜 +0.6, 부조화 시 초반 -1.6";
-    }
-    if (style === "Mid") {
-        return "적합 1명당 중반 +2.0 / CC +0.4 / 딜 +0.4, 부조화 시 중반 -1.6";
-    }
-    if (style === "Late") {
-        return "적합 1명당 후반 +2.0 / 탱 +0.8 / 딜 +0.4, 부조화 시 후반 -1.6";
-    }
+    if (style === "Dive") return "돌진 챔피언당 돌진 스탯 +0.5";
+    if (style === "Poke") return "포킹 챔피언당 포킹 스탯 +0.5";
+    if (style === "Anti") return "받아치기 챔피언당 받아치기 스탯 +0.5";
+    if (style === "Early") return "초반형 챔피언당 초반 스탯 +0.8";
+    if (style === "Mid") return "중반형 챔피언당 중반 스탯 +0.8";
+    if (style === "Late") return "후반형 챔피언당 후반 스탯 +0.8";
     return "추가 보정 없음";
 }
 
@@ -2680,7 +2842,9 @@ function getRealTeamStyleDetailBySide(side) {
     const team = getWorldsTeamById(teamId);
     if (!team) return null;
     const style = team.prefStrategy || "General";
-    const prefLabel = team.prefLabel || (STRATEGY_CONFIGS[style]?.label || "일반적");
+    const rawLabel = team.prefLabel || (STRATEGY_CONFIGS[style]?.label || "일반적");
+    const cleanLabel = String(rawLabel).replace(/조합/g, "").trim();
+    const prefLabel = cleanLabel.endsWith("선호") ? cleanLabel : (cleanLabel + " 선호");
     return {
         teamName: team.name || "-",
         prefLabel,
@@ -2692,7 +2856,7 @@ function getRealTeamStrategyGuideHtml() {
     if (!worldsModeEnabled || !userTeam) {
         return `<div class="strategy-guide-line"><b>실제 팀 모드 OFF</b> 상태입니다. 팀 성향/선수 주챔 보정이 적용되지 않습니다.</div>`;
     }
-    const common = "공통 효과: 선수 주챔 픽 시 챔피언 강점 시간대 +1.6, 딜 +1.1, 보정 +2.2";
+    const common = "공통 효과: 선수 시그니처 챔피언 픽 시 주력 시간대 +1.6, 딜 +1.1";
     const blueLine = getRealTeamEffectSummaryBySide("blue");
     const redLine = getRealTeamEffectSummaryBySide("red");
     return `
@@ -2940,6 +3104,7 @@ function resetSeries() {
     seriesRoleWins = { user: 0, ai: 0 };
     fearlessLocked = new Set();
     seriesDraftStats = { picks: [], bans: [] };
+    seriesSetStats = [];
     lastSeriesEnded = false;
     startGameDraft();
 }
@@ -3026,8 +3191,8 @@ async function init() {
     POSITIONS.forEach((pos, i) => {
         bBans.innerHTML += `<div class="ban-slot" id="b-ban-${i}"></div>`;
         rBans.innerHTML += `<div class="ban-slot" id="r-ban-${i}"></div>`;
-        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-hint"><div class="player-chip off"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="player-note"></div></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
-        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-hint"><div class="player-chip off"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="player-note"></div></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
+        bPicks.innerHTML += `<div class="slot" id="b-slot-${i}"><span class="pos-indicator">${pos}</span><div class="player-chip off worlds-slot-player"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="champ-img"></div><div class="slot-meta left"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('blue', ${i})">🔃</button></div>`;
+        rPicks.innerHTML += `<div class="slot" id="r-slot-${i}" style="flex-direction:row-reverse; text-align:right;"><span class="pos-indicator" style="right:10px; left:auto;">${pos}</span><div class="player-chip off worlds-slot-player"><img class="player-photo" src="" alt="PLAYER"><span class="player-nick">-</span></div><div class="champ-img"></div><div class="slot-meta right"><div class="name">-</div><div class="player-note"></div></div><button class="swap-btn" onclick="handleSwap('red', ${i})">🔃</button></div>`;
 
         const bBan = document.getElementById(`b-ban-${i}`);
         const rBan = document.getElementById(`r-ban-${i}`);
@@ -4033,7 +4198,6 @@ function evaluateWorldsContext(picksState, sourceStats) {
         const style = worldsTeam.prefStrategy || "General";
         const styleLabel = worldsTeam.prefLabel || (STRATEGY_CONFIGS[style]?.label || style);
         let fitCount = 0;
-        let mismatchCount = 0;
 
         POSITIONS.forEach((pos) => {
             const champKey = getTeamChampByPos(team, picksState, pos);
@@ -4056,36 +4220,18 @@ function evaluateWorldsContext(picksState, sourceStats) {
 
             const styleState = getWorldsTeamStyleFitState(champ, style);
             if (styleState > 0) fitCount += 1;
-            else if (styleState < 0) mismatchCount += 1;
             bonus[team] += gained;
         });
 
         if (style !== "General") {
-            if (style === "Dive" || style === "Poke" || style === "Anti") {
-                const typeKey = style === "Dive" ? "dive" : (style === "Poke" ? "poke" : "anti");
-                stats[team][typeKey] += fitCount * 1.2;
-                stats[team].dmg += fitCount * 0.5;
-                stats[team].tank += fitCount * 0.3;
-                stats[team].mid += fitCount * 0.6;
-                stats[team].dmg -= mismatchCount * 0.5;
-                bonus[team] += fitCount * 1.4 - mismatchCount * 1.4;
-            } else if (style === "Early") {
-                stats[team].early += fitCount * 2.0 - mismatchCount * 1.6;
-                stats[team].mid += fitCount * 0.6 - mismatchCount * 0.6;
-                stats[team].dmg += fitCount * 0.6 - mismatchCount * 0.4;
-                bonus[team] += fitCount * 1.7 - mismatchCount * 1.5;
-            } else if (style === "Late") {
-                stats[team].late += fitCount * 2.0 - mismatchCount * 1.6;
-                stats[team].tank += fitCount * 0.8 - mismatchCount * 0.4;
-                stats[team].dmg += fitCount * 0.4 - mismatchCount * 0.4;
-                bonus[team] += fitCount * 1.7 - mismatchCount * 1.5;
-            } else if (style === "Mid") {
-                stats[team].mid += fitCount * 2.0 - mismatchCount * 1.6;
-                stats[team].cc += fitCount * 0.4;
-                stats[team].dmg += fitCount * 0.4 - mismatchCount * 0.4;
-                bonus[team] += fitCount * 1.7 - mismatchCount * 1.5;
-            }
-            details[team].push(`팀 선호(${styleLabel}) 적합 ${fitCount} / 부조화 ${mismatchCount}`);
+            if (style === "Dive") stats[team].dive += fitCount * 0.5;
+            else if (style === "Poke") stats[team].poke += fitCount * 0.5;
+            else if (style === "Anti") stats[team].anti += fitCount * 0.5;
+            else if (style === "Early") stats[team].early += fitCount * 0.8;
+            else if (style === "Mid") stats[team].mid += fitCount * 0.8;
+            else if (style === "Late") stats[team].late += fitCount * 0.8;
+            bonus[team] += fitCount * 0.6;
+            details[team].push(`팀 선호(${styleLabel}) 발동 ${fitCount}`);
         }
 
         ["cc", "dmg", "tank", "dive", "poke", "anti", "early", "mid", "late"].forEach((k) => {
@@ -5418,6 +5564,17 @@ function startSimulationMatch() {
         const winnerRole = winner === userTeam ? "user" : "ai";
         const loserRole = winnerRole === "user" ? "ai" : "user";
 
+        if (challengeManualSession.active) {
+            challengeManualSession.games.push(buildManualChallengeGameResult(res, winner));
+        }
+
+        seriesSetStats.push({
+            setNo: currentGame,
+            winnerSide: winner,
+            bluePickKeys: [...(picks.blue || []).filter(Boolean)],
+            redPickKeys: [...(picks.red || []).filter(Boolean)]
+        });
+
         seriesWins[winner] += 1;
         seriesRoleWins[winnerRole] += 1;
         recordTraitAnalyticsSample(picks, res.traitCtx, winner, res.bWin, false);
@@ -5446,7 +5603,8 @@ function startSimulationMatch() {
                 pickKeys: [...seriesDraftStats.picks],
                 banKeys: [...seriesDraftStats.bans],
                 bluePickKeys: [...(picks.blue || []).filter(Boolean)],
-                redPickKeys: [...(picks.red || []).filter(Boolean)]
+                redPickKeys: [...(picks.red || []).filter(Boolean)],
+                setResults: [...seriesSetStats]
             });
         }
 
@@ -5455,7 +5613,9 @@ function startSimulationMatch() {
         document.getElementById('final-stats').innerHTML = buildResultBody(res, winner, loser, seriesEnded);
         nextBtn.disabled = false;
         nextBtn.style.opacity = "1";
-        nextBtn.innerText = seriesEnded ? "새 시리즈 시작" : "다음 세트 시작";
+        nextBtn.innerText = seriesEnded
+            ? (challengeManualSession.active ? "월즈 도전으로 복귀" : "새 시리즈 시작")
+            : "다음 세트 시작";
         resultFlowState = "done";
     });
 }
@@ -5474,6 +5634,12 @@ function handleNextAction() {
     pendingSimulationResult = null;
     resultFlowState = "idle";
     if (lastSeriesEnded) {
+        if (challengeManualSession.active) {
+            consumeManualChallengeSeriesResult();
+            setDisplayById("game-shell", "none");
+            setDisplayById("worlds-challenge-live-modal", "flex");
+            return;
+        }
         userTeam = null;
         aiTeam = null;
         openHome();

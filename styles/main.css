@@ -267,9 +267,13 @@ body {
 .side {
     width: 300px;
     min-width: 280px;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
 }
 
 .ban-container {
@@ -374,6 +378,61 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.slot.worlds-mode-slot {
+    gap: 8px;
+}
+
+.slot.worlds-mode-slot .worlds-slot-player {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 118px;
+}
+
+.slot.worlds-mode-slot .player-photo {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border-color: #5d7c8f;
+}
+
+.slot.worlds-mode-slot .player-nick {
+    font-size: 13px;
+    font-weight: 800;
+    color: #e6f0f6;
+    max-width: 74px;
+}
+
+.slot.worlds-mode-slot .champ-img {
+    width: 52px;
+    height: 52px;
+}
+
+.slot.worlds-mode-slot .slot-meta {
+    min-width: 0;
+    gap: 3px;
+}
+
+.slot.worlds-mode-slot .slot-meta .name {
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.slot.worlds-mode-slot .player-note {
+    font-size: 11px;
+    color: #a7bdcc;
+    max-width: 120px;
+}
+
+.slot#r-slot-0.worlds-mode-slot,
+.slot#r-slot-1.worlds-mode-slot,
+.slot#r-slot-2.worlds-mode-slot,
+.slot#r-slot-3.worlds-mode-slot,
+.slot#r-slot-4.worlds-mode-slot {
+    text-align: right;
 }
 
 .pos-indicator {
@@ -696,6 +755,7 @@ body {
     line-height: 1.45;
     color: #cfd8dc;
     box-shadow: inset 0 0 0 1px rgba(200, 170, 110, 0.08);
+    flex: 0 0 auto;
 }
 
 .team-summary .title { font-weight: bold; margin-bottom: 6px; color: var(--gold); }
@@ -1709,6 +1769,9 @@ body {
         width: auto;
         min-width: 0;
         gap: 6px;
+        max-height: 42vh;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .ban-slot {
