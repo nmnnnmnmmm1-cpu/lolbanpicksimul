@@ -400,20 +400,24 @@ const TUTORIAL_STEPS = [
         body: "각 챔피언은 아래 정보를 가집니다.\n- 딜링 / 탱킹 / CC\n- 데미지 유형(AD/AP/하이브리드)\n- 조합 유형(돌진/포킹/받아치기)\n- 파워커브(초반/중반/후반)"
     },
     {
+        title: "챔피언 정보 UI 예시",
+        html: "CHAMPION_INFO_EXAMPLE"
+    },
+    {
         title: "1. 딜링 & 탱킹 스탯",
-        body: "각 챔피언은 1~10 공격/방어 수치를 가집니다.\n\n- 개인 수치가 높을수록 기대승률이 오릅니다.\n- 하지만 팀 총합의 균형이 더 중요합니다.\n- 5인 합계 기준 딜링 또는 탱킹이 20 미만이면 큰 페널티를 받습니다."
+        body: "기본적으로 수치가 높을수록 기대승률이 오르지만, 다섯 챔피언의 스탯 합계가 기준을 넘지 않으면 큰 패널티가 적용됩니다.\n\n기준은 다음과 같습니다.\n- 팀 딜링 합계 25 이상\n- 팀 탱킹 합계 20 이상\n\n이 기준을 충족하지 못하면 기대승률이 대폭 떨어집니다."
     },
     {
         title: "2. CC기 스탯",
-        body: "챔피언당 CC는 0~3 단계입니다.\n\n- 팀 CC 합계 5 이하: 교전 개시/연계가 부족해 승률이 크게 떨어집니다.\n- 팀 CC 합계 10 이상: 한타 안정성이 크게 올라갑니다."
+        body: "챔피언당 CC는 0~3 단계입니다.\n\n- 팀 CC 합계가 7 이하이면 큰 페널티가 적용됩니다.\n- CC가 높을수록 기본 팀 점수(Team Score)에서도 추가 이점을 받습니다."
     },
     {
         title: "3. 데미지 밸런스 (AD/AP)",
-        body: "챔피언은 AD / AP / 하이브리드 중 하나입니다.\n\n- 공격 스탯을 가중치로 AD/AP 비율을 계산합니다.\n- 한쪽으로 과도하게 치우치면 상대 방어 아이템에 카운터를 당합니다.\n- AD/AP를 적절히 섞을수록 안정적인 승률을 기대할 수 있습니다."
+        body: "챔피언은 AD / AP / 하이브리드 중 하나입니다.\n\n- AD/AP 비율은 공격력 합 기준으로 계산됩니다(하이브리드는 50:50 반영).\n- 한쪽 비중이 65% / 80% / 90%를 넘으면 단계별 페널티가 적용됩니다.\n- AD/AP를 적절히 섞을수록 안정적인 승률을 기대할 수 있습니다."
     },
     {
         title: "4. 챔피언 상성 (유형)",
-        body: "상성 구조는 [돌진 > 포킹 > 받아치기 > 돌진] 입니다.\n\n- 유형 수치가 높을수록 상성 이득/손해 폭이 커집니다.\n- 수치가 낮으면 상성 영향이 줄어듭니다.\n- 동점형 조합은 장점이 분산되어 결정력이 약해질 수 있습니다."
+        body: "상성 구조는 [돌진 > 포킹 > 받아치기 > 돌진] 입니다.\n\n- 유형 수치가 높을수록 상성 이득/손해 폭이 커집니다.\n- 수치가 낮으면 상성 영향이 줄어듭니다.\n- 내 팀 유형과 상대 팀 유형이 같다면, 유형 점수가 더 높은 팀이 유리합니다."
     },
     {
         title: "5. 파워 커브",
@@ -422,6 +426,10 @@ const TUTORIAL_STEPS = [
     {
         title: "6. 실제 팀 모드",
         body: "실제 팀 모드에서는 팀 선호 성향과 선수 시그니처 픽 보정이 적용됩니다.\n\n- 돌진 선호 팀: 돌진 챔피언당 돌진 스탯 +0.5\n- 선수 시그니처 챔피언 픽: 주력 시간대 +1.6, 딜링 +1.1"
+    },
+    {
+        title: "7. 고유 특성",
+        body: "고유 특성은 특정 조건을 만족할 때 팀 스탯/승률에 추가 보정을 줍니다.\n\n- 조건: 아군/적군 조합, 포지션, 스탯 임계값 등\n- 효과: 초중후반/딜링/탱킹/CC/유형/승률 보정\n- 챔피언 상세 정보 카드에서 현재 챔피언 특성과 연계 특성을 함께 확인할 수 있습니다."
     },
     {
         title: "마무리",
@@ -2517,8 +2525,46 @@ function renderTutorialStep() {
     if (!body || !idx || !stepTitle) return;
     const step = TUTORIAL_STEPS[tutorialStepIndex];
     stepTitle.innerText = step.title;
-    body.innerHTML = formatTutorialBody(step.body);
+    if (step.html === "CHAMPION_INFO_EXAMPLE") {
+        body.innerHTML = buildTutorialChampionInfoExample();
+    } else {
+        body.innerHTML = formatTutorialBody(step.body);
+    }
     idx.innerText = `${tutorialStepIndex + 1} / ${TUTORIAL_STEPS.length}`;
+}
+
+function buildTutorialChampionInfoExample() {
+    const traitHtml = renderTraitBlock({
+        champName: "오리아나",
+        traitName: "내 공을 부탁해",
+        condition: "아군 JNG가 돌진형일 시",
+        effect: "팀 딜링 +3 / 돌진 수치 비례 추가 보정",
+        wrapperClass: "tip-trait-item",
+        showOwner: false
+    });
+    return `
+        <div class="tutorial-preview-card">
+            <div class="tip-title-row">
+                <b class="tip-title-name">오리아나</b>
+                <span class="tip-title-meta">
+                    <span class="tip-pos-label">MID</span>
+                    <span class="tip-meta-sep">|</span>
+                    <span class="meta-badge type-anti">받아치기 <span class="tip-roman-level">II</span></span>
+                    <span class="tip-meta-sep">|</span>
+                    <span class="meta-badge dmg-ap">AP</span>
+                </span>
+            </div>
+            ${renderCcPips(2)}
+            ${renderStatRow("딜링", "⚔", 8, 10, "#ef5350")}
+            ${renderStatRow("탱킹", "🛡", 3, 10, "#42a5f5")}
+            ${renderPhaseLineChart({ early: 5, mid: 8, late: 7 })}
+            <div class="tip-trait-box">
+                <div class="tip-trait-title">고유 특성 예시</div>
+                ${traitHtml}
+            </div>
+            <p class="tutorial-preview-note">실전에서는 챔피언마다 값/조건이 다르게 적용됩니다.</p>
+        </div>
+    `;
 }
 
 function formatTutorialBody(text) {

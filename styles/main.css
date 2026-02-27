@@ -1418,6 +1418,17 @@ body {
 .tutorial-p { margin: 0 0 10px; }
 .tutorial-list { margin: 0 0 12px 18px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .tutorial-list li { color: #d3e1ea; }
+.tutorial-preview-card {
+    border: 1px solid #335063;
+    border-radius: 10px;
+    background: #101a22;
+    padding: 10px;
+}
+.tutorial-preview-note {
+    margin: 8px 0 0;
+    color: #9cb1bf;
+    font-size: 12px;
+}
 .tutorial-step-index { margin-top: 8px; color: #9fb3c2; font-size: 12px; }
 .tutorial-nav { margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end; }
 
