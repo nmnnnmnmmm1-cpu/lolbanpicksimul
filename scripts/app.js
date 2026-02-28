@@ -872,7 +872,7 @@ async function loadWorldsData() {
     };
     try {
         const [teams, players, rosters] = await Promise.all([
-            loadJson("data/teams.json?v=20260224-9"),
+            loadJson("data/teams.json?v=20260228-02"),
             loadJson("data/players.json?v=20260228-01"),
             loadJson("data/worlds_roster.json?v=20260224-9")
         ]);
