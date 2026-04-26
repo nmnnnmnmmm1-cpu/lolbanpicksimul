@@ -388,52 +388,52 @@ const STRATEGY_CONFIGS = {
 };
 const TUTORIAL_STEPS = [
     {
-        title: "게임 소개",
-        body: "이 게임은 리그 오브 레전드 밴픽 시뮬레이션입니다.\n\n핵심은 단순 합산이 아니라 팀 컨셉(유형/파워커브/데미지 밸런스) 완성도입니다."
+        title: "목표",
+        body: "좋은 챔피언 5명을 고르는 게임이 아닙니다.\n\n서로 맞물리는 5명을 골라 팀 조합을 완성하는 게임입니다.\n\n밴픽이 끝나면 팀 스탯, 상성, 파워커브, 고유 특성을 계산해 기대승률이 정해지고, 실제 승패는 그 확률에 따라 결정됩니다."
     },
     {
-        title: "화면 읽는 법",
-        body: "좌/우 요약 카드에서 팀 상태를 빠르게 확인하세요.\n\n- 삼각 그래프: 돌진/포킹/받아치기 강점\n- 파워커브: 초/중/후반 구간 전투력\n- 상단 팀명 아래: 팀 성향/보정값"
+        title: "밴픽 화면 읽기",
+        body: "먼저 양쪽 팀 요약을 확인하세요.\n\n- CC / 딜 / 탱: 팀의 기본 체력입니다.\n- AD/AP 막대: 데미지 균형입니다.\n- 삼각 그래프: 돌진/포킹/받아치기 중 어떤 조합인지 보여줍니다.\n- 파워커브: 초반, 중반, 후반 중 언제 강한지 보여줍니다."
     },
     {
-        title: "기본 스탯 구성",
-        body: "각 챔피언은 아래 정보를 가집니다.\n- 딜링 / 탱킹 / CC\n- 데미지 유형(AD/AP/하이브리드)\n- 조합 유형(돌진/포킹/받아치기)\n- 파워커브(초반/중반/후반)"
+        title: "챔피언 카드",
+        body: "챔피언을 누르기 전, 상세 정보를 먼저 확인하는 습관이 중요합니다.\n\n챔피언마다 다음 값이 다릅니다.\n- 딜링 / 탱킹 / CC\n- AD / AP / 하이브리드\n- 돌진 / 포킹 / 받아치기\n- 초반 / 중반 / 후반 파워\n- 조건부로 발동하는 고유 특성"
     },
     {
-        title: "챔피언 정보 UI 예시",
+        title: "상세 정보 예시",
         html: "CHAMPION_INFO_EXAMPLE"
     },
     {
-        title: "1. 딜링 & 탱킹 스탯",
-        body: "기본적으로 수치가 높을수록 기대승률이 오르지만, 다섯 챔피언의 스탯 합계가 기준을 넘지 않으면 큰 패널티가 적용됩니다.\n\n기준은 다음과 같습니다.\n- 팀 딜링 합계 25 이상\n- 팀 탱킹 합계 20 이상\n\n이 기준을 충족하지 못하면 기대승률이 대폭 떨어집니다."
+        title: "딜링과 탱킹",
+        body: "딜이 부족하면 상대를 끝내지 못하고, 탱이 부족하면 한타를 버티지 못합니다.\n\n최소 기준은 다음과 같습니다.\n- 팀 딜링 합계 25 이상\n- 팀 탱킹 합계 20 이상\n\n둘 중 하나라도 부족하면 기대승률이 크게 떨어집니다."
     },
     {
-        title: "2. CC기 스탯",
-        body: "챔피언당 CC는 0~3 단계입니다.\n\n- 팀 CC 합계가 7 이하이면 큰 페널티가 적용됩니다.\n- CC가 높을수록 기본 팀 점수(Team Score)에서도 추가 이점을 받습니다."
+        title: "CC",
+        body: "CC는 싸움을 여는 힘입니다.\n\n챔피언마다 CC는 0~3 단계입니다.\n\n- 팀 CC 합계가 7 이하이면 큰 페널티를 받습니다.\n- CC가 높을수록 팀 점수에도 더 크게 반영됩니다.\n\n딜러만 많이 뽑는 조합은 숫자가 좋아 보여도 실제 승률이 낮아질 수 있습니다."
     },
     {
-        title: "3. 데미지 밸런스 (AD/AP)",
-        body: "챔피언은 AD / AP / 하이브리드 중 하나입니다.\n\n- AD/AP 비율은 공격력 합 기준으로 계산됩니다(하이브리드는 50:50 반영).\n- 한쪽 비중이 65% / 80% / 90%를 넘으면 단계별 페널티가 적용됩니다.\n- AD/AP를 적절히 섞을수록 안정적인 승률을 기대할 수 있습니다."
+        title: "AD/AP 균형",
+        body: "한쪽 데미지로 너무 쏠리면 상대가 방어 아이템으로 쉽게 막습니다.\n\n계산 방식은 공격력 합 기준입니다.\n- AD 챔피언: 딜링 점수를 AD에 반영\n- AP 챔피언: 딜링 점수를 AP에 반영\n- 하이브리드: 딜링 점수를 AD/AP에 절반씩 반영\n\n한쪽 비중이 65%, 80%, 90%를 넘을수록 페널티가 커집니다."
     },
     {
-        title: "4. 챔피언 상성 (유형)",
-        body: "상성 구조는 [돌진 > 포킹 > 받아치기 > 돌진] 입니다.\n\n- 유형 수치가 높을수록 상성 이득/손해 폭이 커집니다.\n- 수치가 낮으면 상성 영향이 줄어듭니다.\n- 내 팀 유형과 상대 팀 유형이 같다면, 유형 점수가 더 높은 팀이 유리합니다."
+        title: "조합 상성",
+        body: "조합 유형은 가위바위보처럼 맞물립니다.\n\n돌진은 포킹에 강합니다.\n포킹은 받아치기에 강합니다.\n받아치기는 돌진에 강합니다.\n\n유형 점수가 높을수록 상성 이득도 커지고, 역상성 손해도 커집니다.\n같은 유형끼리 붙으면 유형 점수가 더 높은 팀이 약간 유리합니다."
     },
     {
-        title: "5. 파워 커브",
-        body: "챔피언마다 전성기(초/중/후반)가 다릅니다.\n\n초반 격차가 크면 스노우볼로 빠르게 끝날 수 있고,\n후반 밸류가 높으면 역전 각이 만들어질 수 있습니다."
+        title: "파워커브",
+        body: "강한 시간대가 다르면 경기 흐름도 달라집니다.\n\n초반이 강하면 빠르게 굴려야 합니다.\n중반이 강하면 오브젝트 한타가 중요합니다.\n후반이 강하면 버티는 밴픽이 필요합니다.\n\n특정 시간대 격차가 크면 경기가 그 구간에서 끝날 수 있습니다."
     },
     {
-        title: "6. 실제 팀 모드",
-        body: "실제 팀 모드에서는 팀 선호 성향과 선수 시그니처 픽 보정이 적용됩니다.\n\n- 돌진 선호 팀: 돌진 챔피언당 돌진 스탯 +0.5\n- 선수 시그니처 챔피언 픽: 주력 시간대 +1.6, 딜링 +1.1"
+        title: "실제 팀 모드",
+        body: "실제 팀 모드에서는 팀 컬러와 선수 시그니처 픽이 밴픽에 반영됩니다.\n\n- 팀 선호 성향에 맞는 챔피언을 고르면 해당 방향 보정이 붙습니다.\n- 선수가 잘 다루는 시그니처 챔피언을 고르면 주력 시간대와 딜링이 오릅니다.\n\n팀 로고와 선수 카드가 보이면 실제 팀 모드 보정이 켜진 상태입니다."
     },
     {
-        title: "7. 고유 특성",
-        body: "고유 특성은 특정 조건을 만족할 때 팀 스탯/승률에 추가 보정을 줍니다.\n\n- 조건: 아군/적군 조합, 포지션, 스탯 임계값 등\n- 효과: 초중후반/딜링/탱킹/CC/유형/승률 보정\n- 챔피언 상세 정보 카드에서 현재 챔피언 특성과 연계 특성을 함께 확인할 수 있습니다."
+        title: "고유 특성",
+        body: "일부 챔피언은 특정 조합에서 더 강해집니다.\n\n예를 들어 나미와 루시안처럼 함께 뽑았을 때 발동하는 특성이 있습니다.\n\n상세 정보 카드에서 두 가지를 확인하세요.\n- 고유 특성: 이 챔피언이 직접 발동하는 효과\n- 연계 발동 특성: 다른 챔피언의 조건에 이 챔피언이 포함되는 효과"
     },
     {
-        title: "마무리",
-        body: "그럼 즐거운 게임 되세요!"
+        title: "밴픽 팁",
+        body: "처음에는 이 순서로 보면 됩니다.\n\n- 딜링 25 / 탱킹 20 / CC 7 기준을 넘겼는가?\n- AD/AP가 한쪽으로 심하게 쏠리지 않았는가?\n- 우리 조합 유형이 상대 조합에 유리한가?\n- 초중후반 중 어느 시간대에 이겨야 하는가?\n- 고유 특성이나 선수 시그니처 픽이 발동하는가?\n\n이 다섯 가지가 맞으면 좋은 밴픽입니다."
     }
 ];
 let tutorialStepIndex = 0;
@@ -457,6 +457,10 @@ function getChampionImageUrl(key) {
     }
     const imageKey = CHAMP_IMG_KEY_MAP[key] || key;
     return `https://ddragon.leagueoflegends.com/cdn/${CDN_VERSION}/img/champion/${imageKey}.png`;
+}
+
+function getChampionPlaceholder(name, size = 96) {
+    return `https://placehold.co/${size}x${size}/121c23/c8aa6e?text=${encodeURIComponent(String(name || "?").slice(0, 2))}`;
 }
 
 function setDisplayById(id, display) {
@@ -496,7 +500,8 @@ function renderHomeWorldsTeamPanel() {
 
     const myTeam = getWorldsTeamById(worldsConfig.myTeamId);
     const myRoster = getWorldsRosterByTeamId(worldsConfig.myTeamId);
-    title.innerText = `${myTeam?.name || "내 팀"} 로스터`;
+    const homeTeamLogo = myTeam?.logo || "";
+    title.innerHTML = `${homeTeamLogo ? `<img class="home-worlds-team-logo" src="${escapeHtml(homeTeamLogo)}" alt="${escapeHtml(myTeam?.name || "내 팀")}" onerror="this.style.display='none'">` : ""}<span>${escapeHtml(myTeam?.name || "내 팀")} 로스터</span>`;
     if (!myRoster || !myRoster.players) {
         rosterWrap.innerHTML = '<div class="home-empty">로스터 데이터가 없습니다.</div>';
         return;
@@ -2784,22 +2789,30 @@ function buildChampionInfoHtml(c, isFearlessLocked) {
     const typeClass = getTypeColorClass(c.profile.type);
     const dmgClass = getDmgTypeColorClass(c.dmgType);
     const typeScaleRoman = toRomanScale(c.profile.scale);
+    const champKey = getChampionKeyByName(c.name);
+    const imageUrl = champKey ? getChampionImageUrl(champKey) : getChampionPlaceholder(c.name);
     return `
-        <div class="tip-title-row">
-            <b class="tip-title-name">${c.name}</b>
-            <span class="tip-title-meta">
-                <span class="tip-pos-label">${posLabel}</span>
-                <span class="tip-meta-sep">|</span>
-                <span class="meta-badge ${typeClass}">
-                    ${TYPE_LABEL[c.profile.type]} <span class="tip-roman-level">${typeScaleRoman}</span>
-                </span>
-                <span class="tip-meta-sep">|</span>
-                <span class="meta-badge ${dmgClass}">${c.dmgType}</span>
-            </span>
+        <div class="tip-hero">
+            <img class="tip-portrait" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(c.name)}" onerror="this.onerror=null;this.src='${getChampionPlaceholder(c.name)}';">
+            <div class="tip-hero-copy">
+                <div class="tip-title-row">
+                    <b class="tip-title-name">${escapeHtml(c.name)}</b>
+                    <span class="tip-title-meta">
+                        <span class="tip-pos-label">${escapeHtml(posLabel)}</span>
+                        <span class="meta-badge ${typeClass}">
+                            ${TYPE_LABEL[c.profile.type]} <span class="tip-roman-level">${typeScaleRoman}</span>
+                        </span>
+                        <span class="meta-badge ${dmgClass}">${c.dmgType}</span>
+                    </span>
+                </div>
+                <div class="tip-hero-note">전투 스탯과 파워커브를 기준으로 밴픽 가치를 평가합니다.</div>
+            </div>
         </div>
-        ${renderCcPips(c.cc)}
-        ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
-        ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
+        <div class="tip-stat-panel">
+            ${renderCcPips(c.cc)}
+            ${renderStatRow("딜링", "⚔", c.dmg, 10, "#ef5350")}
+            ${renderStatRow("탱킹", "🛡", c.tank, 10, "#42a5f5")}
+        </div>
         ${renderPhaseLineChart(c.phase)}
         ${renderChampionTraitInfo(c.name)}
         ${isFearlessLocked ? "<div style=\"margin-top:5px;color:#ef9a9a;\">피어리스 잠금됨 (이전 세트 픽)</div>" : ""}
@@ -2812,7 +2825,7 @@ function openMobileChampionInfo(key, isFearlessLocked) {
     const title = document.getElementById('mobile-champ-title');
     if (!modal || !body || !CHAMP_DB[key]) return;
     const c = CHAMP_DB[key];
-    if (title) title.innerText = c.name;
+    if (title) title.innerText = "상세 분석";
     body.innerHTML = buildChampionInfoHtml(c, isFearlessLocked);
     modal.classList.add('show');
 }
@@ -3845,6 +3858,22 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
     const redRealTeamEffectText = redRealTeamDetail
         ? redRealTeamDetail.effectText
         : "실제 팀 정보를 찾지 못해 보정이 적용되지 않습니다.";
+    const renderSummaryTitle = (team, role, stats) => {
+        const dominant = getDominantProfile(stats);
+        const logo = getHeaderTeamLogoUrl(team);
+        return `
+            <div class="summary-headline">
+                <div class="summary-team-main">
+                    ${logo ? `<img class="summary-team-logo" src="${escapeHtml(logo)}" alt="${escapeHtml(role)}" onerror="this.style.display='none'">` : ""}
+                    <div>
+                        <div class="summary-team-role">${escapeHtml(role)}</div>
+                        <div class="summary-team-style ${getTypeColorClass(dominant.type)}">${TYPE_LABEL[dominant.type]} 조합 · ${formatNum(dominant.value)}</div>
+                    </div>
+                </div>
+                <span class="summary-side-badge ${team}">${team.toUpperCase()}</span>
+            </div>
+        `;
+    };
     const renderSummaryHead = (stats, team) => {
         const adPct = Math.round((stats.adRatio || 0.5) * 100);
         const apPct = 100 - adPct;
@@ -3854,36 +3883,39 @@ function updateTeamPanels(b, r, traitCtx = null, strategyCtx = null, worldsCtx =
             : "전략 보정 0";
         const worldsText = worldsModeEnabled ? `실제팀 +${formatNum(team === "blue" ? worldsBlue : worldsRed)}` : "실제팀 OFF";
         return `
-            <div class="summary-kpi-row">
-                <span class="summary-kpi-chip" title="팀의 군중제어 총합입니다. 낮으면 교전 개시가 어려워집니다.">CC ${formatNum(stats.cc)}</span>
-                <span class="summary-kpi-chip" title="팀의 총 화력입니다. 전투 마무리 속도에 영향을 줍니다.">딜 ${formatNum(stats.dmg)}</span>
-                <span class="summary-kpi-chip" title="팀의 전선 유지력입니다. 한타 지속 능력에 영향을 줍니다.">탱 ${formatNum(stats.tank)}</span>
-                <span class="summary-kpi-chip"><span class="dmg-ad">AD ${adPct}%</span> · <span class="dmg-ap">AP ${apPct}%</span></span>
+            <div class="summary-stat-grid">
+                <span class="summary-stat-card" title="팀의 군중제어 총합입니다. 낮으면 교전 개시가 어려워집니다."><em>CC</em><b>${formatNum(stats.cc)}</b></span>
+                <span class="summary-stat-card" title="팀의 총 화력입니다. 전투 마무리 속도에 영향을 줍니다."><em>딜</em><b>${formatNum(stats.dmg)}</b></span>
+                <span class="summary-stat-card" title="팀의 전선 유지력입니다. 한타 지속 능력에 영향을 줍니다."><em>탱</em><b>${formatNum(stats.tank)}</b></span>
             </div>
-            <div class="summary-aux-line">
-                <span>${strategyText}</span>
-                <span>${worldsText}</span>
+            <div class="summary-damage-balance" title="하이브리드는 딜링 점수의 절반씩 AD/AP에 반영됩니다.">
+                <div class="summary-damage-label"><span class="dmg-ad">AD ${adPct}%</span><span class="dmg-ap">AP ${apPct}%</span></div>
+                <div class="summary-damage-track"><span class="summary-damage-ad" style="width:${adPct}%;"></span><span class="summary-damage-ap" style="width:${apPct}%;"></span></div>
+            </div>
+            <div class="summary-meta-strip">
+                <span>${escapeHtml(strategyText)}</span>
+                <span>${escapeHtml(worldsText)}</span>
             </div>
         `;
     };
     blueSummary.innerHTML = `
-        <div class="title">블루팀 요약 (${blueRole})</div>
+        ${renderSummaryTitle("blue", blueRole, b)}
         ${renderSummaryHead(b, "blue")}
         <div class="summary-graph-grid">
             ${renderRadarChart(b, "blue")}
             ${renderTeamPowerCurve(b, "blue")}
         </div>
-        <div class="summary-worlds-note">${worldsModeEnabled ? `${escapeHtml(blueRealTeamStyleText)} · ${escapeHtml(blueRealTeamEffectText)}` : "실제 팀 모드 OFF"}</div>
+        ${worldsModeEnabled ? `<div class="summary-worlds-note">${escapeHtml(blueRealTeamStyleText)} · ${escapeHtml(blueRealTeamEffectText)}</div>` : ""}
         <div class="trait-panel"><div class="trait-title">발동 특성</div>${renderTraitListHtml((traitCtx && traitCtx.traits && traitCtx.traits.blue) || [])}</div>
     `;
     redSummary.innerHTML = `
-        <div class="title">레드팀 요약 (${redRole})</div>
+        ${renderSummaryTitle("red", redRole, r)}
         ${renderSummaryHead(r, "red")}
         <div class="summary-graph-grid">
             ${renderRadarChart(r, "red")}
             ${renderTeamPowerCurve(r, "red")}
         </div>
-        <div class="summary-worlds-note">${worldsModeEnabled ? `${escapeHtml(redRealTeamStyleText)} · ${escapeHtml(redRealTeamEffectText)}` : "실제 팀 모드 OFF"}</div>
+        ${worldsModeEnabled ? `<div class="summary-worlds-note">${escapeHtml(redRealTeamStyleText)} · ${escapeHtml(redRealTeamEffectText)}</div>` : ""}
         <div class="trait-panel"><div class="trait-title">발동 특성</div>${renderTraitListHtml((traitCtx && traitCtx.traits && traitCtx.traits.red) || [])}</div>
     `;
 }
@@ -4632,14 +4664,6 @@ function evaluateDraftState(picksState) {
 function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null, worldsCtx = null) {
     const wrap = document.getElementById('mobile-team-mini');
     if (!wrap) return;
-    const makeType = (stats) => {
-        const d = getDominantProfile(stats);
-        return `<span class="${getTypeColorClass(d.type)}">${TYPE_LABEL[d.type]} ${d.value}</span>`;
-    };
-    const makeTypeDetail = (stats) => {
-        const d = getDominantProfile(stats);
-        return `${makeType(stats)} <span style="color:#8fa3b2;">(돌 ${formatNum(stats.dive)} / 포 ${formatNum(stats.poke)} / 받 ${formatNum(stats.anti)})</span>`;
-    };
     const phaseMax = {
         early: Math.max(1, b.early, r.early),
         mid: Math.max(1, b.mid, r.mid),
@@ -4656,9 +4680,10 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null,
         const apRatio = Math.max(0, Math.min(100, (1 - stats.adRatio) * 100));
         const adRatio = 100 - apRatio;
         const role = getTeamRoleLabel(team);
+        const logo = getHeaderTeamLogoUrl(team);
+        const dominant = getDominantProfile(stats);
         const pv = phaseValues(stats);
         const traitList = ((traitCtx && traitCtx.traits && traitCtx.traits[team]) || []);
-        const traitPreview = traitList.slice(0, 2).map((t) => t.champName + '·' + t.traitName).join(', ');
         const stratApplied = strategyCtx && strategyCtx.effect && strategyCtx.effect.team === team;
         const stratLabel = stratApplied ? (STRATEGY_CONFIGS[strategyCtx.effect.strategy]?.label || "전략") : "전략 없음";
         const worldBonus = worldsCtx ? (worldsCtx.bonus[team] || 0) : 0;
@@ -4667,21 +4692,25 @@ function renderMobileTeamMini(b, r, phases, traitCtx = null, strategyCtx = null,
             ? `${stratLabel} | 적합 ${strategyCtx.effect.fit} / 부조화 ${strategyCtx.effect.mismatch} | ${worldTag}`
             : `${stratLabel} | ${worldTag}`;
         return `<div class="mini-team-card ${team}">
-            <div class="mini-team-head"><span class="mini-team-name">${role}</span><span class="mini-team-type">${team.toUpperCase()}</span></div>
-            <div class="mini-team-line"><span>코어 스탯</span><span>CC ${formatNum(stats.cc)} | 딜 ${formatNum(stats.dmg)} | 탱 ${formatNum(stats.tank)}</span></div>
-            <div class="mini-team-line"><span>팀 유형</span><span>${makeTypeDetail(stats)}</span></div>
+            <div class="mini-team-head">
+                <span class="mini-team-name">${logo ? `<img class="mini-team-logo" src="${escapeHtml(logo)}" alt="${escapeHtml(role)}" onerror="this.style.display='none'">` : ""}${escapeHtml(role)}</span>
+                <span class="mini-team-type ${getTypeColorClass(dominant.type)}">${TYPE_LABEL[dominant.type]} · ${formatNum(dominant.value)}</span>
+            </div>
+            <div class="mini-stat-row">
+                <span>CC <b>${formatNum(stats.cc)}</b></span>
+                <span>딜 <b>${formatNum(stats.dmg)}</b></span>
+                <span>탱 <b>${formatNum(stats.tank)}</b></span>
+            </div>
             <div class="mini-team-phase-bars">
                 <div class="mini-phase-row"><span>초</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.early, phaseMax.early).toFixed(1)}%; background:${color};"></span></div><em>${formatNum(pv.early)}</em></div>
                 <div class="mini-phase-row"><span>중</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.mid, phaseMax.mid).toFixed(1)}%; background:${color};"></span></div><em>${formatNum(pv.mid)}</em></div>
                 <div class="mini-phase-row"><span>후</span><div class="mini-phase-track"><span class="mini-phase-fill" style="width:${phaseBarWidth(pv.late, phaseMax.late).toFixed(1)}%; background:${color};"></span></div><em>${formatNum(pv.late)}</em></div>
             </div>
-            <div class="mini-team-line"><span>AD/AP</span><span><span class="dmg-ad">${adRatio.toFixed(0)}%</span> / <span class="dmg-ap">${apRatio.toFixed(0)}%</span></span></div>
-            <div class="mini-team-line"><span>특성</span><span>${traitList.length}개</span></div>
-            <div class="mini-team-traits">${stratMeta}</div>
-            ${traitPreview ? `<div class="mini-team-traits">${traitPreview}${traitList.length > 2 ? ' ...' : ''}</div>` : ''}
+            <div class="mini-team-adap-head"><span class="dmg-ad">AD ${adRatio.toFixed(0)}%</span><span class="dmg-ap">AP ${apRatio.toFixed(0)}%</span></div>
             <div class="mini-team-adap-track">
                 <span class="mini-team-ad" style="width:${adRatio.toFixed(1)}%; background:#ff9800;"></span><span class="mini-team-ap" style="width:${apRatio.toFixed(1)}%; background:#9c27b0;"></span>
             </div>
+            <div class="mini-team-line compact"><span>특성 ${traitList.length}개</span><span>${escapeHtml(stratMeta)}</span></div>
         </div>`;
     };
     wrap.innerHTML = row('blue', b) + row('red', r);
@@ -4938,6 +4967,13 @@ function teamDisplayName(team) {
     return team === userTeam ? teamProfile.myTeamName : teamProfile.aiTeamName;
 }
 
+function getHeaderTeamLogoUrl(teamSide) {
+    if (!worldsModeEnabled || !userTeam) return "";
+    const teamId = getWorldsTeamIdBySideForUi(teamSide);
+    const team = getWorldsTeamById(teamId);
+    return team?.logo || "";
+}
+
 function getHeaderTeamSubline(team, stats, worldsCtx = null) {
     const dominant = getDominantProfile(stats);
     const base = `${TYPE_LABEL[dominant.type]} ${formatNum(dominant.value)}`;
@@ -4953,11 +4989,19 @@ function updateHeaderTeamInfo(b, r, worldsCtx = null) {
     const redRole = getTeamRoleLabel("red");
     const blueInfo = document.getElementById("blue-info");
     const redInfo = document.getElementById("red-info");
+    const blueLogo = getHeaderTeamLogoUrl("blue");
+    const redLogo = getHeaderTeamLogoUrl("red");
+    const blueLogoHtml = blueLogo
+        ? `<img class="team-head-logo" src="${escapeHtml(blueLogo)}" alt="${escapeHtml(blueRole)}" onerror="this.style.display='none'">`
+        : "";
+    const redLogoHtml = redLogo
+        ? `<img class="team-head-logo" src="${escapeHtml(redLogo)}" alt="${escapeHtml(redRole)}" onerror="this.style.display='none'">`
+        : "";
     if (blueInfo) {
-        blueInfo.innerHTML = `<span class="team-head-name">${escapeHtml(blueRole)} (BLUE)</span><span class="team-head-sub">${escapeHtml(getHeaderTeamSubline("blue", b, worldsCtx))}</span>`;
+        blueInfo.innerHTML = `<span class="team-head-name-wrap">${blueLogoHtml}<span class="team-head-name">${escapeHtml(blueRole)} (BLUE)</span></span><span class="team-head-sub">${escapeHtml(getHeaderTeamSubline("blue", b, worldsCtx))}</span>`;
     }
     if (redInfo) {
-        redInfo.innerHTML = `<span class="team-head-name">${escapeHtml(redRole)} (RED)</span><span class="team-head-sub">${escapeHtml(getHeaderTeamSubline("red", r, worldsCtx))}</span>`;
+        redInfo.innerHTML = `<span class="team-head-name-wrap">${redLogoHtml}<span class="team-head-name">${escapeHtml(redRole)} (RED)</span></span><span class="team-head-sub">${escapeHtml(getHeaderTeamSubline("red", r, worldsCtx))}</span>`;
     }
 }
 
@@ -5619,10 +5663,16 @@ function renderResultTypeMeter(label, value, cls) {
 function renderResultTeamCard(team, stats, compLabel) {
     const teamName = teamDisplayName(team);
     const tone = team === "blue" ? "blue" : "red";
+    const logo = getHeaderTeamLogoUrl(team);
+    const adPct = Math.round((stats.adRatio || 0.5) * 100);
+    const apPct = 100 - adPct;
     return `<section class="result-team-card ${tone}">
         <div class="result-team-head">
             <div class="result-team-title-wrap">
-                <h3 class="result-team-name">${escapeHtml(teamName)}</h3>
+                <div class="result-team-name-row">
+                    ${logo ? `<img class="result-team-logo" src="${escapeHtml(logo)}" alt="${escapeHtml(teamName)}" onerror="this.style.display='none'">` : ""}
+                    <h3 class="result-team-name">${escapeHtml(teamName)}</h3>
+                </div>
                 <span class="result-comp-badge">${escapeHtml(compLabel)}</span>
             </div>
             <span class="result-side-chip ${tone}">${team.toUpperCase()}</span>
@@ -5631,6 +5681,11 @@ function renderResultTeamCard(team, stats, compLabel) {
             ${renderResultMetricRow("CC", stats.cc, 15, "tone-cc", "🧩")}
             ${renderResultMetricRow("딜링", stats.dmg, 50, "tone-dmg", "⚔")}
             ${renderResultMetricRow("탱킹", stats.tank, 50, "tone-tank", "🛡")}
+        </div>
+        <div class="result-damage-balance">
+            <span class="dmg-ad">AD ${adPct}%</span>
+            <div class="result-damage-track"><span class="result-damage-ad" style="width:${adPct}%;"></span><span class="result-damage-ap" style="width:${apPct}%;"></span></div>
+            <span class="dmg-ap">AP ${apPct}%</span>
         </div>
         <div class="result-sub-block">
             <div class="result-sub-title">팀 유형</div>
